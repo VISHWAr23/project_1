@@ -21,7 +21,6 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
     "paths": {
       "@ims/database": ["./packages/database/src"],
       "@ims/validation": ["./packages/validation/src"]
