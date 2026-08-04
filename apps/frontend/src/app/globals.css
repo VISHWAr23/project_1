@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Dim Soft Light Palette (Off-white dim slate) */
+    --background: 210 30% 95%; /* Soft dim background #F0F4F8 */
+    --foreground: 222.2 47% 11.2%; /* Crisp legible text #0F172A */
+    --card: 210 25% 97.5%; /* Soft off-white dim card #F6F9FC */
+    --card-foreground: 222.2 47% 11.2%;
+    --popover: 210 25% 97.5%;
+    --popover-foreground: 222.2 47% 11.2%;
+    --primary: 153.8 60.5% 42%; /* Supabase Green #279C64 for light theme readability */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 214.3 25% 90%; /* Dim secondary surface #E2E8F0 */
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 214.3 25% 90%;
+    --muted-foreground: 215.4 16.3% 40%; /* Legible muted text #526075 */
+    --accent: 214.3 25% 90%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 20% 84%; /* Soft subtle border #CBD5E1 */
+    --input: 214.3 20% 84%;
+    --ring: 153.8 60.5% 42%;
+    --radius: 0.25rem;
+
+    --sidebar: 214.3 25% 91%; /* Dim sidebar #E2E8F0 */
+    --sidebar-foreground: 222.2 47.4% 11.2%;
+    --sidebar-border: 214.3 20% 84%;
+  }
+
+  .dark {
+    /* Supabase Signature Dark Palette */
+    --background: 224 22% 8%; /* #0F1117 */
+    --foreground: 0 0% 93%; /* #EDEDED */
+    --card: 218 18% 13%; /* #1B1F26 */
+    --card-foreground: 0 0% 98%;
+    --popover: 218 18% 13%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 153.8 60.5% 53.1%; /* Supabase Green #3ECF8E */
+    --primary-foreground: 224 22% 8%;
+    --secondary: 220 14% 11%; /* #181A20 */
+    --secondary-foreground: 0 0% 98%;
+    --muted: 220 14% 16%;
+    --muted-foreground: 215 15% 60%;
+    --accent: 220 14% 16%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 350 89% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 16% 20%; /* #2A2F3A */
+    --input: 220 16% 20%;
+    --ring: 153.8 60.5% 53.1%;
+
+    --sidebar: 225 17% 8%; /* #111318 */
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-border: 220 16% 20%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-[#3ECF8E]/30 selection:text-[#3ECF8E];
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* Supabase custom dark & light scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.25);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.45);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
