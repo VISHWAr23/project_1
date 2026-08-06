@@ -88,7 +88,7 @@ export function AdjustmentModal({ item, isOpen, onClose }: AdjustmentModalProps)
           </div>
           <div className="text-right">
             <span className="text-xs text-muted-foreground block">Net Payable</span>
-            <span className="text-lg font-bold font-mono text-[#3ECF8E]">₹ {net.toLocaleString('en-IN')}</span>
+            <span className="text-lg font-bold font-mono text-[#2563EB]">₹ {net.toLocaleString('en-IN')}</span>
           </div>
         </div>
 
@@ -188,7 +188,7 @@ export function AdjustmentModal({ item, isOpen, onClose }: AdjustmentModalProps)
           <div className="p-3 rounded-lg bg-background border border-border flex items-center justify-between text-xs font-mono">
             <div>Gross Salary: <span className="text-foreground font-bold">₹ {gross.toLocaleString('en-IN')}</span></div>
             <div>Total Deductions: <span className="text-rose-400 font-bold">₹ {deductions.toLocaleString('en-IN')}</span></div>
-            <div>Net Pay: <span className="text-[#3ECF8E] font-bold">₹ {net.toLocaleString('en-IN')}</span></div>
+            <div>Net Pay: <span className="text-[#2563EB] font-bold">₹ {net.toLocaleString('en-IN')}</span></div>
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">

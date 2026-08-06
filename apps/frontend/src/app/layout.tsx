@@ -5,8 +5,20 @@ import { ThemeProvider } from '@/providers/theme-provider';
 import { ToastProvider } from '@/components/ui/toast';
 
 export const metadata: Metadata = {
-  title: 'Enterprise IMS | Supabase SaaS Interface',
-  description: 'Enterprise Inventory Management System with Supabase Dashboard Styling',
+  title: 'Shri Lathikka Surgicals | Premier Surgical Disposables & Medical Supplies',
+  description:
+    'Leading retailer & manufacturer of Medi Bath Body Wipes, Surgical Cotton Rolls, Gauze Bandages, Gamjee Rolls, and Medical Surgical Clothing in Rajapalayam, Tamil Nadu.',
+  keywords: [
+    'Shri Lathikka Surgicals',
+    'Rajapalayam',
+    'Surgical Cotton Roll',
+    'Medi Bath Wipes',
+    'Gauze Bandage Roll',
+    'Gamjee Roll',
+    'Medical Clothing',
+    'Tamil Nadu Surgical Manufacturer',
+    'IndiaMART Seller',
+  ],
 };
 
 export default function RootLayout({
@@ -16,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark h-full">
-      <body className="h-full font-sans antialiased bg-background text-foreground selection:bg-[#3ECF8E]/30 selection:text-[#3ECF8E]">
+      <body className="h-full font-sans antialiased bg-background text-foreground selection:bg-blue-500/20 selection:text-blue-600">
         <ThemeProvider>
           <ToastProvider>
             <ReactQueryProvider>{children}</ReactQueryProvider>

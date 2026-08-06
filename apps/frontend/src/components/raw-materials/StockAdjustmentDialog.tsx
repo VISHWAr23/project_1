@@ -84,7 +84,7 @@ export function StockAdjustmentDialog({ isOpen, onClose, material }: StockAdjust
             <span className="text-muted-foreground block">Projected Stock:</span>
             <span
               className={`font-mono font-bold text-sm ${
-                isNegativeError ? 'text-rose-500' : 'text-[#3ECF8E]'
+                isNegativeError ? 'text-rose-500' : 'text-[#2563EB]'
               }`}
             >
               {projectedStock} {material.unit?.abbreviation || 'Units'}
@@ -149,7 +149,7 @@ export function StockAdjustmentDialog({ isOpen, onClose, material }: StockAdjust
         <div>
           <label className="block text-xs font-medium text-muted-foreground mb-1">Transaction Remarks / Reason</label>
           <textarea
-            className="w-full bg-secondary/50 border border-border rounded-md text-xs p-2 text-foreground focus:outline-none focus:border-[#3ECF8E]"
+            className="w-full bg-secondary/50 border border-border rounded-md text-xs p-2 text-foreground focus:outline-none focus:border-[#2563EB]"
             rows={2}
             placeholder="Reason for adjustment, physical verification discrepancy, vendor delivery note..."
             value={notes}

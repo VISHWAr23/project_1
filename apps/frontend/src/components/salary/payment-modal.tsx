@@ -51,7 +51,7 @@ export function PaymentModal({ item, isOpen, onClose }: PaymentModalProps) {
       <div className="bg-[#121214] border border-border rounded-xl w-full max-w-md p-6 shadow-2xl space-y-5">
         <div className="flex items-center justify-between border-b border-border pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-[#3ECF8E]/10 text-[#3ECF8E]">
+            <div className="p-2 rounded-lg bg-[#2563EB]/10 text-[#2563EB]">
               <CreditCard className="h-5 w-5" />
             </div>
             <div>
@@ -64,9 +64,9 @@ export function PaymentModal({ item, isOpen, onClose }: PaymentModalProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="p-3 rounded-lg bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 text-center">
+          <div className="p-3 rounded-lg bg-[#2563EB]/10 border border-[#2563EB]/20 text-center">
             <span className="text-xs text-muted-foreground block">Net Salary Payout</span>
-            <span className="text-2xl font-bold font-mono text-[#3ECF8E]">
+            <span className="text-2xl font-bold font-mono text-[#2563EB]">
               ₹ {netAmount.toLocaleString('en-IN')}
             </span>
             <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -79,7 +79,7 @@ export function PaymentModal({ item, isOpen, onClose }: PaymentModalProps) {
             <select
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-              className="w-full h-9 rounded-md bg-background border border-border px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[#3ECF8E]"
+              className="w-full h-9 rounded-md bg-background border border-border px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
             >
               <option value="BANK_TRANSFER">Bank Transfer (NEFT / RTGS / IMPS)</option>
               <option value="UPI">UPI Payment</option>

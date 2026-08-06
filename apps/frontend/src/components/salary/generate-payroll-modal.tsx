@@ -47,7 +47,7 @@ export function GeneratePayrollModal({ isOpen, onClose }: GeneratePayrollModalPr
       <div className="bg-[#121214] border border-border rounded-xl w-full max-w-md p-6 shadow-2xl space-y-5">
         <div className="flex items-center justify-between border-b border-border pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-[#3ECF8E]/10 text-[#3ECF8E]">
+            <div className="p-2 rounded-lg bg-[#2563EB]/10 text-[#2563EB]">
               <Play className="h-5 w-5 fill-current" />
             </div>
             <div>
@@ -64,7 +64,7 @@ export function GeneratePayrollModal({ isOpen, onClose }: GeneratePayrollModalPr
               <select
                 value={month}
                 onChange={(e) => setMonth(Number(e.target.value))}
-                className="w-full h-9 rounded-md bg-background border border-border px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[#3ECF8E]"
+                className="w-full h-9 rounded-md bg-background border border-border px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
               >
                 {monthNames.map((name, index) => (
                   <option key={index + 1} value={index + 1}>

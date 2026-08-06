@@ -74,7 +74,7 @@ export const RecentActivities: React.FC<RecentActivitiesProps> = ({
     <Card className="h-full flex flex-col justify-between">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-          <Activity className="h-4 w-4 text-[#3ECF8E]" />
+          <Activity className="h-4 w-4 text-[#2563EB]" />
           <span>Real-time Audit Activities</span>
         </CardTitle>
         <CardDescription className="text-xs">

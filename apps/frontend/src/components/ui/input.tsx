@@ -36,7 +36,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
               leftIcon ? 'pl-9' : 'pl-3'
             } ${
               isPassword ? 'pr-9' : 'pr-3'
-            } placeholder:text-muted-foreground/60 focus:outline-none focus:border-[#3ECF8E] focus:ring-1 focus:ring-[#3ECF8E] transition-colors ${
+            } placeholder:text-muted-foreground/60 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors ${
               error ? 'border-rose-500/80 focus:border-rose-500 focus:ring-rose-500' : ''
             } ${className}`}
             {...props}

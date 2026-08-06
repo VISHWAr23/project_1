@@ -48,7 +48,7 @@ export function JobWorkWorkflowModal({ order, onClose }: JobWorkWorkflowModalPro
           <div className="flex items-start justify-between border-b border-border/80 pb-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <div className="bg-[#3ECF8E]/10 p-2 rounded-lg text-[#3ECF8E]">
+                <div className="bg-[#2563EB]/10 p-2 rounded-lg text-[#2563EB]">
                   <Truck className="h-5 w-5" />
                 </div>
                 <div>
@@ -77,7 +77,7 @@ export function JobWorkWorkflowModal({ order, onClose }: JobWorkWorkflowModalPro
           <div className="space-y-3 bg-secondary/30 p-4 rounded-xl border border-border/60">
             <div className="flex items-center justify-between text-xs font-mono">
               <span className="text-muted-foreground">Work Flow SDLC Status Pipeline:</span>
-              <span className="font-bold text-[#3ECF8E] flex items-center gap-1">
+              <span className="font-bold text-[#2563EB] flex items-center gap-1">
                 Stage {currentStageIndex + 1} of 5: {currentStage.label}
               </span>
             </div>
@@ -94,9 +94,9 @@ export function JobWorkWorkflowModal({ order, onClose }: JobWorkWorkflowModalPro
                       <div
                         className={`w-9 h-9 rounded-full flex items-center justify-center font-mono text-xs font-bold transition-all shadow-sm ${
                           isPassed
-                            ? 'bg-[#3ECF8E] text-[#0F1117]'
+                            ? 'bg-[#2563EB] text-[#0F1117]'
                             : isCurrent
-                            ? 'bg-[#3ECF8E] text-[#0F1117] ring-4 ring-[#3ECF8E]/30 animate-pulse'
+                            ? 'bg-[#2563EB] text-[#0F1117] ring-4 ring-[#2563EB]/30 animate-pulse'
                             : 'bg-secondary text-muted-foreground border border-border/80'
                         }`}
                       >
@@ -107,7 +107,7 @@ export function JobWorkWorkflowModal({ order, onClose }: JobWorkWorkflowModalPro
                         <p
                           className={`text-[11px] font-mono font-bold leading-tight ${
                             isCurrent
-                              ? 'text-[#3ECF8E]'
+                              ? 'text-[#2563EB]'
                               : isPassed
                               ? 'text-foreground'
                               : 'text-muted-foreground/70'
@@ -123,7 +123,7 @@ export function JobWorkWorkflowModal({ order, onClose }: JobWorkWorkflowModalPro
             </div>
 
             {/* Current State Description Box */}
-            <div className="p-3 bg-[#3ECF8E]/10 border border-[#3ECF8E]/30 rounded-lg flex items-center justify-between text-xs font-mono">
+            <div className="p-3 bg-[#2563EB]/10 border border-[#2563EB]/30 rounded-lg flex items-center justify-between text-xs font-mono">
               <div className="space-y-0.5">
                 <span className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
                   Current Workflow Action Needed:
@@ -135,7 +135,7 @@ export function JobWorkWorkflowModal({ order, onClose }: JobWorkWorkflowModalPro
               {order.status === 'CREATED' && (
                 <Link
                   href={`/job-work/${order.id}/issue`}
-                  className="px-4 py-2 bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-[#0F1117] font-bold text-xs rounded-lg transition-colors shadow-sm flex items-center gap-1.5 shrink-0"
+                  className="px-4 py-2 bg-[#2563EB] hover:bg-[#2563EB]/90 text-[#0F1117] font-bold text-xs rounded-lg transition-colors shadow-sm flex items-center gap-1.5 shrink-0"
                 >
                   <span>1-Tap Material Issue</span>
                   <ChevronRight className="h-4 w-4" />
@@ -159,7 +159,7 @@ export function JobWorkWorkflowModal({ order, onClose }: JobWorkWorkflowModalPro
                   href={`/job-work/${order.id}/challan`}
                   className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground border border-border font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5 shrink-0"
                 >
-                  <Printer className="h-4 w-4 text-[#3ECF8E]" />
+                  <Printer className="h-4 w-4 text-[#2563EB]" />
                   <span>Print Final Report</span>
                 </Link>
               )}
@@ -179,7 +179,7 @@ export function JobWorkWorkflowModal({ order, onClose }: JobWorkWorkflowModalPro
             <div className="p-3 bg-secondary/30 rounded-xl border border-border/60">
               <span className="text-[10px] text-muted-foreground block">Delivery Challan No</span>
               <p className="font-bold text-foreground flex items-center gap-1.5 mt-1">
-                <FileText className="h-4 w-4 text-[#3ECF8E]" />
+                <FileText className="h-4 w-4 text-[#2563EB]" />
                 <span>{order.challanNumber || 'Pending Issue'}</span>
               </p>
             </div>
@@ -234,7 +234,7 @@ export function JobWorkWorkflowModal({ order, onClose }: JobWorkWorkflowModalPro
           <div className="flex items-center justify-between pt-3 border-t border-border/80">
             <Link
               href={`/job-work/${order.id}`}
-              className="text-xs font-mono text-muted-foreground hover:text-[#3ECF8E] underline transition-colors"
+              className="text-xs font-mono text-muted-foreground hover:text-[#2563EB] underline transition-colors"
             >
               View Full Itemized Audit History →
             </Link>

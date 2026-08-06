@@ -50,8 +50,8 @@ export function SalaryKpiCards({ summary, isLoading }: SalaryKpiCardsProps) {
       value: isLoading ? '...' : `₹ ${kpis.totalNetPayout.toLocaleString('en-IN')}`,
       subtext: `Gross: ₹ ${kpis.totalGrossSalary.toLocaleString('en-IN')}`,
       icon: DollarSign,
-      color: 'text-[#3ECF8E]',
-      bg: 'bg-[#3ECF8E]/10',
+      color: 'text-[#2563EB]',
+      bg: 'bg-[#2563EB]/10',
     },
     {
       title: 'Total Bonus & Incentives',
@@ -84,7 +84,7 @@ export function SalaryKpiCards({ summary, isLoading }: SalaryKpiCardsProps) {
                   {c.value}
                 </h3>
                 <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
-                  <ArrowUpRight className="h-3 w-3 text-[#3ECF8E]" />
+                  <ArrowUpRight className="h-3 w-3 text-[#2563EB]" />
                   {c.subtext}
                 </p>
               </div>

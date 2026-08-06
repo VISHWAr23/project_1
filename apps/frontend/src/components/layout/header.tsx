@@ -73,14 +73,14 @@ export default function Header({ onMobileMenuOpen }: HeaderProps) {
             className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-sm transition-colors relative"
           >
             <Bell className="h-4 w-4" />
-            <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-[#3ECF8E] animate-pulse"></span>
+            <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse"></span>
           </button>
 
           {showNotifications && (
             <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-popover border border-border rounded-md shadow-2xl p-3.5 z-50 text-xs space-y-3">
               <div className="flex items-center justify-between border-b border-border pb-2">
                 <span className="font-semibold text-foreground">Notifications</span>
-                <span className="text-[10px] text-[#3ECF8E] font-mono">2 Unread</span>
+                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-mono font-bold">2 Unread</span>
               </div>
               <div className="space-y-2">
                 <div className="p-2 rounded-sm bg-secondary/50 border border-border/60">
@@ -105,7 +105,7 @@ export default function Header({ onMobileMenuOpen }: HeaderProps) {
             <p className="text-xs font-semibold text-foreground leading-tight truncate max-w-[120px]">
               {user?.email || 'admin@manufacturing.com'}
             </p>
-            <span className="text-[9px] font-mono font-bold text-[#3ECF8E] uppercase tracking-wider">
+            <span className="text-[9px] font-mono font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
               {user?.role || 'SUPER_ADMIN'}
             </span>
           </div>

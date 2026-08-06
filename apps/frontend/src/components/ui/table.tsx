@@ -58,9 +58,9 @@ export function Table<T>({
                       <span className="text-muted-foreground/60">
                         {sortColumn === col.key ? (
                           sortDirection === 'asc' ? (
-                            <ChevronUp className="h-3 w-3 text-[#3ECF8E]" />
+                            <ChevronUp className="h-3 w-3 text-blue-600 dark:text-blue-400" />
                           ) : (
-                            <ChevronDown className="h-3 w-3 text-[#3ECF8E]" />
+                            <ChevronDown className="h-3 w-3 text-blue-600 dark:text-blue-400" />
                           )
                         ) : (
                           <ArrowUpDown className="h-3 w-3" />

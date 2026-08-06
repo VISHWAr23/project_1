@@ -98,7 +98,7 @@ export function JobWorkSDLCCard({ order, onSelect }: JobWorkSDLCCardProps) {
     <motion.div
       whileHover={{ y: -3 }}
       transition={{ duration: 0.2 }}
-      className="bg-card hover:bg-card/90 border border-border/80 hover:border-[#3ECF8E]/50 rounded-xl p-4 shadow-sm flex flex-col justify-between space-y-4 cursor-pointer relative group overflow-hidden"
+      className="bg-card hover:bg-card/90 border border-border/80 hover:border-[#2563EB]/50 rounded-xl p-4 shadow-sm flex flex-col justify-between space-y-4 cursor-pointer relative group overflow-hidden"
       onClick={() => onSelect(order)}
     >
       {/* Top Accent Line for Current Stage */}
@@ -107,7 +107,7 @@ export function JobWorkSDLCCard({ order, onSelect }: JobWorkSDLCCardProps) {
           order.status === 'COMPLETED' || order.status === 'CLOSED'
             ? 'bg-emerald-500'
             : order.status === 'MATERIALS_ISSUED' || order.status === 'IN_PROGRESS'
-            ? 'bg-[#3ECF8E]'
+            ? 'bg-[#2563EB]'
             : order.status === 'PARTIAL_RETURN'
             ? 'bg-amber-400'
             : 'bg-blue-500'

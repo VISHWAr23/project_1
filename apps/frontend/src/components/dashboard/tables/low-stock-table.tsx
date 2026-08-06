@@ -96,7 +96,7 @@ export const LowStockTable: React.FC<LowStockTableProps> = ({
               <tbody className="divide-y divide-border/60 text-foreground">
                 {items.map((item) => (
                   <tr key={item.id} className="hover:bg-secondary/40 transition-colors">
-                    <td className="p-3 font-mono font-semibold text-[#3ECF8E]">{item.sku}</td>
+                    <td className="p-3 font-mono font-semibold text-[#2563EB]">{item.sku}</td>
                     <td className="p-3 font-medium truncate max-w-[180px]">{item.name}</td>
                     <td className="p-3 font-mono text-amber-500 font-bold">
                       {item.currentStockBalance} {item.unit}

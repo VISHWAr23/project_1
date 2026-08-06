@@ -22,7 +22,7 @@ export function SearchInput({
         type="text"
         placeholder={placeholder}
         onChange={onChange}
-        className="w-full bg-secondary/60 text-foreground text-xs rounded-sm pl-9 pr-12 py-2 border border-border focus:outline-none focus:border-[#3ECF8E] focus:ring-1 focus:ring-[#3ECF8E] transition-colors placeholder:text-muted-foreground/60"
+        className="w-full bg-secondary/60 text-foreground text-xs rounded-sm pl-9 pr-12 py-2 border border-border focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors placeholder:text-muted-foreground/60"
         {...props}
       />
       {shortcutKey && (

@@ -3,8 +3,8 @@
 /.pnpm-store
 
 # build outputs
-/dist
-/.next
+apps/backend/dist
+apps/frontend/.next
 /out
 /build
 

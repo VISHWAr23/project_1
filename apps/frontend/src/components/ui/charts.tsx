@@ -27,14 +27,14 @@ export interface ChartProps {
   secondaryColor?: string;
 }
 
-const SUPABASE_PALETTE = ['#3ECF8E', '#3B82F6', '#F59E0B', '#A855F7', '#EC4899', '#14B8A6'];
+const SUPABASE_PALETTE = ['#2563EB', '#3B82F6', '#F59E0B', '#A855F7', '#EC4899', '#14B8A6'];
 
 export function SupabaseAreaChart({
   data,
   height = 250,
   dataKey,
   categoryKey = 'name',
-  color = '#3ECF8E',
+  color = '#2563EB',
 }: ChartProps) {
   return (
     <div style={{ width: '100%', height }}>
@@ -84,7 +84,7 @@ export function SupabaseBarChart({
   height = 250,
   dataKey,
   categoryKey = 'name',
-  color = '#3ECF8E',
+  color = '#2563EB',
 }: ChartProps) {
   return (
     <div style={{ width: '100%', height }}>

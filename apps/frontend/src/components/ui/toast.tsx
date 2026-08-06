@@ -41,7 +41,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   };
 
   const icons = {
-    success: <CheckCircle2 className="h-4 w-4 text-[#3ECF8E]" />,
+    success: <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />,
     warning: <AlertTriangle className="h-4 w-4 text-amber-500" />,
     error: <AlertCircle className="h-4 w-4 text-rose-500" />,
     info: <Info className="h-4 w-4 text-blue-500" />,

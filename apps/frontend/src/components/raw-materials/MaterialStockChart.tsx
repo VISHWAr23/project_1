@@ -37,7 +37,7 @@ export function MaterialStockChart({ material }: MaterialStockChartProps) {
         </div>
         <div className="flex items-center gap-4 text-xs font-mono">
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#3ECF8E]" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB]" />
             <span className="text-foreground">Current Balance</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -58,8 +58,8 @@ export function MaterialStockChart({ material }: MaterialStockChartProps) {
           <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="stockGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3ECF8E" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#3ECF8E" stopOpacity={0.0} />
+                <stop offset="5%" stopColor="#2563EB" stopOpacity={0.4} />
+                <stop offset="95%" stopColor="#2563EB" stopOpacity={0.0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
@@ -91,7 +91,7 @@ export function MaterialStockChart({ material }: MaterialStockChartProps) {
                 label={{ value: 'Max Stock', fill: '#3b82f6', fontSize: 10 }}
               />
             )}
-            <Area type="monotone" dataKey="stock" stroke="#3ECF8E" strokeWidth={2} fillOpacity={1} fill="url(#stockGradient)" />
+            <Area type="monotone" dataKey="stock" stroke="#2563EB" strokeWidth={2} fillOpacity={1} fill="url(#stockGradient)" />
           </AreaChart>
         </ResponsiveContainer>
       </div>

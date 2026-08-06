@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "build": "nest build",
-    "dev": "nest start --watch",
-    "start": "nest start",
+    "dev": "nest start --watch --entryFile apps/backend/src/main",
+    "start": "nest start --entryFile apps/backend/src/main",
     "start:prod": "node dist/apps/backend/src/main"
   },
   "dependencies": {

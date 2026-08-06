@@ -53,7 +53,7 @@ export function PayrollTable({ items, isLoading, onEditAdjustment, onRecordPayme
       sortable: true,
       render: (row) => (
         <div>
-          <span className="font-mono font-semibold text-[#3ECF8E]">{row.employee?.employeeCode}</span>
+          <span className="font-mono font-semibold text-[#2563EB]">{row.employee?.employeeCode}</span>
           <p className="text-[11px] text-muted-foreground">{row.salaryType}</p>
         </div>
       ),
@@ -121,7 +121,7 @@ export function PayrollTable({ items, isLoading, onEditAdjustment, onRecordPayme
       align: 'right',
       render: (row) => (
         <div className="text-right">
-          <span className="font-mono text-sm font-bold text-[#3ECF8E]">
+          <span className="font-mono text-sm font-bold text-[#2563EB]">
             ₹ {Number(row.netSalary).toLocaleString('en-IN')}
           </span>
         </div>
@@ -164,8 +164,8 @@ export function PayrollTable({ items, isLoading, onEditAdjustment, onRecordPayme
               variant="outline"
               size="sm"
               onClick={() => onRecordPayment(row)}
-              leftIcon={<CreditCard className="h-3 w-3 text-[#3ECF8E]" />}
-              className="h-7 text-xs px-2 text-[#3ECF8E] border-[#3ECF8E]/30"
+              leftIcon={<CreditCard className="h-3 w-3 text-[#2563EB]" />}
+              className="h-7 text-xs px-2 text-[#2563EB] border-[#2563EB]/30"
             >
               Pay
             </Button>

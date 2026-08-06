@@ -18,7 +18,7 @@ export function Avatar({ name = 'User', src, size = 'md', status, className = ''
   };
 
   const statusClasses = {
-    online: 'bg-[#3ECF8E]',
+    online: 'bg-blue-600 dark:bg-blue-400',
     offline: 'bg-slate-400',
     away: 'bg-amber-400',
   };

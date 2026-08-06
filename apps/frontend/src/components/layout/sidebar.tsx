@@ -61,7 +61,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
             onClick={isMobile ? onMobileClose : undefined}
             className="flex items-center gap-2.5 overflow-hidden"
           >
-            <div className="bg-[#3ECF8E] text-[#0F1117] p-1.5 rounded-sm font-bold shadow-sm shrink-0">
+            <div className="bg-blue-600 text-white p-1.5 rounded-sm font-bold shadow-sm shrink-0">
               <Package className="h-5 w-5" />
             </div>
             {(!collapsed || isMobile) && (
@@ -70,7 +70,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
                   IMS Enterprise
                 </h2>
                 <span className="text-[10px] text-muted-foreground font-mono">
-                  Supabase Mobile Ready
+                  Shri Lathikka Surgicals
                 </span>
               </div>
             )}
@@ -114,21 +114,21 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
                 title={collapsed && !isMobile ? item.title : undefined}
                 className={`relative flex items-center gap-3 px-2.5 py-2.5 rounded-sm text-xs font-medium transition-colors ${
                   isActive
-                    ? 'bg-[#3ECF8E]/10 text-[#3ECF8E] font-semibold'
+                    ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold'
                     : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
                 }`}
               >
                 {isActive && (
                   <motion.div
                     layoutId="sidebarActiveIndicator"
-                    className="absolute left-0 top-1 bottom-1 w-1 bg-[#3ECF8E] rounded-r-sm"
+                    className="absolute left-0 top-1 bottom-1 w-1 bg-blue-600 dark:bg-blue-400 rounded-r-sm"
                     transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                   />
                 )}
-                <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-[#3ECF8E]' : ''}`} />
+                <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-blue-600 dark:text-blue-400' : ''}`} />
                 {(!collapsed || isMobile) && <span className="truncate flex-1">{item.title}</span>}
                 {(!collapsed || isMobile) && item.badge && (
-                  <span className="text-[9px] bg-[#3ECF8E]/20 text-[#3ECF8E] px-1.5 py-0.5 rounded-sm font-mono font-bold">
+                  <span className="text-[9px] bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-sm font-mono font-bold">
                     {item.badge}
                   </span>
                 )}
@@ -149,7 +149,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
                   <p className="text-xs font-medium text-foreground truncate">
                     {user?.email || 'admin@manufacturing.com'}
                   </p>
-                  <p className="text-[10px] font-mono text-[#3ECF8E] font-semibold">
+                  <p className="text-[10px] font-mono text-blue-600 dark:text-blue-400 font-semibold">
                     {user?.role || 'SUPER_ADMIN'}
                   </p>
                 </div>

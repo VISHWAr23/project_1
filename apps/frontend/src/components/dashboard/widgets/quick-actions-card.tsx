@@ -28,7 +28,7 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
           className="w-full flex items-center justify-between p-3 rounded-lg bg-secondary/40 hover:bg-secondary border border-border/80 text-xs text-foreground transition-all group text-left"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-md bg-[#3ECF8E]/10 text-[#3ECF8E]">
+            <div className="p-2 rounded-md bg-[#2563EB]/10 text-[#2563EB]">
               <Plus className="h-4 w-4" />
             </div>
             <div>
@@ -36,7 +36,7 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
               <p className="text-[10px] text-muted-foreground">Disburse raw materials to shop-floor</p>
             </div>
           </div>
-          <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-[#3ECF8E] transition-colors" />
+          <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-[#2563EB] transition-colors" />
         </button> */}
 
         {/* <a

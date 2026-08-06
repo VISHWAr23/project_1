@@ -81,7 +81,7 @@ export function StockHistoryLedger({ items }: StockHistoryLedgerProps) {
       key: 'referenceNumber',
       header: 'Reference No.',
       render: (row) => (
-        <span className="font-mono text-xs font-semibold text-[#3ECF8E]">
+        <span className="font-mono text-xs font-semibold text-[#2563EB]">
           {row.referenceNumber || 'N/A'}
         </span>
       ),
@@ -100,7 +100,7 @@ export function StockHistoryLedger({ items }: StockHistoryLedgerProps) {
         return (
           <span
             className={`font-mono font-bold text-xs ${
-              isAddition ? 'text-[#3ECF8E]' : 'text-rose-400'
+              isAddition ? 'text-[#2563EB]' : 'text-rose-400'
             }`}
           >
             {isAddition ? '+' : '-'}{row.quantity}
