@@ -14,7 +14,7 @@ import { StorageLocation } from '@/types/raw-materials.types';
 
 export default function StorageLocationsPage() {
   const { toast } = useToast();
-  const { data: locations, refetch } = useStorageLocations();
+  const { data: locations, isLoading, refetch } = useStorageLocations();
   const createLocation = useCreateStorageLocation();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -72,7 +72,7 @@ export default function StorageLocationsPage() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="space-y-6 pb-12 max-w-5xl mx-auto"
+      className="space-y-6 pb-12 w-full"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div className="flex items-center gap-3">
@@ -95,7 +95,12 @@ export default function StorageLocationsPage() {
         </Button>
       </div>
 
-      <Table columns={columns} data={locations || []} keyExtractor={(row) => row.id} />
+      <Table
+        columns={columns}
+        data={locations || []}
+        isLoading={isLoading}
+        keyExtractor={(row) => row.id}
+      />
 
       <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Create Storage Location" description="Add warehouse rack, bin or zone">
         <form onSubmit={handleSubmit} className="space-y-4">

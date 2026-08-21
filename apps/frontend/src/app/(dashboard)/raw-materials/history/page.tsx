@@ -15,7 +15,7 @@ export default function GlobalStockHistoryPage() {
   const [selectedTransactionType, setSelectedTransactionType] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: rawMaterials } = useRawMaterials();
+  const { data: rawMaterials } = useRawMaterials({ limit: 100 });
   const { data, isLoading } = useGlobalStockHistory({
     rawMaterialId: selectedMaterialId || undefined,
     transactionType: selectedTransactionType || undefined,
@@ -24,6 +24,21 @@ export default function GlobalStockHistoryPage() {
   });
 
   const transactions = data?.items || [];
+
+  const isFG = (m: any) =>
+    m.sku?.startsWith('FP-') ||
+    m.sku?.startsWith('FG-') ||
+    m.category?.name?.toLowerCase().includes('dressing') ||
+    m.category?.name?.toLowerCase().includes('care') ||
+    m.category?.name?.toLowerCase().includes('finished');
+
+  const materialFilterOptions = [
+    { label: 'All Inventory Items (RM & FG)', value: '' },
+    ...(rawMaterials?.items.map((m) => ({
+      label: `[${isFG(m) ? 'FG' : 'RM'}] ${m.sku} - ${m.name}`,
+      value: m.id,
+    })) || []),
+  ];
 
   return (
     <motion.div
@@ -41,12 +56,9 @@ export default function GlobalStockHistoryPage() {
           </Link>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
-              <History className="h-6 w-6 text-[#3ECF8E]" />
+              <History className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               Stock Movement Audit History Ledger
             </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Complete immutable transaction audit trail across all raw material issues, receipts & adjustments.
-            </p>
           </div>
         </div>
       </div>
@@ -71,10 +83,7 @@ export default function GlobalStockHistoryPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Select
-            options={[
-              { label: 'All Raw Materials', value: '' },
-              ...(rawMaterials?.items.map((m) => ({ label: `${m.sku} - ${m.name}`, value: m.id })) || []),
-            ]}
+            options={materialFilterOptions}
             value={selectedMaterialId}
             onChange={(e) => setSelectedMaterialId(e.target.value)}
           />

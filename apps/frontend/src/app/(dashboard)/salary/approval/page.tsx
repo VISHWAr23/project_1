@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Table, Column } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { SalaryNavTabs } from '@/components/salary/salary-nav-tabs';
 import { usePayrollRuns, useApprovePayroll } from '@/hooks/useSalary';
 import { useToast } from '@/components/ui/toast';
 import { PayrollRun } from '@/types/salary.types';
@@ -37,7 +38,7 @@ export default function PayrollApprovalPage() {
       sortable: true,
       render: (row) => (
         <div>
-          <span className="font-mono font-bold text-[#3ECF8E]">{row.payrollCode}</span>
+          <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{row.payrollCode}</span>
           <p className="text-[11px] text-muted-foreground">Generated {new Date(row.generatedAt).toLocaleDateString()}</p>
         </div>
       ),
@@ -63,7 +64,7 @@ export default function PayrollApprovalPage() {
       header: 'Net Salary Payout',
       align: 'right',
       render: (row) => (
-        <span className="font-mono font-bold text-[#3ECF8E]">
+        <span className="font-mono font-bold text-emerald-400">
           ₹ {Number(row.totalNet).toLocaleString('en-IN')}
         </span>
       ),
@@ -101,22 +102,24 @@ export default function PayrollApprovalPage() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      <div className="flex items-center gap-3 border-b border-border pb-5">
-        <Link href="/salary">
-          <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />} className="px-2" />
-        </Link>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Pending Payroll Approvals</h1>
-          <p className="text-xs text-muted-foreground">Review draft calculations and issue formal admin sign-off</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
+            Pending Payroll Approvals
+          </h1>
         </div>
       </div>
+
+      {/* Unified Module Navigation Tabs */}
+      <SalaryNavTabs />
 
       <Card className="p-5 border border-border/60 space-y-4">
         {runs.length > 0 ? (
           <Table columns={columns} data={runs} isLoading={isLoading} keyExtractor={(row) => row.id} />
         ) : (
           <div className="py-12 text-center text-muted-foreground space-y-2">
-            <CheckCircle className="h-10 w-10 mx-auto text-[#3ECF8E]/60" />
+            <CheckCircle className="h-10 w-10 mx-auto text-emerald-400/60" />
             <p className="text-sm font-semibold text-foreground">No Pending Approvals</p>
             <p className="text-xs">All generated monthly payroll batches have been approved or disbursed.</p>
           </div>

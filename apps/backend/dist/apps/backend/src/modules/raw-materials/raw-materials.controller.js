@@ -25,13 +25,14 @@ let RawMaterialsController = class RawMaterialsController {
     constructor(rawMaterialsService) {
         this.rawMaterialsService = rawMaterialsService;
     }
-    async findAll(search, categoryId, supplierId, storageLocationId, stockStatus, page, limit) {
+    async findAll(search, categoryId, supplierId, storageLocationId, stockStatus, type, page, limit) {
         return this.rawMaterialsService.findAll({
             search,
             categoryId,
             supplierId,
             storageLocationId,
             stockStatus,
+            type,
             page,
             limit,
         });
@@ -90,6 +91,7 @@ __decorate([
     (0, swagger_1.ApiQuery)({ name: 'supplierId', required: false }),
     (0, swagger_1.ApiQuery)({ name: 'storageLocationId', required: false }),
     (0, swagger_1.ApiQuery)({ name: 'stockStatus', required: false, enum: ['OPTIMAL', 'LOW_STOCK', 'OVERSTOCK', 'OUT_OF_STOCK'] }),
+    (0, swagger_1.ApiQuery)({ name: 'type', required: false, enum: ['ALL', 'RM', 'FG'] }),
     (0, swagger_1.ApiQuery)({ name: 'page', required: false }),
     (0, swagger_1.ApiQuery)({ name: 'limit', required: false }),
     __param(0, (0, common_1.Query)('search')),
@@ -97,10 +99,11 @@ __decorate([
     __param(2, (0, common_1.Query)('supplierId')),
     __param(3, (0, common_1.Query)('storageLocationId')),
     __param(4, (0, common_1.Query)('stockStatus')),
-    __param(5, (0, common_1.Query)('page')),
-    __param(6, (0, common_1.Query)('limit')),
+    __param(5, (0, common_1.Query)('type')),
+    __param(6, (0, common_1.Query)('page')),
+    __param(7, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, String, String, Number, Number]),
+    __metadata("design:paramtypes", [String, String, String, String, String, String, Number, Number]),
     __metadata("design:returntype", Promise)
 ], RawMaterialsController.prototype, "findAll", null);
 __decorate([

@@ -7,6 +7,7 @@ import { Play, Plus, ListFilter, CheckCircle, Clock, ShieldCheck, History, Setti
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { SalaryNavTabs } from '@/components/salary/salary-nav-tabs';
 import { SalaryKpiCards } from '@/components/salary/salary-kpi-cards';
 
 import { PayrollTable } from '@/components/salary/payroll-table';
@@ -40,21 +41,8 @@ export default function SalaryDashboardPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
             Salary & Payroll Management
           </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            Attendance-driven monthly payroll engine, deductions, approval workflows, and payslips.
-          </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Link href="/salary/history">
-            <Button variant="outline" size="sm" leftIcon={<History className="h-3.5 w-3.5" />}>
-              Salary History
-            </Button>
-          </Link>
-          <Link href="/salary/approval">
-            <Button variant="outline" size="sm" leftIcon={<CheckCircle className="h-3.5 w-3.5 text-cyan-400" />}>
-              Approvals
-            </Button>
-          </Link>
+        <div className="flex items-center gap-2">
           <Button
             variant="primary"
             size="sm"
@@ -65,6 +53,9 @@ export default function SalaryDashboardPage() {
           </Button>
         </div>
       </div>
+
+      {/* Unified Module Navigation Tabs */}
+      <SalaryNavTabs />
 
       {/* KPI Cards */}
       <SalaryKpiCards summary={summary} isLoading={isSummaryLoading} />

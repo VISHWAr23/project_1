@@ -172,8 +172,9 @@ export default function EmployeesPage() {
     {
       key: 'joiningDate',
       header: 'Joined Date',
+      width: '130px',
       render: (row) => (
-        <span className="font-mono text-xs text-muted-foreground">
+        <span className="font-mono text-xs text-muted-foreground whitespace-nowrap">
           {new Date(row.joiningDate).toLocaleDateString()}
         </span>
       ),
@@ -226,12 +227,9 @@ export default function EmployeesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2.5">
-            <Users className="h-6 w-6 text-[#3ECF8E]" />
+            <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             Staff & Employee Directory
           </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            Master records, departmental allocations, and employee status management.
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -331,21 +329,13 @@ export default function EmployeesPage() {
       </div>
 
       {/* Main Employee Table */}
-      {isLoading ? (
-        <div className="p-12 text-center text-xs font-mono text-muted-foreground bg-card border border-border rounded-xl">
-          Loading Staff Directory from Database...
-        </div>
-      ) : employees.length === 0 ? (
-        <div className="p-12 text-center space-y-3 bg-card border border-border rounded-xl">
-          <Users className="h-8 w-8 text-muted-foreground mx-auto" />
-          <div className="text-sm font-bold text-foreground">No Employees Found</div>
-          <div className="text-xs text-muted-foreground max-w-sm mx-auto">
-            No active staff match the search query. Try clearing filters or create a new employee intake.
-          </div>
-        </div>
-      ) : (
-        <Table columns={columns} data={employees} keyExtractor={(row) => row.id} />
-      )}
+      <Table
+        columns={columns}
+        data={employees}
+        isLoading={isLoading}
+        emptyMessage="No active staff match the search query. Try clearing filters or create a new employee intake."
+        keyExtractor={(row) => row.id}
+      />
 
       {/* Add Employee Modal */}
       <Modal

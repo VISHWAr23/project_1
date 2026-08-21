@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { prisma, JobWorkStatus, TransactionType } from '@ims/database';
 import { CreateJobWorkOrderDto } from './dto/create-job-work-order.dto';
+import { UpdateJobWorkOrderDto } from './dto/update-job-work-order.dto';
 import { IssueMaterialsDto } from './dto/issue-materials.dto';
 import { ReceiveReturnDto } from './dto/receive-return.dto';
 import { CloseJobWorkOrderDto } from './dto/close-job-work.dto';
@@ -219,14 +220,14 @@ export class JobWorkService {
       throw new BadRequestException(`Cannot issue materials for an order in status ${order.status}`);
     }
 
-    const totalWeight = dto.items.reduce((sum, item) => sum + item.issuedWeight, 0);
-    const totalQty = dto.items.reduce((sum, item) => sum + item.issuedQty, 0);
+    const totalWeight = dto.items.reduce((sum, item) => sum + Number(item.issuedWeight || 0), 0);
+    const totalQty = dto.items.reduce((sum, item) => sum + Number(item.issuedQty || 0), 0);
 
-    // Validate stock balance
+    // Validate stock balance against Weight (Kg)
     const stockBalance = Number(order.rawMaterial.currentStockBalance);
-    if (stockBalance < totalQty) {
+    if (stockBalance < totalWeight) {
       throw new BadRequestException(
-        `Insufficient stock for ${order.rawMaterial.name}. Available: ${stockBalance}, Requested: ${totalQty}`,
+        `Insufficient stock for ${order.rawMaterial.name}. Available: ${stockBalance.toFixed(2)} Kg, Requested: ${totalWeight.toFixed(2)} Kg`,
       );
     }
 
@@ -240,23 +241,32 @@ export class JobWorkService {
       : `DC-${year}-${String(challanCount + 1).padStart(4, '0')}`;
 
     const updatedOrder = await prisma.$transaction(async (tx) => {
-      // 1. Deduct raw material stock
+      // 1. Deduct raw material stock in Kg
+      const rawMat = await tx.rawMaterial.findUniqueOrThrow({
+        where: { id: order.rawMaterialId },
+      });
+      const prevStock = Number(rawMat.currentStockBalance);
+      const newStock = Math.max(0, prevStock - totalWeight);
+
       await tx.rawMaterial.update({
         where: { id: order.rawMaterialId },
         data: {
-          currentStockBalance: { decrement: totalQty },
+          currentStockBalance: newStock,
         },
       });
 
-      // 2. Create Inventory Transaction
+      // 2. Create Inventory Transaction with accurate stock balances in Kg
       await tx.inventoryTransaction.create({
         data: {
           transactionType: TransactionType.JOB_WORK_DISPATCH,
           rawMaterialId: order.rawMaterialId,
-          quantity: totalQty,
+          quantity: totalWeight,
+          previousStock: prevStock,
+          newStock: newStock,
+          referenceNumber: challanNumber,
           referenceDocumentType: 'JobWorkOrder',
           referenceDocumentId: order.id,
-          notes: `Dispatched to Job Working Company via Delivery Challan ${challanNumber}. Vehicle: ${dto.vehicleNumber}`,
+          notes: `Dispatched to Job Working Company via Delivery Challan ${challanNumber}. Total: ${totalWeight.toFixed(2)} Kg (${totalQty} Rolls). Vehicle: ${dto.vehicleNumber || 'N/A'}`,
           createdByUserId: userId || (await tx.user.findFirstOrThrow()).id,
         },
       });
@@ -370,23 +380,56 @@ export class JobWorkService {
           },
         });
 
-        // 2. Increase stock balance for returned product
+        // 2. Increase stock balance for returned product (aware of discrete UOM vs continuous weight)
+        const itemReturnedWeight = Number(item.returnedWeight) || 0;
+        const finProd = await tx.rawMaterial.findUniqueOrThrow({
+          where: { id: item.finishedProductId },
+          include: { unit: true },
+        });
+
+        const unitAbbr = finProd.unit?.abbreviation?.toLowerCase() || '';
+        const unitName = finProd.unit?.name?.toLowerCase() || '';
+
+        // Check if the finished product is discrete (Pieces, Units, Boxes, Packs)
+        const isDiscreteUnit =
+          unitAbbr === 'pc' ||
+          unitAbbr === 'pcs' ||
+          unitAbbr === 'nos' ||
+          unitAbbr === 'box' ||
+          unitAbbr === 'pk' ||
+          unitAbbr === 'pkt' ||
+          unitAbbr === 'dzn' ||
+          unitName.includes('piece') ||
+          unitName.includes('unit') ||
+          unitName.includes('pack') ||
+          unitName.includes('box') ||
+          unitName.includes('dozen');
+
+        const prevStock = Number(finProd.currentStockBalance);
+        // Discrete goods increment by piece count (e.g. +500 Pcs), continuous goods increment by weight (e.g. +95 Kg)
+        const stockIncrement = isDiscreteUnit ? Number(item.returnedQty || 1) : itemReturnedWeight;
+        const newStock = prevStock + stockIncrement;
+        const displayUnit = finProd.unit?.abbreviation || (isDiscreteUnit ? 'Pcs' : 'Kg');
+
         await tx.rawMaterial.update({
           where: { id: item.finishedProductId },
           data: {
-            currentStockBalance: { increment: item.returnedQty },
+            currentStockBalance: newStock,
           },
         });
 
-        // 3. Log inventory transaction for returned finished product
+        // 3. Log inventory transaction for returned finished product in native unit + fabric weight reference
         await tx.inventoryTransaction.create({
           data: {
             transactionType: TransactionType.JOB_WORK_RETURN,
             rawMaterialId: item.finishedProductId,
-            quantity: item.returnedQty,
+            quantity: stockIncrement,
+            previousStock: prevStock,
+            newStock: newStock,
+            referenceNumber: order.jobWorkNumber,
             referenceDocumentType: 'JobWorkOrder',
             referenceDocumentId: order.id,
-            notes: `Received from Job Working Company. Roll: ${item.rollNumber}, Weight: ${item.returnedWeight} kg`,
+            notes: `Received from Job Work. Lot/Roll: ${item.rollNumber}, Stock: +${stockIncrement} ${displayUnit}, Batch Material Weight: ${itemReturnedWeight.toFixed(2)} Kg`,
             createdByUserId: userId || (await tx.user.findFirstOrThrow()).id,
           },
         });
@@ -566,8 +609,132 @@ export class JobWorkService {
   async getMaterials() {
     return prisma.rawMaterial.findMany({
       where: { isActive: true },
-      include: { unit: true },
+      include: { unit: true, category: true },
       orderBy: { name: 'asc' },
+    });
+  }
+
+  /**
+   * Update an existing Job Work Order
+   */
+  async update(id: string, dto: UpdateJobWorkOrderDto, userId?: string) {
+    const existing = await prisma.jobWorkOrder.findUnique({
+      where: { id },
+      include: { rawMaterial: true, jobWorkCompany: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Job Work Order with ID ${id} not found`);
+    }
+
+    const updateData: any = {};
+
+    if (dto.expectedReturnDate) {
+      updateData.expectedReturnDate = new Date(dto.expectedReturnDate);
+    }
+    if (dto.vehicleNumber !== undefined) {
+      updateData.vehicleNumber = dto.vehicleNumber;
+    }
+    if (dto.driverName !== undefined) {
+      updateData.driverName = dto.driverName;
+    }
+    if (dto.remarks !== undefined) {
+      updateData.remarks = dto.remarks;
+    }
+    if (dto.jobWorkCompanyId) {
+      updateData.jobWorkCompanyId = dto.jobWorkCompanyId;
+    }
+
+    // Material changes only allowed if still in CREATED status
+    if (existing.status === JobWorkStatus.CREATED) {
+      if (dto.rawMaterialId) {
+        updateData.rawMaterialId = dto.rawMaterialId;
+      }
+      if (dto.finishedProductId !== undefined) {
+        updateData.finishedProductId = dto.finishedProductId;
+      }
+    }
+
+    const updated = await prisma.jobWorkOrder.update({
+      where: { id },
+      data: updateData,
+      include: {
+        jobWorkCompany: true,
+        rawMaterial: true,
+        finishedProduct: true,
+        issueItems: true,
+        returnItems: true,
+      },
+    });
+
+    return updated;
+  }
+
+  /**
+   * Delete or Cancel a Job Work Order
+   */
+  async delete(id: string, userId?: string) {
+    const order = await prisma.jobWorkOrder.findUnique({
+      where: { id },
+      include: {
+        rawMaterial: true,
+        issueItems: true,
+        returnItems: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Job Work Order with ID ${id} not found`);
+    }
+
+    if (order.status === JobWorkStatus.CLOSED) {
+      throw new BadRequestException('Closed and reconciled orders cannot be deleted.');
+    }
+
+    if (order.returnItems && order.returnItems.length > 0) {
+      throw new BadRequestException('Cannot delete an order with returned goods already recorded.');
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      // If materials were issued, reverse stock back to warehouse
+      if (order.status === JobWorkStatus.MATERIALS_ISSUED || order.status === JobWorkStatus.IN_PROGRESS) {
+        const issuedWeight = Number(order.totalIssuedWeight) || 0;
+        if (issuedWeight > 0) {
+          const currentMat = await tx.rawMaterial.findUnique({
+            where: { id: order.rawMaterialId },
+          });
+
+          if (currentMat) {
+            const currentStock = Number(currentMat.currentStockBalance) || 0;
+            const restoredStock = currentStock + issuedWeight;
+
+            await tx.rawMaterial.update({
+              where: { id: order.rawMaterialId },
+              data: { currentStockBalance: restoredStock },
+            });
+
+            await tx.inventoryTransaction.create({
+              data: {
+                rawMaterialId: order.rawMaterialId,
+                transactionType: TransactionType.ADJUSTMENT_ADD,
+                quantity: issuedWeight,
+                previousStock: currentStock,
+                newStock: restoredStock,
+                unitPrice: Number(currentMat.unitCost) || 0,
+                notes: `Job Work Order ${order.jobWorkNumber} Cancelled - Restored ${issuedWeight} kg stock`,
+                createdByUserId: userId || (await tx.user.findFirstOrThrow()).id,
+              },
+            });
+          }
+        }
+      }
+
+      // Delete status history & issue items
+      await tx.jobWorkStatusHistory.deleteMany({ where: { jobWorkOrderId: id } });
+      await tx.jobWorkIssueItem.deleteMany({ where: { jobWorkOrderId: id } });
+      await tx.jobWorkOrder.delete({ where: { id } });
+
+      return { success: true, message: `Job Work Order ${order.jobWorkNumber} deleted successfully.` };
     });
   }
 }

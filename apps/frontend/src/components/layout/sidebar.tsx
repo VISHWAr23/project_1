@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   Package,
-  Layers,
   Truck,
   Users,
   CalendarCheck,
@@ -21,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Avatar } from '@/components/ui/avatar';
+import { AppLogo } from '@/components/ui/app-logo';
 
 interface NavItem {
   title: string;
@@ -31,14 +31,13 @@ interface NavItem {
 
 export const navItems: NavItem[] = [
   { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  // { title: 'Roll Engine', href: '/roll-tracking', icon: Layers, badge: 'ERP' },
-  // { title: 'Job Work & Material Issue', href: '/job-work', icon: Truck, badge: 'Workflow' },
-  // { title: 'Raw Materials', href: '/raw-materials', icon: Package },
+  { title: 'Materials & Products', href: '/raw-materials', icon: Package },
+  { title: 'Job Work', href: '/job-work', icon: Truck, badge: 'Workflow' },
   { title: 'Employees', href: '/employees', icon: Users },
   { title: 'Attendance', href: '/attendance', icon: CalendarCheck },
   { title: 'Salary & Payroll', href: '/salary', icon: CircleDollarSign },
-  // { title: 'Reports & Analytics', href: '/reports', icon: FileBarChart },
-  // { title: 'System Settings', href: '/settings', icon: Settings },
+  { title: 'Reports & Analytics', href: '/reports', icon: FileBarChart },
+  { title: 'System Settings', href: '/settings', icon: Settings },
 ];
 
 export interface SidebarProps {
@@ -55,21 +54,33 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
     <div className="flex flex-col justify-between h-full select-none">
       <div>
         {/* Header / Brand */}
-        <div className="h-14 px-3.5 flex items-center justify-between border-b border-sidebar-border">
+        <div
+          className={`h-14 flex items-center border-b border-sidebar-border transition-all ${
+            collapsed && !isMobile ? 'justify-center px-2' : 'justify-between px-3.5'
+          }`}
+        >
           <Link
             href="/dashboard"
-            onClick={isMobile ? onMobileClose : undefined}
-            className="flex items-center gap-2.5 overflow-hidden"
+            onClick={(e) => {
+              if (isMobile) {
+                if (onMobileClose) onMobileClose();
+              } else if (collapsed) {
+                e.preventDefault();
+                setCollapsed(false);
+              }
+            }}
+            className={`flex items-center min-w-0 shrink-0 hover:opacity-90 transition-opacity ${
+              collapsed && !isMobile ? 'justify-center w-full' : 'gap-2.5'
+            }`}
+            title={collapsed && !isMobile ? 'Expand Sidebar' : 'Shri Lathikka Surgicals - Dashboard'}
           >
-            <div className="bg-blue-600 text-white p-1.5 rounded-sm font-bold shadow-sm shrink-0">
-              <Package className="h-5 w-5" />
-            </div>
+            <AppLogo size="sm" className="w-8 h-8 rounded-lg shrink-0 shadow-sm" />
             {(!collapsed || isMobile) && (
-              <div className="whitespace-nowrap">
-                <h2 className="font-bold text-foreground text-sm leading-none tracking-tight">
+              <div className="whitespace-nowrap min-w-0">
+                <h2 className="font-bold text-foreground text-sm leading-none tracking-tight truncate">
                   IMS Enterprise
                 </h2>
-                <span className="text-[10px] text-muted-foreground font-mono">
+                <span className="text-[10px] text-muted-foreground font-mono truncate block mt-0.5">
                   Shri Lathikka Surgicals
                 </span>
               </div>
@@ -78,19 +89,20 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           {isMobile ? (
             <button
               onClick={onMobileClose}
-              className="p-1 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0"
+              title="Close Navigation"
             >
               <X className="h-5 w-5" />
             </button>
-          ) : (
+          ) : !collapsed ? (
             <button
-              onClick={() => setCollapsed(!collapsed)}
-              className="p-1 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-              title={collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+              onClick={() => setCollapsed(true)}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0"
+              title="Collapse Sidebar"
             >
-              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+              <ChevronLeft className="h-4 w-4" />
             </button>
-          )}
+          ) : null}
         </div>
 
         {/* Navigation Items */}
@@ -112,7 +124,11 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
                 href={item.href}
                 onClick={isMobile ? onMobileClose : undefined}
                 title={collapsed && !isMobile ? item.title : undefined}
-                className={`relative flex items-center gap-3 px-2.5 py-2.5 rounded-sm text-xs font-medium transition-colors ${
+                className={`relative flex items-center ${
+                  collapsed && !isMobile
+                    ? 'justify-center px-0 w-full h-10'
+                    : 'gap-3 px-2.5 py-2.5'
+                } rounded-md text-xs font-medium transition-colors ${
                   isActive
                     ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold'
                     : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
@@ -121,11 +137,11 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
                 {isActive && (
                   <motion.div
                     layoutId="sidebarActiveIndicator"
-                    className="absolute left-0 top-1 bottom-1 w-1 bg-blue-600 dark:bg-blue-400 rounded-r-sm"
+                    className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-blue-600 dark:bg-blue-400 rounded-r-sm"
                     transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                   />
                 )}
-                <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-blue-600 dark:text-blue-400' : ''}`} />
+                <Icon className={`h-5 w-5 shrink-0 ${isActive ? 'text-blue-600 dark:text-blue-400' : ''}`} />
                 {(!collapsed || isMobile) && <span className="truncate flex-1">{item.title}</span>}
                 {(!collapsed || isMobile) && item.badge && (
                   <span className="text-[9px] bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-sm font-mono font-bold">
@@ -185,7 +201,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
     <>
       {/* Desktop Sidebar (hidden on mobile < md) */}
       <motion.aside
-        animate={{ width: collapsed ? 68 : 256 }}
+        animate={{ width: collapsed ? 72 : 256 }}
         transition={{ duration: 0.2, ease: 'easeInOut' }}
         className="hidden md:flex bg-sidebar border-r border-sidebar-border flex-col justify-between h-screen sticky top-0 shrink-0 z-40 overflow-hidden"
       >

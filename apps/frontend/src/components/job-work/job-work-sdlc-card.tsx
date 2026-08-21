@@ -14,6 +14,8 @@ import {
   FileText,
   ChevronRight,
   Layers,
+  Edit3,
+  Trash2,
 } from 'lucide-react';
 import { JobWorkOrder, JobWorkStatus } from '@/types/job-work.types';
 import { JobWorkStatusBadge } from './job-work-status-badge';
@@ -21,6 +23,8 @@ import { JobWorkStatusBadge } from './job-work-status-badge';
 interface JobWorkSDLCCardProps {
   order: JobWorkOrder;
   onSelect: (order: JobWorkOrder) => void;
+  onEdit?: (order: JobWorkOrder) => void;
+  onDelete?: (order: JobWorkOrder) => void;
 }
 
 // SDLC Pipeline stages mapping
@@ -86,7 +90,7 @@ export function getStageIndex(status: JobWorkStatus): number {
   }
 }
 
-export function JobWorkSDLCCard({ order, onSelect }: JobWorkSDLCCardProps) {
+export function JobWorkSDLCCard({ order, onSelect, onEdit, onDelete }: JobWorkSDLCCardProps) {
   const currentStageIndex = getStageIndex(order.status);
   const currentStage = SDLC_STAGES[currentStageIndex];
 
@@ -209,23 +213,51 @@ export function JobWorkSDLCCard({ order, onSelect }: JobWorkSDLCCardProps) {
         </div>
       </div>
 
-      {/* 1-Tap Footer Action Button */}
+      {/* 1-Tap Footer Action Buttons */}
       <div className="flex items-center justify-between pt-2 border-t border-border/80">
         <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-mono">
           <Clock className="h-3 w-3" />
           {new Date(order.createdAt).toLocaleDateString()}
         </span>
 
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelect(order);
-          }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3ECF8E]/10 hover:bg-[#3ECF8E]/20 text-[#3ECF8E] font-mono text-xs font-semibold transition-colors"
-        >
-          <span>View Workflow</span>
-          <ChevronRight className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-1.5">
+          {onEdit && order.status !== 'CLOSED' && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(order);
+              }}
+              title="Edit Order"
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            >
+              <Edit3 className="h-3.5 w-3.5" />
+            </button>
+          )}
+
+          {onDelete && order.status !== 'CLOSED' && Number(order.totalReturnedWeight) === 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(order);
+              }}
+              title="Delete or Cancel Order"
+              className="p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(order);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-mono text-xs font-semibold transition-colors"
+          >
+            <span>View Details</span>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
     </motion.div>
   );

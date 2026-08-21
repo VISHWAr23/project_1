@@ -122,7 +122,7 @@ export default function EditRawMaterialPage() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="max-w-4xl mx-auto space-y-6 pb-12"
+      className="space-y-6 pb-12 w-full"
     >
       <div className="flex items-center justify-between border-b border-border pb-4">
         <div className="flex items-center gap-3">

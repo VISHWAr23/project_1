@@ -34,6 +34,7 @@ export class RawMaterialsService {
     supplierId?: string;
     storageLocationId?: string;
     stockStatus?: 'OPTIMAL' | 'LOW_STOCK' | 'OVERSTOCK' | 'OUT_OF_STOCK';
+    type?: 'ALL' | 'RM' | 'FG';
     page?: number;
     limit?: number;
   }) {
@@ -62,6 +63,24 @@ export class RawMaterialsService {
       ];
     }
 
+    // Helper to identify Finished Goods
+    const isItemFG = (item: any) => {
+      if (item.sku?.startsWith('FP-') || item.sku?.startsWith('FG-')) return true;
+      if (item.sku?.startsWith('RM-')) return false;
+      const catName = item.category?.name?.toLowerCase() || '';
+      if (
+        catName.includes('raw') ||
+        catName.includes('packaging') ||
+        catName.includes('liquid') ||
+        catName.includes('botanical') ||
+        catName.includes('component') ||
+        catName.includes('metals')
+      ) {
+        return false;
+      }
+      return true;
+    };
+
     // Fetch all materials matching basic filter to evaluate stock status in database or post-query
     const [rawItems, total] = await Promise.all([
       prisma.rawMaterial.findMany({
@@ -83,7 +102,7 @@ export class RawMaterialsService {
       prisma.rawMaterial.count({ where }),
     ]);
 
-    // Format & filter by stockStatus if specified
+    // Format & filter by stockStatus and type if specified
     const items = rawItems
       .map((item) => {
         const current = Number(item.currentStockBalance);
@@ -114,11 +133,18 @@ export class RawMaterialsService {
           avgCost: Number(item.avgCost),
           gstRate: Number(item.gstRate),
           computedStatus: status,
+          isFinishedGood: isItemFG(item),
         };
       })
       .filter((item) => {
         if (!query.stockStatus) return true;
         return item.computedStatus === query.stockStatus;
+      })
+      .filter((item) => {
+        if (!query.type || query.type === 'ALL') return true;
+        if (query.type === 'FG') return item.isFinishedGood;
+        if (query.type === 'RM') return !item.isFinishedGood;
+        return true;
       });
 
     const paginatedItems = items.slice(skip, skip + limit);

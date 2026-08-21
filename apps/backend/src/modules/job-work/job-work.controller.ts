@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JobWorkService } from './job-work.service';
 import { CreateJobWorkOrderDto } from './dto/create-job-work-order.dto';
@@ -89,5 +89,19 @@ export class JobWorkController {
   async closeOrder(@Param('id') id: string, @Body() dto: CloseJobWorkOrderDto, @Req() req: any) {
     const userId = req.user?.id;
     return this.jobWorkService.closeOrder(id, dto, userId);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update Job Work Order details, schedule, or vehicle info' })
+  async update(@Param('id') id: string, @Body() dto: any, @Req() req: any) {
+    const userId = req.user?.id;
+    return this.jobWorkService.update(id, dto, userId);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete or cancel a Job Work Order and reverse stock if needed' })
+  async deleteOrder(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user?.id;
+    return this.jobWorkService.delete(id, userId);
   }
 }

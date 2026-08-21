@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, Column } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { SalaryNavTabs } from '@/components/salary/salary-nav-tabs';
 import { useSalaryHistory } from '@/hooks/useSalary';
 import { SalaryHistoryRecord } from '@/types/salary.types';
 
@@ -39,7 +40,7 @@ export default function SalaryHistoryPage() {
       header: 'Employee Code & Name',
       render: (row) => (
         <div>
-          <span className="font-mono font-semibold text-[#3ECF8E]">{row.employee?.employeeCode}</span>
+          <span className="font-mono font-semibold text-blue-600 dark:text-blue-400">{row.employee?.employeeCode}</span>
           <p className="font-medium text-foreground text-xs">{row.employee?.firstName} {row.employee?.lastName}</p>
         </div>
       ),
@@ -78,7 +79,7 @@ export default function SalaryHistoryPage() {
       header: 'Net Salary',
       align: 'right',
       render: (row) => (
-        <span className="font-mono font-bold text-[#3ECF8E]">
+        <span className="font-mono font-bold text-emerald-400">
           ₹ {Number(row.netSalary).toLocaleString('en-IN')}
         </span>
       ),
@@ -103,15 +104,12 @@ export default function SalaryHistoryPage() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
-        <div className="flex items-center gap-3">
-          <Link href="/salary">
-            <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />} className="px-2" />
-          </Link>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Employee Salary History Ledger</h1>
-            <p className="text-xs text-muted-foreground">Historical snapshot of staff monthly payouts and tax records</p>
-          </div>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
+            Employee Salary History Ledger
+          </h1>
         </div>
 
         <div className="relative w-full sm:w-72">
@@ -124,6 +122,9 @@ export default function SalaryHistoryPage() {
           />
         </div>
       </div>
+
+      {/* Unified Module Navigation Tabs */}
+      <SalaryNavTabs />
 
       <Card className="p-5 border border-border/60">
         <Table columns={columns} data={filtered} isLoading={isLoading} keyExtractor={(row) => row.id} />

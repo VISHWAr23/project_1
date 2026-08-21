@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
 import { useJobWorkCompanies, useJobWorkMaterials, useCreateJobWorkOrder } from '@/hooks/useJobWork';
+import { RawMaterialItem } from '@/types/job-work.types';
 import Link from 'next/link';
 
 export default function CreateJobWorkOrderPage() {
@@ -30,15 +31,43 @@ export default function CreateJobWorkOrderPage() {
   });
   const [remarks, setRemarks] = useState('');
 
+  const isFinishedProduct = (m: RawMaterialItem) => {
+    if (m.sku?.startsWith('FP-') || m.sku?.startsWith('FG-')) return true;
+    if (m.sku?.startsWith('RM-')) return false;
+    const cat = m.category?.name?.toLowerCase() || '';
+    return (
+      cat.includes('dressing') ||
+      cat.includes('surgical') ||
+      cat.includes('patient') ||
+      cat.includes('hygienic') ||
+      cat.includes("women's care") ||
+      cat.includes('adult care') ||
+      cat.includes('baby care') ||
+      cat.includes('mosquito') ||
+      cat.includes('finished')
+    );
+  };
+
+  const rawMaterials = materials.filter((m) => !isFinishedProduct(m));
+  const finishedProducts = materials.filter((m) => isFinishedProduct(m));
+
   const companyOptions = companies.map((c) => ({
     label: `${c.companyName} (${c.gstin || 'GSTIN Pending'})`,
     value: c.id,
   }));
 
-  const materialOptions = materials.map((m) => ({
-    label: `${m.name} [Available: ${m.currentStockBalance} ${m.unit?.abbreviation || 'Units'}]`,
+  const rawMaterialOptions = rawMaterials.map((m) => ({
+    label: `${m.name} (${m.sku}) [Stock: ${m.currentStockBalance} ${m.unit?.abbreviation || 'Units'}]`,
     value: m.id,
   }));
+
+  const finishedProductOptions = [
+    { label: 'Select Target Finished Product...', value: '' },
+    ...finishedProducts.map((m) => ({
+      label: `${m.name} (${m.sku}) • [${m.unit?.abbreviation || 'Units'}]`,
+      value: m.id,
+    })),
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +103,7 @@ export default function CreateJobWorkOrderPage() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="space-y-6 max-w-3xl mx-auto"
+      className="space-y-6 w-full"
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border pb-4">
@@ -86,12 +115,9 @@ export default function CreateJobWorkOrderPage() {
           </Link>
           <div>
             <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <FilePlus className="h-5 w-5 text-primary" />
-              Create Job Work Order (Step 1)
+              <FilePlus className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              Create Job Work Order
             </h1>
-            <p className="text-xs text-muted-foreground">
-              Initialize outward job work order contract and set expected return schedule.
-            </p>
           </div>
         </div>
       </div>
@@ -131,7 +157,7 @@ export default function CreateJobWorkOrderPage() {
                 Select Raw Material to Issue *
               </label>
               <Select
-                options={materialOptions}
+                options={[{ label: 'Select Raw Material to Issue...', value: '' }, ...rawMaterialOptions]}
                 value={rawMaterialId}
                 onChange={(e) => setRawMaterialId(e.target.value)}
                 disabled={isLoadingMaterials}
@@ -144,7 +170,7 @@ export default function CreateJobWorkOrderPage() {
                 Target Finished Product / Processed Material (Optional)
               </label>
               <Select
-                options={[{ label: 'Select Target Product...', value: '' }, ...materialOptions]}
+                options={finishedProductOptions}
                 value={finishedProductId}
                 onChange={(e) => setFinishedProductId(e.target.value)}
                 disabled={isLoadingMaterials}

@@ -14,7 +14,7 @@ import { Category } from '@/types/raw-materials.types';
 
 export default function CategoriesPage() {
   const { toast } = useToast();
-  const { data: categories, refetch } = useRawMaterialCategories();
+  const { data: categories, isLoading, refetch } = useRawMaterialCategories();
   const createCategory = useCreateCategory();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -61,7 +61,7 @@ export default function CategoriesPage() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="space-y-6 pb-12 max-w-5xl mx-auto"
+      className="space-y-6 pb-12 w-full"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div className="flex items-center gap-3">
@@ -84,7 +84,12 @@ export default function CategoriesPage() {
         </Button>
       </div>
 
-      <Table columns={columns} data={categories || []} keyExtractor={(row) => row.id} />
+      <Table
+        columns={columns}
+        data={categories || []}
+        isLoading={isLoading}
+        keyExtractor={(row) => row.id}
+      />
 
       <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Create Material Category" description="Add new category master">
         <form onSubmit={handleSubmit} className="space-y-4">

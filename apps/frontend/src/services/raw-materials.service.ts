@@ -17,6 +17,7 @@ export interface MaterialQueryFilters {
   supplierId?: string;
   storageLocationId?: string;
   stockStatus?: string;
+  type?: 'ALL' | 'RM' | 'FG';
   page?: number;
   limit?: number;
 }
@@ -29,6 +30,7 @@ export const rawMaterialsService = {
     if (params?.supplierId) query.append('supplierId', params.supplierId);
     if (params?.storageLocationId) query.append('storageLocationId', params.storageLocationId);
     if (params?.stockStatus) query.append('stockStatus', params.stockStatus);
+    if (params?.type && params.type !== 'ALL') query.append('type', params.type);
     if (params?.page) query.append('page', String(params.page));
     if (params?.limit) query.append('limit', String(params.limit));
 

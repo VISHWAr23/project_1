@@ -20,8 +20,9 @@ export default function DigitalReturnRegisterPage() {
     {
       key: 'returnedDate',
       header: 'Return Date',
+      width: '130px',
       render: (row) => (
-        <span className="font-mono text-xs text-foreground font-medium">
+        <span className="font-mono text-xs text-foreground font-medium whitespace-nowrap">
           {new Date(row.returnedDate).toLocaleDateString()}
         </span>
       ),
@@ -107,9 +108,6 @@ export default function DigitalReturnRegisterPage() {
               <RefreshCw className="h-6 w-6 text-emerald-400" />
               Digital Return Register
             </h1>
-            <p className="text-xs text-muted-foreground mt-1">
-              Replaces physical notebook logs. Real-time audit stream of all returned rolls across vendors.
-            </p>
           </div>
         </div>
       </div>

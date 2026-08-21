@@ -110,7 +110,8 @@ export default function MaterialDetailPage() {
     {
       key: 'createdAt',
       header: 'Issue Date',
-      render: (row) => <span className="text-xs text-muted-foreground">{new Date(row.createdAt).toLocaleDateString()}</span>,
+      width: '130px',
+      render: (row) => <span className="text-xs text-muted-foreground whitespace-nowrap font-mono">{new Date(row.createdAt).toLocaleDateString()}</span>,
     },
   ];
 
@@ -300,7 +301,13 @@ export default function MaterialDetailPage() {
 
       {activeTab === 'job-work' && (
         <div className="space-y-4">
-          <Table columns={jwColumns} data={jobWorkOrders} keyExtractor={(row) => row.id} />
+          <Table
+            columns={jwColumns}
+            data={jobWorkOrders}
+            isLoading={isLoading}
+            emptyMessage="No job work orders associated with this material yet."
+            keyExtractor={(row) => row.id}
+          />
         </div>
       )}
 

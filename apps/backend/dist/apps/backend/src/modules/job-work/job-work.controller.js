@@ -57,6 +57,14 @@ let JobWorkController = class JobWorkController {
         const userId = req.user?.id;
         return this.jobWorkService.closeOrder(id, dto, userId);
     }
+    async update(id, dto, req) {
+        const userId = req.user?.id;
+        return this.jobWorkService.update(id, dto, userId);
+    }
+    async deleteOrder(id, req) {
+        const userId = req.user?.id;
+        return this.jobWorkService.delete(id, userId);
+    }
 };
 exports.JobWorkController = JobWorkController;
 __decorate([
@@ -150,6 +158,25 @@ __decorate([
     __metadata("design:paramtypes", [String, close_job_work_dto_1.CloseJobWorkOrderDto, Object]),
     __metadata("design:returntype", Promise)
 ], JobWorkController.prototype, "closeOrder", null);
+__decorate([
+    (0, common_1.Patch)(':id'),
+    (0, swagger_1.ApiOperation)({ summary: 'Update Job Work Order details, schedule, or vehicle info' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], JobWorkController.prototype, "update", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    (0, swagger_1.ApiOperation)({ summary: 'Delete or cancel a Job Work Order and reverse stock if needed' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], JobWorkController.prototype, "deleteOrder", null);
 exports.JobWorkController = JobWorkController = __decorate([
     (0, swagger_1.ApiTags)('Job Work Management'),
     (0, common_1.Controller)('job-work'),

@@ -1,10 +1,10 @@
 {
-  "/(dashboard)/salary/page": "app/(dashboard)/salary/page.js",
+  "/(dashboard)/raw-materials/page": "app/(dashboard)/raw-materials/page.js",
   "/(dashboard)/attendance/page": "app/(dashboard)/attendance/page.js",
-  "/(dashboard)/employees/page": "app/(dashboard)/employees/page.js",
-  "/(dashboard)/salary/approval/page": "app/(dashboard)/salary/approval/page.js",
-  "/(dashboard)/salary/history/page": "app/(dashboard)/salary/history/page.js",
+  "/(dashboard)/job-work/page": "app/(dashboard)/job-work/page.js",
+  "/(dashboard)/settings/page": "app/(dashboard)/settings/page.js",
+  "/(dashboard)/reports/page": "app/(dashboard)/reports/page.js",
   "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
-  "/(dashboard)/salary/list/page": "app/(dashboard)/salary/list/page.js",
-  "/(dashboard)/salary/[id]/page": "app/(dashboard)/salary/[id]/page.js"
+  "/(dashboard)/salary/page": "app/(dashboard)/salary/page.js",
+  "/(dashboard)/employees/page": "app/(dashboard)/employees/page.js"
 }

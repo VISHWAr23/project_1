@@ -262,12 +262,9 @@ export default function AttendancePage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2.5">
-            <CalendarCheck className="h-6 w-6 text-[#3ECF8E]" />
+            <CalendarCheck className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             Daily Attendance Register
           </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            Status-based attendance marking (Full Day / Half Day / Absent / Leave).
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -403,21 +400,13 @@ export default function AttendancePage() {
             </select>
           </div>
 
-          {isLoading ? (
-            <div className="p-12 text-center text-xs font-mono text-muted-foreground bg-card border border-border rounded-xl">
-              Loading Attendance Sheet from Database...
-            </div>
-          ) : logs.length === 0 ? (
-            <div className="p-12 text-center space-y-3 bg-card border border-border rounded-xl">
-              <Clock className="h-8 w-8 text-muted-foreground mx-auto" />
-              <div className="text-sm font-bold text-foreground">No Attendance Logs Found for {selectedDate}</div>
-              <div className="text-xs text-muted-foreground max-w-sm mx-auto">
-                No staff logs exist for this date yet. Use the <strong>Mark Single</strong> or <strong>Bulk Attendance</strong> tabs to record entries.
-              </div>
-            </div>
-          ) : (
-            <Table columns={columns} data={logs} keyExtractor={(row) => row.id} />
-          )}
+          <Table
+            columns={columns}
+            data={logs}
+            isLoading={isLoading}
+            emptyMessage={`No attendance logs found for ${selectedDate}. Use the Mark Single or Bulk Attendance tabs to record entries.`}
+            keyExtractor={(row) => row.id}
+          />
         </div>
       )}
 

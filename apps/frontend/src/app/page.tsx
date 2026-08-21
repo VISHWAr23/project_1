@@ -19,6 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { AppLogo } from '@/components/ui/app-logo';
 import { useTheme } from '@/providers/theme-provider';
 
 export default function Home() {
@@ -29,9 +30,7 @@ export default function Home() {
       {/* Top Navbar */}
       <header className="max-w-7xl w-full mx-auto flex justify-between items-center pb-4 border-b border-border/60">
         <div className="flex items-center space-x-3">
-          <div className="bg-blue-600 text-white p-2.5 rounded-xl shadow-lg shadow-blue-600/25">
-            <Package className="h-6 w-6" />
-          </div>
+          <AppLogo size="md" className="w-10 h-10 rounded-xl shadow-lg shadow-blue-600/25 shrink-0" />
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-extrabold text-lg tracking-tight text-foreground">

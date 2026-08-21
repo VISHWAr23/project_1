@@ -23,9 +23,6 @@ export default function ReportsPage() {
     >
       <div className="border-b border-border pb-5">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Reports & Export Center</h1>
-        <p className="text-xs text-muted-foreground mt-1">
-          Generate multi-sheet Excel reports and PDF financial/inventory audit ledgers.
-        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

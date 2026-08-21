@@ -68,42 +68,46 @@ export function StockHistoryLedger({ items }: StockHistoryLedgerProps) {
       key: 'createdAt',
       header: 'Date & Time',
       sortable: true,
-      render: (row) => (
-        <span className="font-mono text-xs text-muted-foreground">
-          {new Date(row.createdAt).toLocaleString('en-IN', {
-            dateStyle: 'medium',
-            timeStyle: 'short',
-          })}
-        </span>
-      ),
-    },
-    {
-      key: 'referenceNumber',
-      header: 'Reference No.',
-      render: (row) => (
-        <span className="font-mono text-xs font-semibold text-[#2563EB]">
-          {row.referenceNumber || 'N/A'}
-        </span>
-      ),
+      width: '180px',
+      render: (row) => {
+        const d = new Date(row.createdAt);
+        const dateStr = d.toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        });
+        const timeStr = d.toLocaleTimeString('en-IN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        });
+        return (
+          <span className="font-mono text-xs text-muted-foreground whitespace-nowrap inline-block">
+            {dateStr}, {timeStr}
+          </span>
+        );
+      },
     },
     {
       key: 'transactionType',
       header: 'Transaction Type',
+      width: '165px',
       render: (row) => getTransactionBadge(row.transactionType),
     },
     {
       key: 'quantity',
-      header: 'Quantity',
+      header: 'Weight / Qty',
       align: 'right',
+      width: '125px',
       render: (row) => {
         const isAddition = ['PURCHASE_RECEIPT', 'ADJUSTMENT_ADD', 'JOB_WORK_RETURN'].includes(row.transactionType);
         return (
           <span
-            className={`font-mono font-bold text-xs ${
-              isAddition ? 'text-[#2563EB]' : 'text-rose-400'
+            className={`font-mono font-bold text-xs whitespace-nowrap ${
+              isAddition ? 'text-blue-600 dark:text-blue-400' : 'text-rose-400'
             }`}
           >
-            {isAddition ? '+' : '-'}{row.quantity}
+            {isAddition ? '+' : '-'}{Number(row.quantity || 0).toFixed(2)} Kg
           </span>
         );
       },
@@ -112,19 +116,30 @@ export function StockHistoryLedger({ items }: StockHistoryLedgerProps) {
       key: 'previousStock',
       header: 'Prev Stock',
       align: 'right',
-      render: (row) => <span className="font-mono text-xs text-muted-foreground">{row.previousStock}</span>,
+      width: '115px',
+      render: (row) => (
+        <span className="font-mono text-xs text-muted-foreground whitespace-nowrap">
+          {Number(row.previousStock || 0).toFixed(2)} Kg
+        </span>
+      ),
     },
     {
       key: 'newStock',
       header: 'New Stock',
       align: 'right',
-      render: (row) => <span className="font-mono text-xs font-bold text-foreground">{row.newStock}</span>,
+      width: '115px',
+      render: (row) => (
+        <span className="font-mono text-xs font-bold text-foreground whitespace-nowrap">
+          {Number(row.newStock || 0).toFixed(2)} Kg
+        </span>
+      ),
     },
     {
       key: 'createdBy',
       header: 'Created By',
+      width: '120px',
       render: (row) => (
-        <span className="text-xs text-muted-foreground truncate max-w-[120px]">
+        <span className="text-xs text-muted-foreground truncate max-w-[120px] block">
           {row.createdBy?.email?.split('@')[0] || 'System Admin'}
         </span>
       ),
@@ -133,7 +148,7 @@ export function StockHistoryLedger({ items }: StockHistoryLedgerProps) {
       key: 'notes',
       header: 'Remarks / Notes',
       render: (row) => (
-        <span className="text-xs text-muted-foreground italic truncate max-w-[180px]">
+        <span className="text-xs text-muted-foreground italic truncate max-w-[280px] block">
           {row.notes || '-'}
         </span>
       ),

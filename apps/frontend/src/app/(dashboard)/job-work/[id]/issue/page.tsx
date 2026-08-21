@@ -28,6 +28,7 @@ export default function IssueMaterialsPage({ params }: { params: Promise<{ id: s
     {
       id: 'r1',
       rollNumber: 'ROLL-RM-1001',
+      unitWeight: 50,
       issuedWeight: 50,
       issuedQty: 1,
       remarks: '',
@@ -91,7 +92,7 @@ export default function IssueMaterialsPage({ params }: { params: Promise<{ id: s
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="space-y-6 max-w-4xl mx-auto"
+      className="space-y-6 w-full"
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border pb-4">
@@ -103,12 +104,9 @@ export default function IssueMaterialsPage({ params }: { params: Promise<{ id: s
           </Link>
           <div>
             <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <Truck className="h-5 w-5 text-primary" />
-              Issue Materials & Generate Delivery Challan (Step 2)
+              <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              Issue Materials & Generate Delivery Challan
             </h1>
-            <p className="text-xs text-muted-foreground">
-              Dispatch raw material rolls to vendor premises and automatically update stock ledger.
-            </p>
           </div>
         </div>
       </div>

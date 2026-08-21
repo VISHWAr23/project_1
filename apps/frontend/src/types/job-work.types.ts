@@ -37,6 +37,11 @@ export interface RawMaterialItem {
   currentStockBalance: number;
   unitCost: number;
   unit?: RawMaterialUnit;
+  category?: {
+    id: string;
+    name: string;
+    description?: string;
+  };
 }
 
 export interface JobWorkIssueItem {

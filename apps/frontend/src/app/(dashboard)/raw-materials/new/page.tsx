@@ -95,7 +95,7 @@ export default function NewRawMaterialPage() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="max-w-4xl mx-auto space-y-6 pb-12"
+      className="space-y-6 pb-12 w-full"
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border pb-4">
@@ -107,12 +107,9 @@ export default function NewRawMaterialPage() {
           </Link>
           <div>
             <h1 className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
-              <Package className="h-5 w-5 text-[#3ECF8E]" />
-              Register New Raw Material Master
+              <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              Register New Item Master
             </h1>
-            <p className="text-xs text-muted-foreground">
-              Define master item attributes, stock safety thresholds & accounting details.
-            </p>
           </div>
         </div>
       </div>

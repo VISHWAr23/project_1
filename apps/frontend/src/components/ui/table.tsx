@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, ChevronUp, Loader2, Inbox } from 'lucide-react';
 
 export interface Column<T> {
   key: string;
@@ -36,7 +36,7 @@ export function Table<T>({
   onRowClick,
 }: TableProps<T>) {
   return (
-    <div className="w-full overflow-x-auto rounded-md border border-border bg-card shadow-sm scrollbar-thin">
+    <div className="w-full overflow-x-auto rounded-md border border-border bg-card shadow-sm scrollbar-thin relative min-h-[140px]">
       <table className="w-full text-left text-xs border-collapse min-w-[600px] sm:min-w-full">
         <thead>
           <tr className="border-b border-border bg-muted/40 text-muted-foreground font-mono">
@@ -46,7 +46,7 @@ export function Table<T>({
               return (
                 <th
                   key={col.key}
-                  style={{ width: col.width }}
+                  style={{ width: col.width, minWidth: col.width }}
                   onClick={() => col.sortable && onSort && onSort(col.key)}
                   className={`p-2.5 sm:p-3 font-medium tracking-wide uppercase text-[10px] select-none ${alignClass} ${
                     col.sortable ? 'cursor-pointer hover:text-foreground' : ''
@@ -75,19 +75,26 @@ export function Table<T>({
         </thead>
         <tbody className="divide-y divide-border/60 text-foreground">
           {isLoading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <tr key={i} className="animate-pulse">
-                {columns.map((col) => (
-                  <td key={col.key} className="p-2.5 sm:p-3">
-                    <div className="h-4 bg-muted/60 rounded-sm w-3/4"></div>
+            Array.from({ length: 6 }).map((_, i) => (
+              <tr key={`skeleton-${i}`} className="animate-pulse">
+                {columns.map((col, colIdx) => (
+                  <td key={`sk-${col.key}-${colIdx}`} className="p-2.5 sm:p-3">
+                    <div
+                      className={`h-3.5 bg-muted/70 rounded-md ${
+                        colIdx === 0 ? 'w-3/5' : colIdx === 1 ? 'w-4/5' : 'w-1/2'
+                      }`}
+                    ></div>
                   </td>
                 ))}
               </tr>
             ))
           ) : data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="p-8 text-center text-muted-foreground">
-                {emptyMessage}
+              <td colSpan={columns.length} className="p-12 text-center text-muted-foreground">
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <Inbox className="h-8 w-8 text-muted-foreground/40 stroke-1" />
+                  <p className="text-xs font-mono">{emptyMessage}</p>
+                </div>
               </td>
             </tr>
           ) : (
@@ -101,7 +108,11 @@ export function Table<T>({
                   const alignClass =
                     col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left';
                   return (
-                    <td key={col.key} className={`p-2.5 sm:p-3 align-middle ${alignClass}`}>
+                    <td
+                      key={col.key}
+                      style={{ width: col.width, minWidth: col.width }}
+                      className={`p-2.5 sm:p-3 align-middle ${alignClass}`}
+                    >
                       {col.render ? col.render(row) : (row as any)[col.key]}
                     </td>
                   );
@@ -111,6 +122,15 @@ export function Table<T>({
           )}
         </tbody>
       </table>
+
+      {isLoading && (
+        <div className="absolute inset-0 bg-background/20 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card/95 border border-border shadow-lg text-xs font-medium text-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600 dark:text-blue-400" />
+            <span>Loading records...</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

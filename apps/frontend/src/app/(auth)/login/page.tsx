@@ -19,6 +19,7 @@ import {
 import { authService } from '@/services/auth-service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AppLogo } from '@/components/ui/app-logo';
 import { useTheme } from '@/providers/theme-provider';
 
 export default function LoginPage() {
@@ -74,8 +75,8 @@ export default function LoginPage() {
       >
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex bg-blue-600 p-3 rounded-2xl text-white shadow-xl shadow-blue-600/25">
-            <Package className="h-7 w-7" />
+          <div className="inline-flex justify-center">
+            <AppLogo size="lg" className="w-14 h-14 rounded-2xl shadow-xl shadow-blue-600/25" />
           </div>
           <div className="space-y-0.5">
             <h1 className="text-2xl font-black tracking-tight text-foreground">Shri Lathikka Surgicals</h1>

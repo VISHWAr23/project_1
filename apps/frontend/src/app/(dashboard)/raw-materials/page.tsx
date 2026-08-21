@@ -44,6 +44,7 @@ export default function RawMaterialsPage() {
   const [selectedSupplier, setSelectedSupplier] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [typeTab, setTypeTab] = useState<'ALL' | 'RM' | 'FG'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
 
   const [adjustmentMaterial, setAdjustmentMaterial] = useState<RawMaterial | null>(null);
@@ -54,6 +55,7 @@ export default function RawMaterialsPage() {
     supplierId: selectedSupplier || undefined,
     storageLocationId: selectedLocation || undefined,
     stockStatus: selectedStatus || undefined,
+    type: typeTab,
     page: currentPage,
     limit: 10,
   });
@@ -70,31 +72,66 @@ export default function RawMaterialsPage() {
     outOfStockCount: 0,
   };
 
+  const isItemFG = (row: RawMaterial) => {
+    if (row.sku?.startsWith('FP-') || row.sku?.startsWith('FG-')) return true;
+    if (row.sku?.startsWith('RM-')) return false;
+    const catName = row.category?.name?.toLowerCase() || '';
+    if (
+      catName.includes('raw') ||
+      catName.includes('packaging') ||
+      catName.includes('liquid') ||
+      catName.includes('botanical') ||
+      catName.includes('component') ||
+      catName.includes('metals')
+    ) {
+      return false;
+    }
+    return true;
+  };
+
   const columns: Column<RawMaterial>[] = [
     {
       key: 'sku',
-      header: 'Material Code',
+      header: 'Item Code',
       sortable: true,
+      width: '140px',
       render: (row) => (
         <Link
           href={`/raw-materials/${row.id}`}
-          className="font-mono font-semibold text-[#3ECF8E] hover:underline"
+          className="font-mono font-semibold text-blue-600 dark:text-blue-400 hover:underline"
         >
           {row.sku}
         </Link>
       ),
     },
     {
+      key: 'type' as any,
+      header: 'Classification',
+      width: '135px',
+      render: (row) => {
+        const isFG = isItemFG(row);
+        return isFG ? (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            FINISHED GOOD
+          </span>
+        ) : (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+            RAW MATERIAL
+          </span>
+        );
+      },
+    },
+    {
       key: 'name',
-      header: 'Material Name & Category',
+      header: 'Item Name & Category',
       sortable: true,
       render: (row) => (
         <div>
-          <Link href={`/raw-materials/${row.id}`} className="font-medium text-foreground hover:text-[#3ECF8E] transition-colors">
+          <Link href={`/raw-materials/${row.id}`} className="font-medium text-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
             {row.name}
           </Link>
           <span className="block text-[11px] text-muted-foreground">
-            {row.category?.name || 'Uncategorized'} • HSN: {row.hsnCode || 'N/A'}
+            {row.category?.name || 'General Inventory'} • HSN: {row.hsnCode || 'N/A'}
           </span>
         </div>
       ),
@@ -107,11 +144,11 @@ export default function RawMaterialsPage() {
       render: (row) => (
         <div className="text-right">
           <span className="font-mono font-bold text-xs text-foreground block">
-            {row.currentStockBalance} {row.unit?.abbreviation || 'Units'}
+            {Number(row.currentStockBalance).toFixed(2)} {row.unit?.abbreviation || 'Units'}
           </span>
-          {row.reservedStock > 0 && (
+          {Number(row.reservedStock) > 0 && (
             <span className="text-[10px] text-amber-400 block font-mono">
-              ({row.reservedStock} Reserved)
+              ({Number(row.reservedStock).toFixed(2)} Reserved)
             </span>
           )}
         </div>
@@ -166,7 +203,7 @@ export default function RawMaterialsPage() {
             onClick={() => setAdjustmentMaterial(row)}
             title="Record Stock Movement"
           >
-            <ArrowUpDown className="h-3.5 w-3.5 text-[#3ECF8E]" />
+            <ArrowUpDown className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
           </Button>
           <Link href={`/raw-materials/${row.id}`}>
             <Button variant="ghost" size="sm" title="View Details">
@@ -174,7 +211,7 @@ export default function RawMaterialsPage() {
             </Button>
           </Link>
           <Link href={`/raw-materials/${row.id}/edit`}>
-            <Button variant="ghost" size="sm" title="Edit Material">
+            <Button variant="ghost" size="sm" title="Edit Item">
               <Edit className="h-3.5 w-3.5 text-muted-foreground" />
             </Button>
           </Link>
@@ -194,12 +231,9 @@ export default function RawMaterialsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
-            <Package className="h-6 w-6 text-[#3ECF8E]" />
-            Raw Material Master Catalog
+            <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            Materials & Finished Goods Master
           </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            Enterprise single source of truth for materials, safety stock limits, movement history & valuation.
-          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link href="/raw-materials/categories">
@@ -224,22 +258,65 @@ export default function RawMaterialsPage() {
           </Link>
           <Link href="/raw-materials/new">
             <Button variant="primary" size="sm" leftIcon={<Plus className="h-3.5 w-3.5" />}>
-              Add Raw Material
+              Add New Item
             </Button>
           </Link>
         </div>
+      </div>
+
+      {/* Classification Tabs */}
+      <div className="flex items-center gap-2 border-b border-border pb-2">
+        <button
+          onClick={() => {
+            setTypeTab('ALL');
+            setCurrentPage(1);
+          }}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            typeTab === 'ALL'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+          }`}
+        >
+          All Inventory
+        </button>
+        <button
+          onClick={() => {
+            setTypeTab('RM');
+            setCurrentPage(1);
+          }}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            typeTab === 'RM'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+          }`}
+        >
+          Raw Materials (RM)
+        </button>
+        <button
+          onClick={() => {
+            setTypeTab('FG');
+            setCurrentPage(1);
+          }}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            typeTab === 'FG'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+          }`}
+        >
+          Finished Goods (FG)
+        </button>
       </div>
 
       {/* KPI Metrics Panel */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-secondary/30 border border-border rounded-xl p-4 flex items-center justify-between">
           <div>
-            <span className="text-xs text-muted-foreground block font-medium">Total Raw Material SKUs</span>
+            <span className="text-xs text-muted-foreground block font-medium">Total Item SKUs</span>
             <span className="text-2xl font-bold text-foreground font-mono mt-1 block">
               {stats.totalSkus}
             </span>
           </div>
-          <div className="p-3 bg-[#3ECF8E]/10 text-[#3ECF8E] rounded-lg">
+          <div className="p-3 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg">
             <Boxes className="h-5 w-5" />
           </div>
         </div>
@@ -247,11 +324,11 @@ export default function RawMaterialsPage() {
         <div className="bg-secondary/30 border border-border rounded-xl p-4 flex items-center justify-between">
           <div>
             <span className="text-xs text-muted-foreground block font-medium">Total Inventory Valuation</span>
-            <span className="text-2xl font-bold text-[#3ECF8E] font-mono mt-1 block">
+            <span className="text-2xl font-bold text-emerald-400 font-mono mt-1 block">
               ₹ {stats.totalValuation.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
             </span>
           </div>
-          <div className="p-3 bg-[#3ECF8E]/10 text-[#3ECF8E] rounded-lg">
+          <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-lg">
             <DollarSign className="h-5 w-5" />
           </div>
         </div>
@@ -357,12 +434,24 @@ export default function RawMaterialsPage() {
       </div>
 
       {/* Data Table */}
-      <Table columns={columns} data={materials} keyExtractor={(row) => row.id} />
+      <Table
+        columns={columns}
+        data={materials}
+        isLoading={isLoading}
+        emptyMessage={
+          typeTab === 'FG'
+            ? 'No finished goods match the selected filters.'
+            : typeTab === 'RM'
+            ? 'No raw materials match the selected filters.'
+            : 'No inventory items match the selected filters.'
+        }
+        keyExtractor={(row) => row.id}
+      />
 
       <Pagination
         currentPage={currentPage}
-        totalPages={data?.meta.totalPages || 1}
-        totalRecords={data?.meta.total || materials.length}
+        totalPages={data?.meta?.totalPages || 1}
+        totalRecords={data?.meta?.total || 0}
         pageSize={10}
         onPageChange={(page) => setCurrentPage(page)}
       />

@@ -15,6 +15,8 @@ import {
   Package,
   CheckCircle2,
   Printer,
+  Edit3,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -22,17 +24,23 @@ import { useToast } from '@/components/ui/toast';
 import { JobWorkStatusBadge } from '@/components/job-work/job-work-status-badge';
 import { JobWorkTimeline } from '@/components/job-work/job-work-timeline';
 import { ReconciliationDialog } from '@/components/job-work/reconciliation-dialog';
+import { JobWorkEditModal } from '@/components/job-work/job-work-edit-modal';
+import { JobWorkDeleteModal } from '@/components/job-work/job-work-delete-modal';
 import { useJobWorkOrderDetail, useCloseJobWorkOrder } from '@/hooks/useJobWork';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function JobWorkDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const { toast } = useToast();
 
   const { data: order, isLoading, refetch } = useJobWorkOrderDetail(id);
   const closeMutation = useCloseJobWorkOrder();
 
   const [isReconcileOpen, setIsReconcileOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   if (isLoading || !order) {
     return (
@@ -115,6 +123,29 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
 
           {order.status !== 'CLOSED' && (
             <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditOpen(true)}
+              leftIcon={<Edit3 className="h-3.5 w-3.5" />}
+            >
+              Edit Order
+            </Button>
+          )}
+
+          {order.status !== 'CLOSED' && (Number(order.totalReturnedWeight) === 0) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+              onClick={() => setIsDeleteOpen(true)}
+              leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+            >
+              {order.status === 'CREATED' ? 'Delete Order' : 'Cancel & Reverse'}
+            </Button>
+          )}
+
+          {order.status !== 'CLOSED' && (
+            <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsReconcileOpen(true)}
@@ -135,7 +166,6 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
             <Scale className="h-4 w-4 text-primary" />
             {issuedWeight.toFixed(2)} Kg
           </h3>
-          <p className="text-[11px] text-muted-foreground mt-1">{order.totalIssuedQty} units dispatched</p>
         </Card>
 
         <Card hoverElevation className="p-4 bg-card border-border">
@@ -143,7 +173,6 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
           <h3 className="text-xl font-bold text-emerald-400 font-mono mt-1">
             {returnedWeight.toFixed(2)} Kg
           </h3>
-          <p className="text-[11px] text-emerald-400/80 mt-1">{order.totalReturnedQty} rolls received</p>
         </Card>
 
         <Card hoverElevation className="p-4 bg-card border-border">
@@ -151,7 +180,6 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
           <h3 className="text-xl font-bold text-amber-400 font-mono mt-1">
             {wastageWeight.toFixed(2)} Kg
           </h3>
-          <p className="text-[11px] text-amber-400/80 mt-1">Acceptable process scrap</p>
         </Card>
 
         <Card hoverElevation className="p-4 bg-card border-border">
@@ -159,7 +187,6 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
           <h3 className="text-xl font-bold text-primary font-mono mt-1">
             {pendingWeight.toFixed(2)} Kg
           </h3>
-          <p className="text-[11px] text-primary/80 mt-1">{order.pendingQty} units remaining</p>
         </Card>
       </div>
 
@@ -319,6 +346,24 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
         order={order}
         onConfirmClose={handleCloseOrder}
         isLoading={closeMutation.isPending}
+      />
+
+      {/* Edit Job Work Order Modal */}
+      <JobWorkEditModal
+        order={order}
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        onSuccess={() => refetch()}
+      />
+
+      {/* Delete / Cancel Job Work Order Modal */}
+      <JobWorkDeleteModal
+        order={order}
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onSuccess={() => {
+          router.push('/job-work');
+        }}
       />
     </motion.div>
   );

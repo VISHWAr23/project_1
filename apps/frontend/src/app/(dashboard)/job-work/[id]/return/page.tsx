@@ -31,12 +31,14 @@ export default function ReceiveReturnPage({ params }: { params: Promise<{ id: st
     if (order && rows.length === 0) {
       const defaultTargetProduct = order.finishedProductId || order.rawMaterialId;
       const pendingW = Number(order.pendingWeight) || 50;
+      const defaultUnit = Math.min(50, pendingW);
       setRows([
         {
           id: 'r1',
           finishedProductId: defaultTargetProduct,
           rollNumber: 'ROLL-FG-5001',
-          returnedWeight: Math.min(50, pendingW),
+          unitWeight: defaultUnit,
+          returnedWeight: defaultUnit,
           returnedQty: 1,
           wastageWeight: 0,
           wastageQty: 0,
@@ -94,7 +96,7 @@ export default function ReceiveReturnPage({ params }: { params: Promise<{ id: st
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="space-y-6 max-w-4xl mx-auto"
+      className="space-y-6 w-full"
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border pb-4">
@@ -107,11 +109,8 @@ export default function ReceiveReturnPage({ params }: { params: Promise<{ id: st
           <div>
             <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
               <RefreshCw className="h-5 w-5 text-emerald-400" />
-              Digital Return Register - Receive Finished Goods (Step 4)
+              Receive Returned Finished Goods
             </h1>
-            <p className="text-xs text-muted-foreground">
-              Record returned rolls from vendor, update inventory balances automatically.
-            </p>
           </div>
         </div>
       </div>

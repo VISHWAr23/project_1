@@ -47,6 +47,22 @@ let RawMaterialsService = class RawMaterialsService {
                 { description: { contains: query.search, mode: 'insensitive' } },
             ];
         }
+        const isItemFG = (item) => {
+            if (item.sku?.startsWith('FP-') || item.sku?.startsWith('FG-'))
+                return true;
+            if (item.sku?.startsWith('RM-'))
+                return false;
+            const catName = item.category?.name?.toLowerCase() || '';
+            if (catName.includes('raw') ||
+                catName.includes('packaging') ||
+                catName.includes('liquid') ||
+                catName.includes('botanical') ||
+                catName.includes('component') ||
+                catName.includes('metals')) {
+                return false;
+            }
+            return true;
+        };
         const [rawItems, total] = await Promise.all([
             database_1.prisma.rawMaterial.findMany({
                 where,
@@ -96,12 +112,22 @@ let RawMaterialsService = class RawMaterialsService {
                 avgCost: Number(item.avgCost),
                 gstRate: Number(item.gstRate),
                 computedStatus: status,
+                isFinishedGood: isItemFG(item),
             };
         })
             .filter((item) => {
             if (!query.stockStatus)
                 return true;
             return item.computedStatus === query.stockStatus;
+        })
+            .filter((item) => {
+            if (!query.type || query.type === 'ALL')
+                return true;
+            if (query.type === 'FG')
+                return item.isFinishedGood;
+            if (query.type === 'RM')
+                return !item.isFinishedGood;
+            return true;
         });
         const paginatedItems = items.slice(skip, skip + limit);
         const totalSkus = rawItems.length;

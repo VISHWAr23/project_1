@@ -95,3 +95,26 @@ export function useCloseJobWorkOrder() {
     },
   });
 }
+
+export function useUpdateJobWorkOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<CreateJobWorkOrderPayload> & { vehicleNumber?: string; driverName?: string; remarks?: string } }) =>
+      jobWorkService.update(id, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['jobWorkOrders'] });
+      queryClient.invalidateQueries({ queryKey: ['jobWorkOrder', variables.id] });
+    },
+  });
+}
+
+export function useDeleteJobWorkOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => jobWorkService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobWorkOrders'] });
+      queryClient.invalidateQueries({ queryKey: ['rawMaterials'] });
+    },
+  });
+}

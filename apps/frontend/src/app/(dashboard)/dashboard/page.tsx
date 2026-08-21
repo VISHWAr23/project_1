@@ -104,9 +104,6 @@ export default function DashboardPage() {
               LIVE LEDGER
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Real-time operations overview, stock valuations, shop-floor production trends, and workforce metrics.
-          </p>
         </div>
 
         <div className="flex items-center gap-3">

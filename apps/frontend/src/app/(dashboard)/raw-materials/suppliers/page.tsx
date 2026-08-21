@@ -14,7 +14,7 @@ import { Supplier } from '@/types/raw-materials.types';
 
 export default function SuppliersPage() {
   const { toast } = useToast();
-  const { data: suppliers, refetch } = useSuppliers();
+  const { data: suppliers, isLoading, refetch } = useSuppliers();
   const createSupplier = useCreateSupplier();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -85,7 +85,7 @@ export default function SuppliersPage() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="space-y-6 pb-12 max-w-6xl mx-auto"
+      className="space-y-6 pb-12 w-full"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div className="flex items-center gap-3">
@@ -108,7 +108,12 @@ export default function SuppliersPage() {
         </Button>
       </div>
 
-      <Table columns={columns} data={suppliers || []} keyExtractor={(row) => row.id} />
+      <Table
+        columns={columns}
+        data={suppliers || []}
+        isLoading={isLoading}
+        keyExtractor={(row) => row.id}
+      />
 
       <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Create Supplier Master" description="Register a new material vendor">
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -11,12 +11,12 @@ import { Avatar } from '@/components/ui/avatar';
 
 const ROUTE_LABELS: Record<string, string> = {
   '/dashboard': 'Executive Dashboard',
-  '/raw-materials': 'Raw Materials Catalog',
-  '/material-issue': 'Internal Material Issues',
-  '/job-work': 'Job Work Outsourcing',
+  '/raw-materials': 'Materials & Products Master',
+  '/job-work': 'Job Work Pipeline',
   '/employees': 'Employee Directory',
   '/attendance': 'Daily Attendance & Shifts',
   '/salary': 'Salary & Payroll Engine',
+  '/salary/job-work': 'Job Work Subcontractor Wages',
   '/reports': 'Reports & Export Center',
   '/settings': 'System Settings',
 };

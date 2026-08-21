@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ChevronRight, Home } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
 export interface BreadcrumbItem {
   label: string;
@@ -16,12 +16,9 @@ export interface BreadcrumbProps {
 export function Breadcrumb({ items }: BreadcrumbProps) {
   return (
     <nav className="flex items-center space-x-1.5 text-xs text-muted-foreground">
-      <Link href="/dashboard" className="hover:text-foreground transition-colors flex items-center gap-1">
-        <Home className="h-3.5 w-3.5" />
-      </Link>
       {items.map((item, idx) => (
         <React.Fragment key={idx}>
-          <ChevronRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+          {idx > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />}
           {item.href ? (
             <Link href={item.href} className="hover:text-foreground transition-colors font-medium">
               {item.label}

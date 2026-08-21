@@ -25,15 +25,21 @@ import { Table, Column } from '@/components/ui/table';
 import { JobWorkStatusBadge } from '@/components/job-work/job-work-status-badge';
 import { JobWorkSDLCCard, SDLC_STAGES, getStageIndex } from '@/components/job-work/job-work-sdlc-card';
 import { JobWorkWorkflowModal } from '@/components/job-work/job-work-workflow-modal';
+import { JobWorkEditModal } from '@/components/job-work/job-work-edit-modal';
+import { JobWorkDeleteModal } from '@/components/job-work/job-work-delete-modal';
 import { useJobWorkOrders } from '@/hooks/useJobWork';
 import { JobWorkOrder, JobWorkStatus } from '@/types/job-work.types';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Edit3, Trash2 } from 'lucide-react';
 
 export default function JobWorkMainPage() {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'board' | 'table'>('board');
-  const [selectedOrder, setSelectedOrder] = useState<JobWorkOrder | null>(null);
+  const [editingOrder, setEditingOrder] = useState<JobWorkOrder | null>(null);
+  const [deletingOrder, setDeletingOrder] = useState<JobWorkOrder | null>(null);
 
   const { data, isLoading, refetch } = useJobWorkOrders({
     search: search || undefined,
@@ -49,14 +55,15 @@ export default function JobWorkMainPage() {
       key: 'jobWorkNumber',
       header: 'Job Work Order No',
       sortable: true,
+      width: '180px',
       render: (row) => (
         <div>
-          <button
-            onClick={() => setSelectedOrder(row)}
-            className="font-mono font-bold text-[#3ECF8E] hover:underline block text-left"
+          <Link
+            href={`/job-work/${row.id}`}
+            className="font-mono font-bold text-blue-600 dark:text-blue-400 hover:underline block text-left"
           >
             {row.jobWorkNumber}
-          </button>
+          </Link>
           {row.challanNumber && (
             <span className="text-[11px] font-mono text-muted-foreground">DC: {row.challanNumber}</span>
           )}
@@ -116,16 +123,38 @@ export default function JobWorkMainPage() {
     },
     {
       key: 'actions',
-      header: '1-Tap Action',
+      header: 'Actions',
       align: 'right',
+      width: '160px',
       render: (row) => (
-        <div className="flex items-center justify-end gap-1.5">
-          <button
-            onClick={() => setSelectedOrder(row)}
-            className="px-2.5 py-1 bg-[#3ECF8E]/10 text-[#3ECF8E] hover:bg-[#3ECF8E]/20 text-xs font-mono font-semibold rounded-md transition-colors"
+        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+          {row.status !== 'CLOSED' && (
+            <button
+              onClick={() => setEditingOrder(row)}
+              title="Edit Job Work"
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            >
+              <Edit3 className="h-3.5 w-3.5" />
+            </button>
+          )}
+
+          {row.status !== 'CLOSED' && Number(row.totalReturnedWeight) === 0 && (
+            <button
+              onClick={() => setDeletingOrder(row)}
+              title="Delete or Cancel Job Work"
+              className="p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+
+          <Link
+            href={`/job-work/${row.id}`}
+            className="px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 text-xs font-mono font-semibold rounded-md transition-colors inline-flex items-center gap-1"
           >
-            View Workflow
-          </button>
+            <span>View</span>
+            <ArrowRight className="h-3 w-3" />
+          </Link>
         </div>
       ),
     },
@@ -149,9 +178,6 @@ export default function JobWorkMainPage() {
               <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
                 Job Work & Material Issue Pipeline
               </h1>
-              <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                SDLC-style Subcontracting Workflow, Material Issue & Digital Return Reconciliation
-              </p>
             </div>
           </div>
         </div>
@@ -170,13 +196,13 @@ export default function JobWorkMainPage() {
         </div>
       </div>
 
-      {/* Guided SDLC Workflow Overview Step Header */}
+      {/* Guided Subcontracting Pipeline Step Header */}
       <div className="bg-card border border-border/80 rounded-2xl p-4 space-y-3 shadow-xs">
         <div className="flex items-center justify-between text-xs font-mono">
           <span className="text-muted-foreground font-medium uppercase tracking-wider text-[11px]">
-            End-to-End Subcontracting SDLC Pipeline
+            Subcontracting Workflow Stages
           </span>
-          <span className="text-[#3ECF8E] font-bold">5 Guided Factory Stages</span>
+          <span className="text-[#3ECF8E] font-bold">5 Stages</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
@@ -207,7 +233,6 @@ export default function JobWorkMainPage() {
           <h3 className="text-2xl font-bold text-foreground font-mono mt-1">
             {stats?.activeVendorsCount || 3} Active
           </h3>
-          <p className="text-[11px] text-muted-foreground mt-1 font-mono">Authorized Bleaching Units</p>
         </Card>
 
         <Card hoverElevation className="p-4 bg-card border-border/80">
@@ -216,7 +241,6 @@ export default function JobWorkMainPage() {
             <Scale className="h-5 w-5" />
             {stats?.materialsIssued || 1} Active
           </h3>
-          <p className="text-[11px] text-muted-foreground mt-1 font-mono">Materials at vendor site</p>
         </Card>
 
         <Card hoverElevation className="p-4 bg-card border-border/80">
@@ -224,7 +248,6 @@ export default function JobWorkMainPage() {
           <h3 className="text-2xl font-bold text-amber-400 font-mono mt-1">
             {stats?.partialReturn || 1} Orders
           </h3>
-          <p className="text-[11px] text-amber-400/80 mt-1 font-mono">Partial rolls awaiting return</p>
         </Card>
 
         <Card hoverElevation className="p-4 bg-card border-border/80">
@@ -232,7 +255,6 @@ export default function JobWorkMainPage() {
           <h3 className="text-2xl font-bold text-emerald-400 font-mono mt-1">
             {stats?.closed || 1} Closed
           </h3>
-          <p className="text-[11px] text-emerald-400/80 mt-1 font-mono">Reconciled work orders</p>
         </Card>
       </div>
 
@@ -254,31 +276,28 @@ export default function JobWorkMainPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
             options={[
               { label: 'All Pipeline Stages', value: 'ALL' },
-              { label: 'Stage 1: Draft / Created', value: 'CREATED' },
-              { label: 'Stage 2: Material Issued', value: 'MATERIALS_ISSUED' },
-              { label: 'Stage 3: Vendor Processing', value: 'IN_PROGRESS' },
-              { label: 'Stage 4: Partial Return Recv', value: 'PARTIAL_RETURN' },
-              { label: 'Stage 5: Reconciled & Closed', value: 'COMPLETED' },
+              ...SDLC_STAGES.map((s) => ({ label: `Stage 0${s.stepNumber}: ${s.label}`, value: s.key })),
             ]}
+            className="text-xs font-mono"
           />
 
           {/* Board vs Table Switcher */}
-          <div className="flex items-center bg-secondary p-1 rounded-xl border border-border/80 shrink-0">
+          <div className="flex items-center bg-secondary/50 p-1 rounded-xl border border-border/60">
             <button
               onClick={() => setViewMode('board')}
-              className={`p-1.5 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${
                 viewMode === 'board'
                   ? 'bg-card text-[#3ECF8E] shadow-xs font-bold'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
-              title="SDLC Card View"
+              title="SDLC Pipeline Board View"
             >
               <LayoutGrid className="h-4 w-4" />
-              <span className="hidden sm:inline">SDLC Cards</span>
+              <span className="hidden sm:inline">Board</span>
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${
                 viewMode === 'table'
                   ? 'bg-card text-[#3ECF8E] shadow-xs font-bold'
                   : 'text-muted-foreground hover:text-foreground'
@@ -297,7 +316,7 @@ export default function JobWorkMainPage() {
         <div className="space-y-4">
           {isLoading ? (
             <div className="p-12 text-center text-muted-foreground font-mono bg-card border border-border/80 rounded-2xl">
-              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-[#3ECF8E]" />
+              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-blue-600 dark:text-blue-400" />
               Loading SDLC Job Work Board...
             </div>
           ) : orders.length === 0 ? (
@@ -310,7 +329,9 @@ export default function JobWorkMainPage() {
                 <JobWorkSDLCCard
                   key={order.id}
                   order={order}
-                  onSelect={(ord) => setSelectedOrder(ord)}
+                  onSelect={(ord) => router.push(`/job-work/${ord.id}`)}
+                  onEdit={(ord) => setEditingOrder(ord)}
+                  onDelete={(ord) => setDeletingOrder(ord)}
                 />
               ))}
             </div>
@@ -322,13 +343,24 @@ export default function JobWorkMainPage() {
           data={orders}
           keyExtractor={(row) => row.id}
           isLoading={isLoading}
+          onRowClick={(row) => router.push(`/job-work/${row.id}`)}
         />
       )}
 
-      {/* SDLC Interactive Workflow Stepper Modal */}
-      <JobWorkWorkflowModal
-        order={selectedOrder}
-        onClose={() => setSelectedOrder(null)}
+      {/* Edit Job Work Order Modal */}
+      <JobWorkEditModal
+        order={editingOrder}
+        isOpen={Boolean(editingOrder)}
+        onClose={() => setEditingOrder(null)}
+        onSuccess={() => refetch()}
+      />
+
+      {/* Delete / Cancel Job Work Order Modal */}
+      <JobWorkDeleteModal
+        order={deletingOrder}
+        isOpen={Boolean(deletingOrder)}
+        onClose={() => setDeletingOrder(null)}
+        onSuccess={() => refetch()}
       />
     </motion.div>
   );

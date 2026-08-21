@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 export interface RollIssueRow {
   id: string;
   rollNumber: string;
+  unitWeight?: number;
   issuedWeight: number;
   issuedQty: number;
   remarks: string;
@@ -23,6 +24,7 @@ export function MultiRollIssueTable({ rows, onChange, maxAvailableStock }: Multi
     const newRow: RollIssueRow = {
       id: Math.random().toString(36).substring(2, 9),
       rollNumber: `ROLL-RM-${1000 + nextIndex}`,
+      unitWeight: 50,
       issuedWeight: 50,
       issuedQty: 1,
       remarks: '',
@@ -39,11 +41,46 @@ export function MultiRollIssueTable({ rows, onChange, maxAvailableStock }: Multi
     onChange(
       rows.map((r) => {
         if (r.id === id) {
+          if (field === 'issuedQty') {
+            const newQty = Math.max(0, Number(value) || 0);
+            const unitWeight = r.unitWeight && r.unitWeight > 0 ? r.unitWeight : 50;
+            const newWeight = Number((newQty * unitWeight).toFixed(2));
+            return {
+              ...r,
+              issuedQty: newQty,
+              issuedWeight: newWeight,
+            };
+          }
+          if (field === 'issuedWeight') {
+            const newWeight = Math.max(0, Number(value) || 0);
+            const currentQty = Number(r.issuedQty) || 1;
+            const newUnitWeight = currentQty > 0 ? Number((newWeight / currentQty).toFixed(2)) : newWeight;
+            return {
+              ...r,
+              issuedWeight: newWeight,
+              unitWeight: newUnitWeight > 0 ? newUnitWeight : (r.unitWeight || 50),
+            };
+          }
           return { ...r, [field]: value };
         }
         return r;
       }),
     );
+  };
+
+  const generateMultipleRolls = (count: number, weightPerRoll: number = 50) => {
+    const generated: RollIssueRow[] = [];
+    for (let i = 1; i <= count; i++) {
+      generated.push({
+        id: Math.random().toString(36).substring(2, 9),
+        rollNumber: `ROLL-RM-${1000 + i}`,
+        unitWeight: weightPerRoll,
+        issuedWeight: weightPerRoll,
+        issuedQty: 1,
+        remarks: '',
+      });
+    }
+    onChange(generated);
   };
 
   const totalWeight = rows.reduce((sum, r) => sum + (Number(r.issuedWeight) || 0), 0);
@@ -53,14 +90,42 @@ export function MultiRollIssueTable({ rows, onChange, maxAvailableStock }: Multi
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Package className="h-4 w-4 text-primary" />
-          Raw Material Rolls Dispatch Table
-        </h4>
-        <Button variant="outline" size="sm" type="button" onClick={addRow} leftIcon={<Plus className="h-3.5 w-3.5" />}>
-          Add Roll
-        </Button>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            Raw Material Rolls Dispatch Table
+          </h4>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Changing Quantity automatically scales roll weight proportionally.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            type="button"
+            onClick={() => {
+              const count = prompt('How many rolls to auto-generate?', '5');
+              const num = parseInt(count || '', 10);
+              if (num && num > 0) {
+                generateMultipleRolls(num, 50);
+              }
+            }}
+            className="text-xs"
+          >
+            Auto-Generate N Rolls
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            type="button"
+            onClick={addRow}
+            leftIcon={<Plus className="h-3.5 w-3.5" />}
+          >
+            Add Roll
+          </Button>
+        </div>
       </div>
 
       <div className="border border-border rounded-lg overflow-x-auto bg-card">
@@ -68,10 +133,10 @@ export function MultiRollIssueTable({ rows, onChange, maxAvailableStock }: Multi
           <thead className="bg-muted/50 border-b border-border text-muted-foreground font-semibold uppercase">
             <tr>
               <th className="p-3 w-12 text-center">#</th>
-              <th className="p-3">Roll Number / Identifier</th>
+              <th className="p-3 min-w-[160px]">Roll Number / Identifier</th>
               <th className="p-3 w-32">Weight (Kg)</th>
-              <th className="p-3 w-32">Quantity</th>
-              <th className="p-3">Remarks</th>
+              <th className="p-3 w-28">Quantity</th>
+              <th className="p-3 min-w-[180px]">Remarks</th>
               <th className="p-3 w-12 text-center">Action</th>
             </tr>
           </thead>
@@ -92,9 +157,10 @@ export function MultiRollIssueTable({ rows, onChange, maxAvailableStock }: Multi
                     type="number"
                     step="0.01"
                     min="0.01"
-                    value={row.issuedWeight || ''}
+                    value={row.issuedWeight !== undefined ? row.issuedWeight : ''}
                     onChange={(e) => updateRow(row.id, 'issuedWeight', parseFloat(e.target.value) || 0)}
                     placeholder="50.0"
+                    className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-mono"
                     required
                   />
                 </td>
@@ -103,9 +169,10 @@ export function MultiRollIssueTable({ rows, onChange, maxAvailableStock }: Multi
                     type="number"
                     step="1"
                     min="1"
-                    value={row.issuedQty || ''}
+                    value={row.issuedQty !== undefined ? row.issuedQty : ''}
                     onChange={(e) => updateRow(row.id, 'issuedQty', parseFloat(e.target.value) || 0)}
                     placeholder="1"
+                    className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-mono"
                     required
                   />
                 </td>
@@ -134,17 +201,25 @@ export function MultiRollIssueTable({ rows, onChange, maxAvailableStock }: Multi
           <tfoot className="bg-muted/30 border-t border-border font-semibold text-foreground">
             <tr>
               <td colSpan={2} className="p-3 text-right">
-                Totals ({rows.length} rolls):
+                Totals ({rows.length} roll entries):
               </td>
-              <td className="p-3 font-mono text-emerald-400 flex items-center gap-1">
-                <Scale className="h-3.5 w-3.5" />
-                {totalWeight.toFixed(2)} Kg
+              <td className="p-3 font-mono text-emerald-400">
+                <span className="flex items-center gap-1">
+                  <Scale className="h-3.5 w-3.5" />
+                  {totalWeight.toFixed(2)} Kg
+                </span>
               </td>
-              <td className="p-3 font-mono">{totalQty} Units</td>
+              <td className="p-3 font-mono text-blue-600 dark:text-blue-400 font-bold">
+                {totalQty} Units
+              </td>
               <td colSpan={2} className="p-3">
-                {isExceedingStock && (
-                  <span className="text-red-400 text-[11px]">
-                    Exceeds available stock balance ({maxAvailableStock} available)
+                {isExceedingStock ? (
+                  <span className="text-red-400 text-[11px] font-semibold">
+                    ⚠️ Exceeds available stock balance ({maxAvailableStock} available)
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground text-[11px]">
+                    Available stock balance: {maxAvailableStock} units
                   </span>
                 )}
               </td>

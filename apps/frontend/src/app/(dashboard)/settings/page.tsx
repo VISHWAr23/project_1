@@ -20,13 +20,10 @@ export default function SettingsPage() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="space-y-6 max-w-4xl"
+      className="space-y-6 w-full"
     >
       <div className="border-b border-border pb-5">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">System Configuration & Settings</h1>
-        <p className="text-xs text-muted-foreground mt-1">
-          Enterprise company profile, database integration, security keys, and visual appearance preferences.
-        </p>
       </div>
 
       <Tabs

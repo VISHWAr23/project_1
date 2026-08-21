@@ -77,16 +77,12 @@ export function SalaryKpiCards({ summary, isLoading }: SalaryKpiCardsProps) {
         const Icon = c.icon;
         return (
           <Card key={i} className="p-4 relative overflow-hidden border border-border/60 hover:border-border transition-all">
-            <div className="flex items-start justify-between">
+            <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground font-medium">{c.title}</p>
                 <h3 className="text-xl sm:text-2xl font-bold font-mono text-foreground mt-1 tracking-tight">
                   {c.value}
                 </h3>
-                <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
-                  <ArrowUpRight className="h-3 w-3 text-[#2563EB]" />
-                  {c.subtext}
-                </p>
               </div>
               <div className={`p-2.5 rounded-xl ${c.bg} ${c.color}`}>
                 <Icon className="h-5 w-5" />
