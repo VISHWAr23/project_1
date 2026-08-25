@@ -175,7 +175,9 @@ export class EmployeeService {
         employmentType: dto.employmentType || 'Permanent',
         shift: dto.shift || 'General Day',
         salaryType: dto.salaryType || 'Monthly Salary',
+        salaryCycle: dto.salaryCycle || 'MONTHLY',
         baseWage: dto.baseWage !== undefined ? dto.baseWage : 0,
+        otRatePerHour: dto.otRatePerHour !== undefined ? dto.otRatePerHour : 0,
         bankName: dto.bankName,
         bankAccountNo: dto.bankAccountNo,
         bankIfsc: dto.bankIfsc,
@@ -243,7 +245,9 @@ export class EmployeeService {
     if (dto.employmentType !== undefined) dataToUpdate.employmentType = dto.employmentType;
     if (dto.shift !== undefined) dataToUpdate.shift = dto.shift;
     if (dto.salaryType !== undefined) dataToUpdate.salaryType = dto.salaryType;
+    if (dto.salaryCycle !== undefined) dataToUpdate.salaryCycle = dto.salaryCycle;
     if (dto.baseWage !== undefined) dataToUpdate.baseWage = dto.baseWage;
+    if (dto.otRatePerHour !== undefined) dataToUpdate.otRatePerHour = dto.otRatePerHour;
     if (dto.bankName !== undefined) dataToUpdate.bankName = dto.bankName;
     if (dto.bankAccountNo !== undefined) dataToUpdate.bankAccountNo = dto.bankAccountNo;
     if (dto.bankIfsc !== undefined) dataToUpdate.bankIfsc = dto.bankIfsc;
@@ -259,6 +263,10 @@ export class EmployeeService {
         department: true,
         designation: true,
         documents: true,
+        salaryStructure: true,
+        advances: {
+          orderBy: { createdAt: 'desc' },
+        },
       },
     });
 
@@ -279,6 +287,435 @@ export class EmployeeService {
     }
 
     return updated;
+  }
+
+  /**
+   * Get Comprehensive Financial & Compensation Summary for Employee Profile
+   */
+  async getFinancialSummary(employeeId: string) {
+    const employee = await prisma.employee.findFirst({
+      where: { id: employeeId, deletedAt: null },
+      include: {
+        department: true,
+        designation: true,
+        salaryStructure: true,
+        advances: {
+          include: { repayments: true },
+          orderBy: { createdAt: 'desc' },
+        },
+        salaryPayments: {
+          take: 10,
+          orderBy: { paymentDate: 'desc' },
+        },
+      },
+    });
+
+    if (!employee) {
+      throw new NotFoundException(`Employee with ID ${employeeId} not found`);
+    }
+
+    // Determine current cycle period (weekly or monthly)
+    const now = new Date();
+    let startDate: Date;
+    let endDate: Date;
+
+    const salaryCycle = employee.salaryCycle || 'MONTHLY';
+    if (salaryCycle === 'WEEKLY') {
+      // Current week ending on upcoming/current Saturday
+      const dayOfWeek = now.getDay(); // 0 is Sun, 6 is Sat
+      const diffToSaturday = (6 - dayOfWeek + 7) % 7;
+      const saturday = new Date(now);
+      saturday.setDate(now.getDate() + diffToSaturday);
+      saturday.setHours(23, 59, 59, 999);
+
+      const monday = new Date(saturday);
+      monday.setDate(saturday.getDate() - 5);
+      monday.setHours(0, 0, 0, 0);
+
+      startDate = monday;
+      endDate = saturday;
+    } else {
+      // Monthly: 1st of current month to end of current month
+      startDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+      endDate = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999));
+    }
+
+    // Fetch attendance logs for current cycle
+    const currentCycleLogs = await prisma.attendanceLog.findMany({
+      where: {
+        employeeId,
+        date: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+    });
+
+    let presentDays = 0;
+    let halfDays = 0;
+    let totalWorkingHours = 0;
+    let totalOvertimeHours = 0;
+    let totalOtAmount = 0;
+
+    for (const log of currentCycleLogs) {
+      if (log.status === 'PRESENT') presentDays += 1;
+      if (log.status === 'HALF_DAY') halfDays += 1;
+      totalWorkingHours += Number(log.workingHours || 0);
+      totalOvertimeHours += Number(log.overtimeHours || 0);
+      totalOtAmount += Number(log.otAmount || 0);
+    }
+
+    // Advance balances
+    const activeAdvances = employee.advances.filter((a) => a.status === 'ACTIVE');
+    const totalAdvanceGiven = employee.advances.reduce((acc, a) => acc + Number(a.amount || 0), 0);
+    const totalAdvanceRepaid = employee.advances.reduce((acc, a) => acc + Number(a.repaidAmount || 0), 0);
+    const outstandingAdvanceBalance = activeAdvances.reduce((acc, a) => acc + Number(a.balanceAmount || 0), 0);
+    const weeklyDeductionTotal = activeAdvances.reduce((acc, a) => acc + Number(a.weeklyDeduction || 0), 0);
+
+    // Normal Base Salary estimate (Base Wage is Daily Rate)
+    const baseWage = Number(employee.baseWage || (employee.salaryStructure ? employee.salaryStructure.baseSalary : 0));
+    const payableDays = presentDays + 0.5 * halfDays;
+    const baseSalaryEarned = Math.round(baseWage * payableDays * 100) / 100;
+
+    const otRatePerHour = Number(employee.otRatePerHour || 0);
+    const otSalaryEarned = Math.round(totalOvertimeHours * otRatePerHour * 100) / 100;
+
+    return {
+      employee: {
+        id: employee.id,
+        employeeCode: employee.employeeCode,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        department: employee.department?.name || 'Unassigned',
+        designation: employee.designation?.name || 'Staff',
+        salaryType: employee.salaryType || 'Monthly Salary',
+        salaryCycle,
+        baseWage,
+        otRatePerHour,
+      },
+      currentCycle: {
+        periodType: salaryCycle,
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+        presentDays,
+        halfDays,
+        totalWorkingHours: Math.round(totalWorkingHours * 100) / 100,
+        totalOvertimeHours: Math.round(totalOvertimeHours * 100) / 100,
+        baseSalaryEarned,
+        otSalaryEarned,
+      },
+      advances: {
+        activeAdvances,
+        totalAdvanceGiven,
+        totalAdvanceRepaid,
+        outstandingBalance: outstandingAdvanceBalance,
+        weeklyDeductionTotal,
+      },
+      recentPayments: employee.salaryPayments,
+      settlementSummary: {
+        baseSalaryEarned,
+        otSalaryEarned,
+        totalGrossEarned: Math.round((baseSalaryEarned + otSalaryEarned) * 100) / 100,
+        pendingAdvanceDeduction: Math.min(outstandingAdvanceBalance, weeklyDeductionTotal > 0 ? weeklyDeductionTotal : outstandingAdvanceBalance),
+        estimatedNetPayout: Math.max(
+          0,
+          Math.round(
+            (baseSalaryEarned +
+              otSalaryEarned -
+              Math.min(outstandingAdvanceBalance, weeklyDeductionTotal > 0 ? weeklyDeductionTotal : outstandingAdvanceBalance)) *
+              100,
+          ) / 100,
+        ),
+      },
+    };
+  }
+
+  /**
+   * Disburse / Create New Advance for Employee
+   */
+  async createAdvance(dto: { employeeId: string; amount: number; weeklyDeduction?: number; reason?: string; issueDate?: string }, userId?: string) {
+    const employee = await prisma.employee.findFirst({
+      where: { id: dto.employeeId, deletedAt: null },
+    });
+    if (!employee) throw new NotFoundException(`Employee with ID ${dto.employeeId} not found`);
+
+    const issueDate = dto.issueDate ? new Date(dto.issueDate) : new Date();
+
+    const advance = await prisma.$transaction(async (tx) => {
+      const adv = await tx.employeeAdvance.create({
+        data: {
+          employeeId: dto.employeeId,
+          amount: dto.amount,
+          repaidAmount: 0,
+          balanceAmount: dto.amount,
+          weeklyDeduction: dto.weeklyDeduction || 0,
+          reason: dto.reason || 'Salary Advance / Emergency Loan',
+          status: 'ACTIVE',
+          issueDate,
+          createdByUserId: userId || null,
+        },
+      });
+
+      // Record SalaryPayment entry for audit/ledger
+      await tx.salaryPayment.create({
+        data: {
+          employeeId: dto.employeeId,
+          paymentType: 'ADVANCE_DISBURSEMENT',
+          amount: dto.amount,
+          paymentMethod: 'CASH',
+          paymentDate: issueDate,
+          remarks: `Advance disbursed: ${dto.reason || 'Salary Advance'} (Weekly Repayment: ₹${dto.weeklyDeduction || 0})`,
+          paidByUserId: userId || null,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          action: 'ADVANCE_DISBURSED',
+          entityName: 'EmployeeAdvance',
+          entityId: adv.id,
+          newValues: { amount: dto.amount, employeeId: dto.employeeId, weeklyDeduction: dto.weeklyDeduction },
+          userId: userId || null,
+        },
+      });
+
+      return adv;
+    });
+
+    return advance;
+  }
+
+  /**
+   * Repay Advance Installment
+   */
+  async repayAdvance(dto: { advanceId: string; amount: number; paymentMethod?: any; notes?: string }, userId?: string) {
+    const advance = await prisma.employeeAdvance.findUnique({
+      where: { id: dto.advanceId },
+      include: { employee: true },
+    });
+    if (!advance) throw new NotFoundException(`Advance record with ID ${dto.advanceId} not found`);
+
+    const currentBalance = Number(advance.balanceAmount);
+    const newRepaid = Number(advance.repaidAmount) + dto.amount;
+    const newBalance = Math.max(0, currentBalance - dto.amount);
+    const newStatus = newBalance <= 0 ? 'FULLY_REPAID' : 'ACTIVE';
+
+    const repayment = await prisma.$transaction(async (tx) => {
+      const rep = await tx.advanceRepayment.create({
+        data: {
+          advanceId: dto.advanceId,
+          employeeId: advance.employeeId,
+          amount: dto.amount,
+          paymentMethod: dto.paymentMethod || 'CASH',
+          notes: dto.notes || 'Advance Installment Repayment',
+          recordedByUserId: userId || null,
+        },
+      });
+
+      await tx.employeeAdvance.update({
+        where: { id: dto.advanceId },
+        data: {
+          repaidAmount: newRepaid,
+          balanceAmount: newBalance,
+          status: newStatus,
+        },
+      });
+
+      await tx.salaryPayment.create({
+        data: {
+          employeeId: advance.employeeId,
+          paymentType: 'ADVANCE_REPAYMENT',
+          amount: dto.amount,
+          paymentMethod: dto.paymentMethod || 'CASH',
+          remarks: `Advance Repayment received for Advance ${advance.id.slice(0, 8)} (${dto.notes || 'Repayment'})`,
+          paidByUserId: userId || null,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          action: 'ADVANCE_REPAID',
+          entityName: 'AdvanceRepayment',
+          entityId: rep.id,
+          newValues: { amount: dto.amount, remainingBalance: newBalance, status: newStatus },
+          userId: userId || null,
+        },
+      });
+
+      return rep;
+    });
+
+    return repayment;
+  }
+
+  /**
+   * Settle Any Payment Directly From Employee Profile (Normal Salary, OT Salary, Advance, Full Settlement)
+   */
+  async settlePayment(
+    dto: {
+      employeeId: string;
+      paymentType: 'NORMAL_SALARY' | 'OVERTIME_SALARY' | 'ADVANCE_DISBURSEMENT' | 'ADVANCE_REPAYMENT' | 'FULL_SETTLEMENT';
+      amount: number;
+      advanceDeduction?: number;
+      netAmount?: number;
+      weeklyDeduction?: number;
+      paymentMethod?: any;
+      transactionRef?: string;
+      remarks?: string;
+      advanceId?: string;
+    },
+    userId?: string,
+  ) {
+    const employee = await prisma.employee.findFirst({
+      where: { id: dto.employeeId, deletedAt: null },
+    });
+    if (!employee) throw new NotFoundException(`Employee with ID ${dto.employeeId} not found`);
+
+    if (dto.paymentType === 'ADVANCE_DISBURSEMENT') {
+      return this.createAdvance(
+        {
+          employeeId: dto.employeeId,
+          amount: dto.amount,
+          weeklyDeduction: dto.weeklyDeduction,
+          reason: dto.remarks,
+        },
+        userId,
+      );
+    }
+
+    if (dto.paymentType === 'ADVANCE_REPAYMENT' && dto.advanceId) {
+      return this.repayAdvance(
+        {
+          advanceId: dto.advanceId,
+          amount: dto.amount,
+          paymentMethod: dto.paymentMethod,
+          notes: dto.remarks,
+        },
+        userId,
+      );
+    }
+
+    // Direct Salary, OT or Full Settlement with optional advance deduction
+    const advanceDed = Number(dto.advanceDeduction || 0);
+    const netPayout = dto.netAmount !== undefined ? dto.netAmount : Math.max(0, dto.amount - advanceDed);
+
+    const payment = await prisma.$transaction(async (tx) => {
+      // If an advance deduction is specified, deduct it from active advances in chronological order
+      if (advanceDed > 0) {
+        const activeAdvances = await tx.employeeAdvance.findMany({
+          where: { employeeId: dto.employeeId, status: 'ACTIVE' },
+          orderBy: { createdAt: 'asc' },
+        });
+
+        let remainingDed = advanceDed;
+        for (const adv of activeAdvances) {
+          if (remainingDed <= 0) break;
+          const currentBal = Number(adv.balanceAmount);
+          const deductThis = Math.min(currentBal, remainingDed);
+          const newBal = currentBal - deductThis;
+          const newRepaid = Number(adv.repaidAmount) + deductThis;
+          const newStatus = newBal <= 0 ? 'FULLY_REPAID' : 'ACTIVE';
+
+          await tx.employeeAdvance.update({
+            where: { id: adv.id },
+            data: {
+              balanceAmount: newBal,
+              repaidAmount: newRepaid,
+              status: newStatus,
+            },
+          });
+
+          await tx.advanceRepayment.create({
+            data: {
+              advanceId: adv.id,
+              employeeId: dto.employeeId,
+              amount: deductThis,
+              paymentMethod: dto.paymentMethod || 'CASH',
+              notes: `Deduction of ₹${deductThis} from salary payout`,
+              recordedByUserId: userId || null,
+            },
+          });
+
+          remainingDed -= deductThis;
+        }
+      }
+
+      // Generate clean remarks noting gross, deduction, and net
+      let finalRemarks = dto.remarks;
+      if (!finalRemarks) {
+        if (advanceDed > 0) {
+          finalRemarks = `Gross: ₹${dto.amount} | Advance Ded: ₹${advanceDed} | Net Paid: ₹${netPayout}`;
+        } else {
+          finalRemarks = `Direct Settlement: ₹${netPayout} (${dto.paymentType.replace('_', ' ')})`;
+        }
+      }
+
+      const p = await tx.salaryPayment.create({
+        data: {
+          employeeId: dto.employeeId,
+          paymentType: dto.paymentType,
+          amount: netPayout,
+          paymentMethod: dto.paymentMethod || 'CASH',
+          transactionRef: dto.transactionRef,
+          remarks: finalRemarks,
+          paidByUserId: userId || null,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          action: 'EMPLOYEE_PAYMENT_SETTLED',
+          entityName: 'SalaryPayment',
+          entityId: p.id,
+          newValues: {
+            type: dto.paymentType,
+            grossAmount: dto.amount,
+            advanceDeduction: advanceDed,
+            netPaid: netPayout,
+            employeeId: dto.employeeId,
+          },
+          userId: userId || null,
+        },
+      });
+
+      return p;
+    });
+
+    return payment;
+  }
+
+  /**
+   * Get Complete Payment & Transaction History for an Employee
+   */
+  async getPaymentHistory(employeeId: string) {
+    const employee = await prisma.employee.findFirst({
+      where: { id: employeeId, deletedAt: null },
+    });
+    if (!employee) throw new NotFoundException(`Employee with ID ${employeeId} not found`);
+
+    const [payments, advances, repayments] = await Promise.all([
+      prisma.salaryPayment.findMany({
+        where: { employeeId },
+        include: { paidByUser: { select: { id: true, email: true } } },
+        orderBy: { paymentDate: 'desc' },
+      }),
+      prisma.employeeAdvance.findMany({
+        where: { employeeId },
+        include: { repayments: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.advanceRepayment.findMany({
+        where: { employeeId },
+        include: { recordedByUser: { select: { id: true, email: true } } },
+        orderBy: { repaymentDate: 'desc' },
+      }),
+    ]);
+
+    return {
+      payments,
+      advances,
+      repayments,
+    };
   }
 
   /**

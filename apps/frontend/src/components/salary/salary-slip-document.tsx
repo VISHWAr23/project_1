@@ -151,9 +151,15 @@ export function SalarySlipDocument({ item }: SalarySlipDocumentProps) {
             </div>
             <div className="p-3 text-xs space-y-2 font-mono">
               <div className="flex justify-between text-slate-700">
-                <span>Basic Salary</span>
+                <span>Basic / Regular Wage</span>
                 <span>₹ {basic.toLocaleString('en-IN')}</span>
               </div>
+              {Number(item.overtimeSalary || 0) > 0 && (
+                <div className="flex justify-between text-emerald-700 font-semibold">
+                  <span>Overtime ({Number(item.overtimeHours || 0)}h @ ₹{Number(item.overtimeRate || 0)}/h)</span>
+                  <span>+₹ {Number(item.overtimeSalary || 0).toLocaleString('en-IN')}</span>
+                </div>
+              )}
               {bonus > 0 && (
                 <div className="flex justify-between text-slate-700">
                   <span>Performance Bonus</span>
@@ -180,10 +186,18 @@ export function SalarySlipDocument({ item }: SalarySlipDocumentProps) {
               <span>Amount (₹)</span>
             </div>
             <div className="p-3 text-xs space-y-2 font-mono">
-              <div className="flex justify-between text-slate-700">
-                <span>Professional Tax (PT)</span>
-                <span>₹ {pt.toLocaleString('en-IN')}</span>
-              </div>
+              {advance > 0 && (
+                <div className="flex justify-between text-amber-800 font-medium">
+                  <span>Salary Advance Recovery</span>
+                  <span>-₹ {advance.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+              {pt > 0 && (
+                <div className="flex justify-between text-slate-700">
+                  <span>Professional Tax (PT)</span>
+                  <span>₹ {pt.toLocaleString('en-IN')}</span>
+                </div>
+              )}
               {pf > 0 && (
                 <div className="flex justify-between text-slate-700">
                   <span>Provident Fund (PF)</span>
@@ -194,12 +208,6 @@ export function SalarySlipDocument({ item }: SalarySlipDocumentProps) {
                 <div className="flex justify-between text-slate-700">
                   <span>ESI Deduction</span>
                   <span>₹ {esi.toLocaleString('en-IN')}</span>
-                </div>
-              )}
-              {advance > 0 && (
-                <div className="flex justify-between text-slate-700">
-                  <span>Salary Advance Recovery</span>
-                  <span>₹ {advance.toLocaleString('en-IN')}</span>
                 </div>
               )}
               {loan > 0 && (

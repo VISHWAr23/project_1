@@ -162,57 +162,70 @@ export class SalaryService {
   }
 
   /**
-   * Generate Monthly Payroll Run
+   * Generate Payroll Run (Monthly or Weekly)
    */
   async generatePayroll(dto: GeneratePayrollDto, userId?: string) {
-    const existingRun = await prisma.payrollRun.findUnique({
-      where: { month_year: { month: dto.month, year: dto.year } },
-    });
+    const periodType = dto.periodType || 'MONTHLY';
+    let calculatedItems: any[] = [];
+    let payrollCode = '';
 
-    if (existingRun && existingRun.status !== PayrollStatus.CANCELLED) {
-      throw new BadRequestException(
-        `Payroll run for ${dto.month}/${dto.year} already exists with status ${existingRun.status}`,
-      );
+    if (periodType === 'WEEKLY') {
+      calculatedItems = await this.payrollEngine.calculateWeeklyPayroll(dto.weekNumber, dto.startDate, dto.endDate);
+      const wkStr = String(dto.weekNumber || 1).padStart(2, '0');
+      payrollCode = `PAY-WK${wkStr}-${dto.year}`;
+    } else {
+      const existingRun = await prisma.payrollRun.findFirst({
+        where: { month: dto.month, year: dto.year, periodType: 'MONTHLY' },
+      });
+
+      if (existingRun && existingRun.status !== PayrollStatus.CANCELLED) {
+        throw new BadRequestException(
+          `Monthly Payroll run for ${dto.month}/${dto.year} already exists with status ${existingRun.status}`,
+        );
+      }
+
+      calculatedItems = await this.payrollEngine.calculateMonthlyPayroll(dto.month, dto.year);
+      const monthStr = String(dto.month).padStart(2, '0');
+      payrollCode = `PAY-${dto.year}-${monthStr}`;
     }
-
-    // Calculate line items from attendance engine
-    const calculatedItems = await this.payrollEngine.calculateMonthlyPayroll(dto.month, dto.year);
 
     if (calculatedItems.length === 0) {
       throw new BadRequestException('No active employees found to generate payroll');
     }
 
-    const monthStr = String(dto.month).padStart(2, '0');
-    const payrollCode = `PAY-${dto.year}-${monthStr}`;
-
     let totalGross = 0;
     let totalDeductions = 0;
     let totalBonus = 0;
+    let totalOvertime = 0;
     let totalNet = 0;
 
     for (const item of calculatedItems) {
       totalGross += item.grossSalary;
       totalDeductions += item.totalDeductions;
       totalBonus += item.bonusAmount;
+      totalOvertime += item.overtimeSalary;
       totalNet += item.netSalary;
     }
 
+    const startDate = dto.startDate ? new Date(dto.startDate) : null;
+    const endDate = dto.endDate ? new Date(dto.endDate) : null;
+
     // Use transaction to create header & line items
     const payrollRun = await prisma.$transaction(async (tx) => {
-      // Delete cancelled run if exists
-      if (existingRun && existingRun.status === PayrollStatus.CANCELLED) {
-        await tx.payrollRun.delete({ where: { id: existingRun.id } });
-      }
-
       const run = await tx.payrollRun.create({
         data: {
           payrollCode,
           month: dto.month,
           year: dto.year,
+          periodType,
+          weekNumber: dto.weekNumber || null,
+          startDate,
+          endDate,
           totalEmployees: calculatedItems.length,
           totalGross,
           totalDeductions,
           totalBonus,
+          totalOvertime,
           totalNet,
           status: PayrollStatus.DRAFT,
           remarks: dto.remarks,
@@ -225,6 +238,7 @@ export class SalaryService {
           payrollRunId: run.id,
           employeeId: item.employeeId,
           salaryType: item.salaryType,
+          periodType: item.periodType || periodType,
           baseWage: item.baseWage,
           workingDaysInMonth: item.workingDaysInMonth,
           presentDays: item.presentDays,
@@ -235,6 +249,9 @@ export class SalaryService {
           weeklyOffCount: item.weeklyOffCount,
           payableDays: item.payableDays,
           basicSalary: item.basicSalary,
+          overtimeHours: item.overtimeHours,
+          overtimeRate: item.overtimeRate,
+          overtimeSalary: item.overtimeSalary,
           grossSalary: item.grossSalary,
           bonusAmount: item.bonusAmount,
           incentiveAmount: item.incentiveAmount,
@@ -257,7 +274,7 @@ export class SalaryService {
           action: 'PAYROLL_GENERATED',
           entityName: 'PayrollRun',
           entityId: run.id,
-          newValues: { payrollCode, month: dto.month, year: dto.year, count: calculatedItems.length, totalNet },
+          newValues: { payrollCode, periodType, month: dto.month, year: dto.year, count: calculatedItems.length, totalNet },
           userId,
         },
       });
@@ -269,7 +286,7 @@ export class SalaryService {
   }
 
   /**
-   * Update Payroll Item Adjustments (Bonus, Late, Advance, PT, etc.)
+   * Update Payroll Item Adjustments (Bonus, Late, Advance, OT, PT, etc.)
    */
   async updatePayrollItemAdjustment(itemId: string, dto: UpdatePayrollItemAdjustmentDto, userId?: string) {
     const item = await prisma.payrollItem.findUnique({
@@ -287,6 +304,10 @@ export class SalaryService {
 
     const bonusAmount = dto.bonusAmount !== undefined ? dto.bonusAmount : Number(item.bonusAmount);
     const incentiveAmount = dto.incentiveAmount !== undefined ? dto.incentiveAmount : Number(item.incentiveAmount);
+    const overtimeHours = dto.overtimeHours !== undefined ? dto.overtimeHours : Number(item.overtimeHours);
+    const overtimeRate = dto.overtimeRate !== undefined ? dto.overtimeRate : Number(item.overtimeRate);
+    const overtimeSalary = Math.round(overtimeHours * overtimeRate * 100) / 100;
+
     const lateDeduction = dto.lateDeduction !== undefined ? dto.lateDeduction : Number(item.lateDeduction);
     const advanceDeduction = dto.advanceDeduction !== undefined ? dto.advanceDeduction : Number(item.advanceDeduction);
     const loanDeduction = dto.loanDeduction !== undefined ? dto.loanDeduction : Number(item.loanDeduction);
@@ -295,14 +316,17 @@ export class SalaryService {
     const professionalTax = dto.professionalTax !== undefined ? dto.professionalTax : Number(item.professionalTax);
     const otherDeductions = dto.otherDeductions !== undefined ? dto.otherDeductions : Number(item.otherDeductions);
 
-    const grossSalary = Number(item.basicSalary) + bonusAmount + incentiveAmount;
-    const totalDeductions = lateDeduction + advanceDeduction + loanDeduction + pfDeduction + esiDeduction + professionalTax + otherDeductions;
-    const netSalary = Math.max(0, grossSalary - totalDeductions);
+    const grossSalary = Math.round((Number(item.basicSalary) + overtimeSalary + bonusAmount + incentiveAmount) * 100) / 100;
+    const totalDeductions = Math.round((lateDeduction + advanceDeduction + loanDeduction + pfDeduction + esiDeduction + professionalTax + otherDeductions) * 100) / 100;
+    const netSalary = Math.max(0, Math.round((grossSalary - totalDeductions) * 100) / 100);
 
     const updatedItem = await prisma.$transaction(async (tx) => {
       const res = await tx.payrollItem.update({
         where: { id: itemId },
         data: {
+          overtimeHours,
+          overtimeRate,
+          overtimeSalary,
           bonusAmount,
           incentiveAmount,
           lateDeduction,
@@ -326,6 +350,7 @@ export class SalaryService {
       const totalGross = items.reduce((acc, i) => acc + Number(i.grossSalary), 0);
       const totalDeductionsSum = items.reduce((acc, i) => acc + Number(i.totalDeductions), 0);
       const totalBonusSum = items.reduce((acc, i) => acc + Number(i.bonusAmount), 0);
+      const totalOvertimeSum = items.reduce((acc, i) => acc + Number(i.overtimeSalary), 0);
       const totalNetSum = items.reduce((acc, i) => acc + Number(i.netSalary), 0);
 
       await tx.payrollRun.update({
@@ -334,6 +359,7 @@ export class SalaryService {
           totalGross,
           totalDeductions: totalDeductionsSum,
           totalBonus: totalBonusSum,
+          totalOvertime: totalOvertimeSum,
           totalNet: totalNetSum,
         },
       });
@@ -344,7 +370,7 @@ export class SalaryService {
           entityName: 'PayrollItem',
           entityId: itemId,
           oldValues: { netSalary: Number(item.netSalary) },
-          newValues: { netSalary, bonusAmount, totalDeductions },
+          newValues: { netSalary, bonusAmount, overtimeSalary, totalDeductions },
           userId,
         },
       });
@@ -421,6 +447,10 @@ export class SalaryService {
             status: 'APPROVED',
             snapshotData: {
               basicSalary: Number(item.basicSalary),
+              overtimeHours: Number(item.overtimeHours),
+              overtimeRate: Number(item.overtimeRate),
+              overtimeSalary: Number(item.overtimeSalary),
+              advanceDeduction: Number(item.advanceDeduction),
               bonusAmount: Number(item.bonusAmount),
               professionalTax: Number(item.professionalTax),
               presentDays: Number(item.presentDays),
@@ -487,6 +517,10 @@ export class SalaryService {
    * Record Payment for Payroll Item
    */
   async recordPayment(dto: RecordSalaryPaymentDto, userId?: string) {
+    if (!dto.payrollItemId) {
+      throw new BadRequestException('payrollItemId is required to pay a payroll item');
+    }
+
     const item = await prisma.payrollItem.findUnique({
       where: { id: dto.payrollItemId },
       include: { payrollRun: true, employee: true },
@@ -503,6 +537,7 @@ export class SalaryService {
         data: {
           payrollItemId: dto.payrollItemId,
           employeeId: item.employeeId,
+          paymentType: dto.paymentType || 'NORMAL_SALARY',
           amount: dto.amount,
           paymentMethod: dto.paymentMethod,
           transactionRef: dto.transactionRef,
@@ -515,6 +550,48 @@ export class SalaryService {
         where: { id: dto.payrollItemId },
         data: { status: PayrollStatus.PAID },
       });
+
+      // Deduct advance if advanceDeduction was applied on this item
+      const advDed = Number(item.advanceDeduction);
+      if (advDed > 0) {
+        const activeAdvances = await tx.employeeAdvance.findMany({
+          where: { employeeId: item.employeeId, status: 'ACTIVE' },
+          orderBy: { createdAt: 'asc' },
+        });
+
+        let remainingToDeduct = advDed;
+        for (const adv of activeAdvances) {
+          if (remainingToDeduct <= 0) break;
+          const bal = Number(adv.balanceAmount);
+          const ded = Math.min(bal, remainingToDeduct);
+          const newBal = bal - ded;
+          const newRepaid = Number(adv.repaidAmount) + ded;
+          const newStatus = newBal <= 0 ? 'FULLY_REPAID' : 'ACTIVE';
+
+          await tx.employeeAdvance.update({
+            where: { id: adv.id },
+            data: {
+              repaidAmount: newRepaid,
+              balanceAmount: newBal,
+              status: newStatus,
+            },
+          });
+
+          await tx.advanceRepayment.create({
+            data: {
+              advanceId: adv.id,
+              employeeId: item.employeeId,
+              amount: ded,
+              paymentMethod: dto.paymentMethod,
+              payrollItemId: item.id,
+              notes: `Deducted via Payroll batch ${item.payrollRun.payrollCode}`,
+              recordedByUserId: userId,
+            },
+          });
+
+          remainingToDeduct -= ded;
+        }
+      }
 
       // Update Salary History status to PAID
       await tx.salaryHistory.updateMany({

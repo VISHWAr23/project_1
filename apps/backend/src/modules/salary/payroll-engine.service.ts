@@ -4,6 +4,7 @@ import { prisma, AttendanceStatus, EmployeeStatus } from '@ims/database';
 export interface CalculatedPayrollItem {
   employeeId: string;
   salaryType: string;
+  periodType: string; // MONTHLY, WEEKLY
   baseWage: number;
   workingDaysInMonth: number;
   presentDays: number;
@@ -14,6 +15,9 @@ export interface CalculatedPayrollItem {
   weeklyOffCount: number;
   payableDays: number;
   basicSalary: number;
+  overtimeHours: number;
+  overtimeRate: number;
+  overtimeSalary: number;
   grossSalary: number;
   bonusAmount: number;
   incentiveAmount: number;
@@ -38,10 +42,9 @@ export class PayrollEngineService {
   }
 
   /**
-   * Core Calculation Engine: Aggregates attendance logs & builds line items
+   * Core Calculation Engine: Aggregates attendance logs & builds line items for MONTHLY payroll
    */
   async calculateMonthlyPayroll(month: number, year: number) {
-    // 1. Fetch active employees
     const employees = await prisma.employee.findMany({
       where: {
         status: EmployeeStatus.ACTIVE,
@@ -51,6 +54,9 @@ export class PayrollEngineService {
         department: true,
         designation: true,
         salaryStructure: true,
+        advances: {
+          where: { status: 'ACTIVE' },
+        },
       },
     });
 
@@ -58,13 +64,10 @@ export class PayrollEngineService {
     const totalDaysInMonth = this.getDaysInMonth(month, year);
     const endDate = new Date(Date.UTC(year, month - 1, totalDaysInMonth, 23, 59, 59, 999));
 
-    // Standard working days default to 26 for industrial ERP or total days
     const defaultWorkingDays = 26;
-
     const calculatedItems: CalculatedPayrollItem[] = [];
 
     for (const emp of employees) {
-      // Fetch attendance logs for employee in this month
       const attendanceLogs = await prisma.attendanceLog.findMany({
         where: {
           employeeId: emp.id,
@@ -81,8 +84,10 @@ export class PayrollEngineService {
       let leaveDays = 0;
       let holidayCount = 0;
       let weeklyOffCount = 0;
+      let totalOvertimeHours = 0;
 
       for (const log of attendanceLogs) {
+        totalOvertimeHours += Number(log.overtimeHours || 0);
 
         switch (log.status) {
           case AttendanceStatus.PRESENT:
@@ -108,24 +113,16 @@ export class PayrollEngineService {
 
       const salaryType = emp.salaryType || 'Monthly Salary';
       const baseWage = Number(emp.baseWage || (emp.salaryStructure ? emp.salaryStructure.baseSalary : 0));
+      const otRatePerHour = Number(emp.otRatePerHour || 0);
 
       const pfDeduction = Number(emp.salaryStructure ? emp.salaryStructure.pfDeduction : 0);
       const esiDeduction = Number(emp.salaryStructure ? emp.salaryStructure.esiDeduction : 0);
 
-      let payableDays = 0;
-      let basicSalary = 0;
+      const payableDays = presentDays + 0.5 * halfDays;
+      const basicSalary = Math.round(baseWage * payableDays * 100) / 100;
 
-      if (salaryType === 'Daily Wage' || salaryType === 'Temporary Worker' || salaryType === 'Contract Employee') {
-        payableDays = presentDays + 0.5 * halfDays;
-        basicSalary = baseWage * payableDays;
-      } else {
-        // Monthly Salary
-        payableDays = presentDays + holidayCount + weeklyOffCount + leaveDays + 0.5 * halfDays;
-        const dailyRate = baseWage / defaultWorkingDays;
-        basicSalary = Math.round(dailyRate * payableDays * 100) / 100;
-      }
-
-      const initialGross = Math.round(basicSalary * 100) / 100;
+      const overtimeSalary = Math.round(totalOvertimeHours * otRatePerHour * 100) / 100;
+      const initialGross = Math.round((basicSalary + overtimeSalary) * 100) / 100;
 
       // Professional Tax (PT) Slabs
       let professionalTax = 0;
@@ -133,10 +130,21 @@ export class PayrollEngineService {
         professionalTax = 200;
       }
 
+      // Advance deduction calculation from active advances
+      let advanceDeduction = 0;
+      if (emp.advances && emp.advances.length > 0) {
+        for (const adv of emp.advances) {
+          const bal = Number(adv.balanceAmount);
+          const weeklyDed = Number(adv.weeklyDeduction);
+          // For monthly, 4 weeks of deduction or total balance
+          const monthlyDed = weeklyDed > 0 ? weeklyDed * 4 : bal;
+          advanceDeduction += Math.min(bal, monthlyDed);
+        }
+      }
+
       const bonusAmount = 0;
       const incentiveAmount = 0;
       const lateDeduction = 0;
-      const advanceDeduction = 0;
       const loanDeduction = 0;
       const otherDeductions = 0;
 
@@ -146,6 +154,7 @@ export class PayrollEngineService {
       calculatedItems.push({
         employeeId: emp.id,
         salaryType,
+        periodType: 'MONTHLY',
         baseWage,
         workingDaysInMonth: defaultWorkingDays,
         presentDays,
@@ -156,6 +165,167 @@ export class PayrollEngineService {
         weeklyOffCount,
         payableDays,
         basicSalary,
+        overtimeHours: Math.round(totalOvertimeHours * 100) / 100,
+        overtimeRate: otRatePerHour,
+        overtimeSalary,
+        grossSalary: initialGross,
+        bonusAmount,
+        incentiveAmount,
+        lateDeduction,
+        advanceDeduction,
+        loanDeduction,
+        pfDeduction,
+        esiDeduction,
+        professionalTax,
+        otherDeductions,
+        totalDeductions,
+        netSalary,
+      });
+    }
+
+    return calculatedItems;
+  }
+
+  /**
+   * Calculation Engine for WEEKLY payroll (Saturday salary day)
+   */
+  async calculateWeeklyPayroll(weekNumber?: number, startDateStr?: string, endDateStr?: string) {
+    const employees = await prisma.employee.findMany({
+      where: {
+        status: EmployeeStatus.ACTIVE,
+        deletedAt: null,
+      },
+      include: {
+        department: true,
+        designation: true,
+        salaryStructure: true,
+        advances: {
+          where: { status: 'ACTIVE' },
+        },
+      },
+    });
+
+    let startDate: Date;
+    let endDate: Date;
+
+    if (startDateStr && endDateStr) {
+      startDate = new Date(startDateStr);
+      endDate = new Date(endDateStr);
+      endDate.setHours(23, 59, 59, 999);
+    } else {
+      // Calculate current week ending Saturday
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const diffToSaturday = (6 - dayOfWeek + 7) % 7;
+      const saturday = new Date(now);
+      saturday.setDate(now.getDate() + diffToSaturday);
+      saturday.setHours(23, 59, 59, 999);
+
+      const monday = new Date(saturday);
+      monday.setDate(saturday.getDate() - 5);
+      monday.setHours(0, 0, 0, 0);
+
+      startDate = monday;
+      endDate = saturday;
+    }
+
+    const workingDaysInWeek = 6;
+    const calculatedItems: CalculatedPayrollItem[] = [];
+
+    for (const emp of employees) {
+      const attendanceLogs = await prisma.attendanceLog.findMany({
+        where: {
+          employeeId: emp.id,
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+      });
+
+      let presentDays = 0;
+      let absentDays = 0;
+      let halfDays = 0;
+      let leaveDays = 0;
+      let holidayCount = 0;
+      let weeklyOffCount = 0;
+      let totalOvertimeHours = 0;
+
+      for (const log of attendanceLogs) {
+        totalOvertimeHours += Number(log.overtimeHours || 0);
+
+        switch (log.status) {
+          case AttendanceStatus.PRESENT:
+            presentDays += 1;
+            break;
+          case AttendanceStatus.ABSENT:
+            absentDays += 1;
+            break;
+          case AttendanceStatus.HALF_DAY:
+            halfDays += 1;
+            break;
+          case AttendanceStatus.LEAVE:
+            leaveDays += 1;
+            break;
+          case AttendanceStatus.HOLIDAY:
+            holidayCount += 1;
+            break;
+          case AttendanceStatus.WEEKLY_OFF:
+            weeklyOffCount += 1;
+            break;
+        }
+      }
+
+      const salaryType = emp.salaryType || 'Weekly Wage';
+      const baseWage = Number(emp.baseWage || (emp.salaryStructure ? emp.salaryStructure.baseSalary : 0));
+      const otRatePerHour = Number(emp.otRatePerHour || 0);
+
+      const payableDays = presentDays + 0.5 * halfDays;
+      const basicSalary = Math.round(baseWage * payableDays * 100) / 100;
+
+      const overtimeSalary = Math.round(totalOvertimeHours * otRatePerHour * 100) / 100;
+      const initialGross = Math.round((basicSalary + overtimeSalary) * 100) / 100;
+
+      // Active weekly advance deductions
+      let advanceDeduction = 0;
+      if (emp.advances && emp.advances.length > 0) {
+        for (const adv of emp.advances) {
+          const bal = Number(adv.balanceAmount);
+          const weeklyDed = Number(adv.weeklyDeduction);
+          const ded = weeklyDed > 0 ? weeklyDed : bal;
+          advanceDeduction += Math.min(bal, ded);
+        }
+      }
+
+      const bonusAmount = 0;
+      const incentiveAmount = 0;
+      const lateDeduction = 0;
+      const loanDeduction = 0;
+      const pfDeduction = 0;
+      const esiDeduction = 0;
+      const professionalTax = 0;
+      const otherDeductions = 0;
+
+      const totalDeductions = Math.round((advanceDeduction + lateDeduction + otherDeductions) * 100) / 100;
+      const netSalary = Math.max(0, Math.round((initialGross + bonusAmount + incentiveAmount - totalDeductions) * 100) / 100);
+
+      calculatedItems.push({
+        employeeId: emp.id,
+        salaryType,
+        periodType: 'WEEKLY',
+        baseWage,
+        workingDaysInMonth: workingDaysInWeek,
+        presentDays,
+        absentDays,
+        halfDays,
+        leaveDays,
+        holidayCount,
+        weeklyOffCount,
+        payableDays,
+        basicSalary,
+        overtimeHours: Math.round(totalOvertimeHours * 100) / 100,
+        overtimeRate: otRatePerHour,
+        overtimeSalary,
         grossSalary: initialGross,
         bonusAmount,
         incentiveAmount,

@@ -94,3 +94,59 @@ export function useDeleteEmployeeDocument() {
     },
   });
 }
+
+export function useEmployeeFinancialSummary(employeeId: string) {
+  return useQuery({
+    queryKey: ['employee-financial-summary', employeeId],
+    queryFn: () => employeeService.getFinancialSummary(employeeId),
+    enabled: Boolean(employeeId),
+  });
+}
+
+export function useCreateAdvance() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ employeeId, payload }: { employeeId: string; payload: any }) =>
+      employeeService.createAdvance(employeeId, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['employee', variables.employeeId] });
+      queryClient.invalidateQueries({ queryKey: ['employee-financial-summary', variables.employeeId] });
+      queryClient.invalidateQueries({ queryKey: ['employee-payment-history', variables.employeeId] });
+    },
+  });
+}
+
+export function useRepayAdvance() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ employeeId, payload }: { employeeId: string; payload: any }) =>
+      employeeService.repayAdvance(employeeId, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['employee', variables.employeeId] });
+      queryClient.invalidateQueries({ queryKey: ['employee-financial-summary', variables.employeeId] });
+      queryClient.invalidateQueries({ queryKey: ['employee-payment-history', variables.employeeId] });
+    },
+  });
+}
+
+export function useSettlePayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ employeeId, payload }: { employeeId: string; payload: any }) =>
+      employeeService.settlePayment(employeeId, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['employee', variables.employeeId] });
+      queryClient.invalidateQueries({ queryKey: ['employee-financial-summary', variables.employeeId] });
+      queryClient.invalidateQueries({ queryKey: ['employee-payment-history', variables.employeeId] });
+      queryClient.invalidateQueries({ queryKey: ['salary-dashboard'] });
+    },
+  });
+}
+
+export function useEmployeePaymentHistory(employeeId: string) {
+  return useQuery({
+    queryKey: ['employee-payment-history', employeeId],
+    queryFn: () => employeeService.getPaymentHistory(employeeId),
+    enabled: Boolean(employeeId),
+  });
+}

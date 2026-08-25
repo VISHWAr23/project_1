@@ -1,32 +1,88 @@
-# dependencies
-/node_modules
-/.pnpm-store
+# ==========================================
+# Dependencies
+# ==========================================
+node_modules/
+*/node_modules/
+**/node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+yarn-error.log*
+npm-debug.log*
+pnpm-debug.log*
 
-# build outputs
-apps/backend/dist
-apps/frontend/.next
-/out
-/build
+# ==========================================
+# Build & Distribution Artifacts
+# ==========================================
+dist/
+**/dist/
+build/
+**/build/
+out/
+**/out/
+.next/
+**/.next/
+*.tsbuildinfo
+**/*.tsbuildinfo
+.turbo/
+**/.turbo/
 
-# environment variables
+# ==========================================
+# Environment Variables & Secrets
+# ==========================================
 .env
+.env.*
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+!.env.example
 
-# IDE
+# ==========================================
+# Database & SQLite Files
+# ==========================================
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# ==========================================
+# IDE & Editor Configurations
+# ==========================================
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
 
-# OS
+# ==========================================
+# Operating System Files
+# ==========================================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+desktop.ini
 
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+# ==========================================
+# Logs & Testing
+# ==========================================
+logs/
+*.log
+coverage/
+.nyc_output/
+
+# ==========================================
+# Local Scratch & Temporary Scripts
+# ==========================================
+query_db.js
+scratch/
+test_*.js
+*.tmp

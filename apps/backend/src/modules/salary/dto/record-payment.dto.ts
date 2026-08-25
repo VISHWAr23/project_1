@@ -3,8 +3,17 @@ import { Type } from 'class-transformer';
 import { PaymentMethod } from '@ims/database';
 
 export class RecordSalaryPaymentDto {
+  @IsOptional()
   @IsUUID()
-  payrollItemId!: string;
+  payrollItemId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  employeeId?: string;
+
+  @IsOptional()
+  @IsString()
+  paymentType?: 'NORMAL_SALARY' | 'OVERTIME_SALARY' | 'ADVANCE_DISBURSEMENT' | 'ADVANCE_REPAYMENT' | 'FULL_SETTLEMENT';
 
   @Type(() => Number)
   @IsNumber()

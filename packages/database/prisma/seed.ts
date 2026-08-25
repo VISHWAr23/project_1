@@ -7,517 +7,645 @@ import {
   JobWorkStatus,
   ProductionWorkOrderStatus,
   QCResultStatus,
+  EmployeeStatus,
+  AttendanceStatus,
+  PaymentMethod,
+  PayrollStatus,
+  AdjustmentType,
 } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Helper to generate past dates relative to reference date (August 2026)
-function getPastDate(daysAgo: number, hour = 9, minute = 0): Date {
-  const d = new Date('2026-08-17T12:00:00Z');
-  d.setDate(d.getDate() - daysAgo);
-  d.setHours(hour, minute, 0, 0);
-  return d;
-}
-
 async function main() {
-  console.log('🔄 Cleaning up previous job work, raw material, roll, and finished product records...');
+  console.log('🧹 [1/8] Removing all existing data from database across all modules...');
 
-  // 1. Clean up operational data in safe relational order
-  await prisma.jobWorkStatusHistory.deleteMany({});
-  await prisma.jobWorkReturnItem.deleteMany({});
-  await prisma.jobWorkIssueItem.deleteMany({});
-  await prisma.jobWorkOrder.deleteMany({});
-  await prisma.jobWorkChallan.deleteMany({});
-
+  // 1. Clean in strict foreign key order
+  await prisma.auditLog.deleteMany({});
   await prisma.packingBundleItem.deleteMany({});
   await prisma.packingBundle.deleteMany({});
   await prisma.qCInspection.deleteMany({});
   await prisma.rollStatusHistory.deleteMany({});
   await prisma.cottonRoll.deleteMany({});
-
   await prisma.bOMItem.deleteMany({});
   await prisma.billOfMaterial.deleteMany({});
   await prisma.productMaster.deleteMany({});
+  await prisma.productionBatch.deleteMany({});
+
+  await prisma.jobWorkStatusHistory.deleteMany({});
+  await prisma.jobWorkReturnItem.deleteMany({});
+  await prisma.jobWorkIssueItem.deleteMany({});
+  await prisma.jobWorkOrder.deleteMany({});
+  await prisma.jobWorkChallan.deleteMany({});
+  await prisma.jobWorkCompany.deleteMany({});
 
   await prisma.materialIssue.deleteMany({});
   await prisma.workOrder.deleteMany({});
   await prisma.inventoryTransaction.deleteMany({});
   await prisma.inventoryBatch.deleteMany({});
   await prisma.rawMaterial.deleteMany({});
-
-  await prisma.productionBatch.deleteMany({});
-  await prisma.jobWorkCompany.deleteMany({});
   await prisma.storageLocation.deleteMany({});
   await prisma.supplier.deleteMany({});
   await prisma.category.deleteMany({});
   await prisma.unitOfMeasure.deleteMany({});
 
-  console.log('✅ Previous job work & material records cleared.');
+  await prisma.advanceRepayment.deleteMany({});
+  await prisma.employeeAdvance.deleteMany({});
+  await prisma.salarySlip.deleteMany({});
+  await prisma.salaryPayment.deleteMany({});
+  await prisma.salaryAdjustment.deleteMany({});
+  await prisma.payrollItem.deleteMany({});
+  await prisma.payrollDetail.deleteMany({});
+  await prisma.payrollRun.deleteMany({});
+  await prisma.salaryHistory.deleteMany({});
+  await prisma.salaryStructure.deleteMany({});
+  await prisma.attendanceLog.deleteMany({});
+  await prisma.employeeDocument.deleteMany({});
+  await prisma.user.deleteMany({});
+  await prisma.employee.deleteMany({});
+  await prisma.designation.deleteMany({});
+  await prisma.department.deleteMany({});
 
-  // 2. Ensure Admin User Exists
-  const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@manufacturing.com' },
-    update: {},
-    create: {
+  console.log('✅ Database completely wiped.');
+
+  // =========================================================================
+  // 2. DEPARTMENTS & DESIGNATIONS (5 records each)
+  // =========================================================================
+  console.log('🌱 [2/8] Seeding 5 Departments & 5 Designations...');
+
+  const departmentsData = [
+    { name: 'Spinning & Weaving', code: 'DEPT-SW', description: 'Raw cotton spinning, carding and grey fabric roll weaving' },
+    { name: 'Bleaching & Chemical Processing', code: 'DEPT-BC', description: 'Kier boiling, scouring, peroxide bleaching and washing' },
+    { name: 'Cutting & Bandage Slitting', code: 'DEPT-CS', description: 'High-speed roll slitting, cutting, folding and stitching' },
+    { name: 'Quality Assurance & Lab', code: 'DEPT-QC', description: 'Testing GSM, whiteness, absorbency time and microbiology QC' },
+    { name: 'Packaging & Warehouse', code: 'DEPT-PW', description: 'Sterilization pouch packing, boxing, bundling and dispatch' },
+  ];
+
+  const depts: Record<string, any> = {};
+  for (const d of departmentsData) {
+    const created = await prisma.department.create({ data: d });
+    depts[d.code] = created;
+  }
+
+  const designationsData = [
+    { name: 'Production Supervisor', code: 'DES-SUP', description: 'Oversees shop floor shifts, machines and attendance' },
+    { name: 'Master Weaver', code: 'DES-WV', description: 'Expert loom operator and woven fabric roll specialist' },
+    { name: 'Bleaching Technician', code: 'DES-BT', description: 'Kier boiling and chemical bleaching operator' },
+    { name: 'Quality Inspector', code: 'DES-QC', description: 'Laboratory quality testing and standard compliance' },
+    { name: 'Packaging Lead', code: 'DES-PK', description: 'Packaging line supervisor and bundle barcode verification' },
+  ];
+
+  const desigs: Record<string, any> = {};
+  for (const des of designationsData) {
+    const created = await prisma.designation.create({ data: des });
+    desigs[des.code] = created;
+  }
+
+  // =========================================================================
+  // 3. EMPLOYEES & USERS (5 realistic staff records with Daily Wages)
+  // =========================================================================
+  console.log('🌱 [3/8] Seeding 5 Staff Employees & User Accounts...');
+
+  const passwordHash = '$2a$10$IDSOiQ9lOn0VSIvu2xCLi.oZPOODTQp6hFSHAj/VDhOHrfatYaRGq'; // Admin@12345
+
+  const employeesData = [
+    {
+      employeeCode: 'EMP-001',
+      firstName: 'Ramesh',
+      lastName: 'Kumar',
+      phone: '+91 98430 11223',
+      email: 'ramesh.supervisor@manufacturing.com',
+      gender: 'Male',
+      joiningDate: new Date('2024-01-15'),
+      departmentId: depts['DEPT-SW'].id,
+      designationId: desigs['DES-SUP'].id,
+      salaryType: 'Daily Wage',
+      salaryCycle: 'WEEKLY',
+      baseWage: 900, // ₹900 per day
+      otRatePerHour: 150, // ₹150 / hr
+      bankName: 'State Bank of India',
+      bankAccountNo: '30491029381',
+      bankIfsc: 'SBIN0001234',
+      upiId: 'ramesh.kumar@oksbi',
+      role: UserRole.PRODUCTION_MANAGER,
+    },
+    {
+      employeeCode: 'EMP-002',
+      firstName: 'Suresh',
+      lastName: 'Patel',
+      phone: '+91 98421 22334',
+      email: 'suresh.weaver@manufacturing.com',
+      gender: 'Male',
+      joiningDate: new Date('2024-03-10'),
+      departmentId: depts['DEPT-SW'].id,
+      designationId: desigs['DES-WV'].id,
+      salaryType: 'Daily Wage',
+      salaryCycle: 'MONTHLY',
+      baseWage: 850, // ₹850 per day
+      otRatePerHour: 140, // ₹140 / hr
+      bankName: 'HDFC Bank',
+      bankAccountNo: '50100234567890',
+      bankIfsc: 'HDFC0000456',
+      upiId: 'suresh.weaver@okhdfcbank',
+      role: UserRole.JOB_WORK_MANAGER,
+    },
+    {
+      employeeCode: 'EMP-003',
+      firstName: 'Lakshmi',
+      lastName: 'Devi',
+      phone: '+91 97890 33445',
+      email: 'lakshmi.packaging@manufacturing.com',
+      gender: 'Female',
+      joiningDate: new Date('2024-06-01'),
+      departmentId: depts['DEPT-PW'].id,
+      designationId: desigs['DES-PK'].id,
+      salaryType: 'Daily Wage',
+      salaryCycle: 'WEEKLY',
+      baseWage: 750, // ₹750 per day
+      otRatePerHour: 120, // ₹120 / hr
+      bankName: 'Canara Bank',
+      bankAccountNo: '120938475610',
+      bankIfsc: 'CNRB0002345',
+      upiId: 'lakshmidevi@okaxis',
+      role: UserRole.WAREHOUSE_INCHARGE,
+    },
+    {
+      employeeCode: 'EMP-004',
+      firstName: 'Hari',
+      lastName: 'Bhaskar',
+      phone: '+91 94432 44556',
+      email: 'hari.bleach@manufacturing.com',
+      gender: 'Male',
+      joiningDate: new Date('2024-08-01'),
+      departmentId: depts['DEPT-BC'].id,
+      designationId: desigs['DES-BT'].id,
+      salaryType: 'Daily Wage',
+      salaryCycle: 'WEEKLY',
+      baseWage: 800, // ₹800 per day
+      otRatePerHour: 130, // ₹130 / hr
+      bankName: 'Indian Overseas Bank',
+      bankAccountNo: '045601000012345',
+      bankIfsc: 'IOBA0000456',
+      upiId: 'haribhaskar@ybl',
+      role: UserRole.PRODUCTION_MANAGER,
+    },
+    {
+      employeeCode: 'EMP-005',
+      firstName: 'Anitha',
+      lastName: 'Krishnan',
+      phone: '+91 98412 55667',
+      email: 'anitha.qc@manufacturing.com',
+      gender: 'Female',
+      joiningDate: new Date('2023-11-20'),
+      departmentId: depts['DEPT-QC'].id,
+      designationId: desigs['DES-QC'].id,
+      salaryType: 'Daily Wage',
+      salaryCycle: 'MONTHLY',
+      baseWage: 1000, // ₹1000 per day
+      otRatePerHour: 160, // ₹160 / hr
+      bankName: 'Axis Bank',
+      bankAccountNo: '918020034567890',
+      bankIfsc: 'UTIB0000789',
+      upiId: 'anitha.qc@okaxis',
+      role: UserRole.QC_INSPECTOR,
+    },
+  ];
+
+  const employees: Record<string, any> = {};
+  for (const empData of employeesData) {
+    const { role, ...empFields } = empData;
+    const emp = await prisma.employee.create({
+      data: {
+        ...empFields,
+        status: EmployeeStatus.ACTIVE,
+      },
+    });
+    employees[emp.employeeCode] = emp;
+
+    // Create User Account
+    await prisma.user.create({
+      data: {
+        email: emp.email!,
+        passwordHash,
+        role,
+        isActive: true,
+        employeeId: emp.id,
+      },
+    });
+
+    // Create Salary Structure
+    await prisma.salaryStructure.create({
+      data: {
+        employeeId: emp.id,
+        baseSalary: Number(emp.baseWage) * 26,
+        hra: 2000,
+        conveyance: 1000,
+        pfDeduction: 0,
+        esiDeduction: 0,
+      },
+    });
+  }
+
+  // Create Primary Admin User
+  const adminUser = await prisma.user.create({
+    data: {
       email: 'admin@manufacturing.com',
-      passwordHash: '$2b$10$EpRnTzVlqHNP0.fKbX26D.g7Fq2ZkXoV9N9/0YfM0eM.vN4mB6a/C', // bcrypt hash for Admin@12345
+      passwordHash,
       role: UserRole.ADMIN,
       isActive: true,
     },
   });
-  console.log('✔ Admin user ready:', adminUser.email);
+  console.log('✔ Master Admin User ready: admin@manufacturing.com / Admin@12345');
 
-  // 3. Seed Units of Measure
+  // =========================================================================
+  // 4. ATTENDANCE LOGS (5 distinct days per employee with IST timestamps)
+  // =========================================================================
+  console.log('🌱 [4/8] Seeding Attendance Logs (IST Shifts & OT)...');
+
+  // Dates: August 21 to 25, 2026
+  const attendanceDates = ['2026-08-21', '2026-08-22', '2026-08-23', '2026-08-24', '2026-08-25'];
+
+  for (const empCode of Object.keys(employees)) {
+    const emp = employees[empCode];
+    const isWeaver = empCode === 'EMP-002';
+    const isBleach = empCode === 'EMP-004';
+
+    for (let i = 0; i < attendanceDates.length; i++) {
+      const dateStr = attendanceDates[i];
+      const isSunday = i === 2; // Aug 23 was Sunday
+
+      let status: AttendanceStatus = AttendanceStatus.PRESENT;
+      let checkInStr: string | null = `${dateStr}T09:00:00+05:30`;
+      let lunchStartStr: string | null = `${dateStr}T13:30:00+05:30`;
+      let lunchEndStr: string | null = `${dateStr}T14:30:00+05:30`;
+      let checkOutStr: string | null = `${dateStr}T18:30:00+05:30`;
+      let workingHours = 8.5;
+      let overtimeHours = 0;
+      let otAmount = 0;
+
+      if (isSunday) {
+        status = AttendanceStatus.WEEKLY_OFF;
+        checkInStr = null;
+        lunchStartStr = null;
+        lunchEndStr = null;
+        checkOutStr = null;
+        workingHours = 0;
+      } else if (i === 1 && isWeaver) {
+        // Half day on Saturday for weaver
+        status = AttendanceStatus.HALF_DAY;
+        checkOutStr = `${dateStr}T13:45:00+05:30`;
+        workingHours = 4.25;
+      } else if (i === 4 && isBleach) {
+        // Overtime shift (worked till 08:30 PM = 2 hours OT)
+        checkOutStr = `${dateStr}T20:30:00+05:30`;
+        workingHours = 8.5;
+        overtimeHours = 2.0;
+        otAmount = 2.0 * Number(emp.otRatePerHour);
+      } else if (i === 0 && empCode === 'EMP-001') {
+        // Ramesh worked 1.5h OT on Friday
+        checkOutStr = `${dateStr}T20:00:00+05:30`;
+        workingHours = 8.5;
+        overtimeHours = 1.5;
+        otAmount = 1.5 * Number(emp.otRatePerHour);
+      }
+
+      await prisma.attendanceLog.create({
+        data: {
+          employeeId: emp.id,
+          date: new Date(dateStr),
+          status,
+          checkIn: checkInStr ? new Date(checkInStr) : null,
+          lunchStart: lunchStartStr ? new Date(lunchStartStr) : null,
+          lunchEnd: lunchEndStr ? new Date(lunchEndStr) : null,
+          checkOut: checkOutStr ? new Date(checkOutStr) : null,
+          workingHours,
+          overtimeHours,
+          otAmount,
+          remarks: overtimeHours > 0 ? `Urgent production shift (+${overtimeHours}h OT)` : 'Regular shift',
+        },
+      });
+    }
+  }
+
+  // =========================================================================
+  // 5. EMPLOYEE ADVANCES, REPAYMENTS & SALARY SETTLEMENTS (3-5 records)
+  // =========================================================================
+  console.log('🌱 [5/8] Seeding Employee Advances & Payment Settlements...');
+
+  // Advance 1: Ramesh Kumar ₹5,000 (Active, ₹500/week deduction, ₹1,000 repaid)
+  const adv1 = await prisma.employeeAdvance.create({
+    data: {
+      employeeId: employees['EMP-001'].id,
+      amount: 5000,
+      repaidAmount: 1000,
+      balanceAmount: 4000,
+      weeklyDeduction: 500,
+      reason: 'Medical Emergency Loan',
+      status: 'ACTIVE',
+      issueDate: new Date('2026-08-01'),
+      createdByUserId: adminUser.id,
+    },
+  });
+
+  await prisma.advanceRepayment.create({
+    data: {
+      advanceId: adv1.id,
+      employeeId: employees['EMP-001'].id,
+      amount: 1000,
+      paymentMethod: PaymentMethod.CASH,
+      repaymentDate: new Date('2026-08-15'),
+      notes: 'Weekly cash installment repayment (2 weeks)',
+      recordedByUserId: adminUser.id,
+    },
+  });
+
+  // Advance 2: Lakshmi Devi ₹3,000 (Active, ₹500/week deduction)
+  const adv2 = await prisma.employeeAdvance.create({
+    data: {
+      employeeId: employees['EMP-003'].id,
+      amount: 3000,
+      repaidAmount: 500,
+      balanceAmount: 2500,
+      weeklyDeduction: 500,
+      reason: 'School Fees Advance',
+      status: 'ACTIVE',
+      issueDate: new Date('2026-08-10'),
+      createdByUserId: adminUser.id,
+    },
+  });
+
+  await prisma.advanceRepayment.create({
+    data: {
+      advanceId: adv2.id,
+      employeeId: employees['EMP-003'].id,
+      amount: 500,
+      paymentMethod: PaymentMethod.CASH,
+      repaymentDate: new Date('2026-08-17'),
+      notes: 'Weekly deduction',
+      recordedByUserId: adminUser.id,
+    },
+  });
+
+  // Advance 3: Suresh Patel ₹2,000 (Fully Repaid)
+  const adv3 = await prisma.employeeAdvance.create({
+    data: {
+      employeeId: employees['EMP-002'].id,
+      amount: 2000,
+      repaidAmount: 2000,
+      balanceAmount: 0,
+      weeklyDeduction: 500,
+      reason: 'Travel Expense Advance',
+      status: 'FULLY_REPAID',
+      issueDate: new Date('2026-07-01'),
+      createdByUserId: adminUser.id,
+    },
+  });
+
+  // Payroll Run: July 2026 Monthly Run (Approved & Paid)
+  const payrollRun = await prisma.payrollRun.create({
+    data: {
+      payrollCode: 'PAY-2026-07-M',
+      month: 7,
+      year: 2026,
+      periodType: 'MONTHLY',
+      totalEmployees: 5,
+      totalGross: 115000,
+      totalDeductions: 2000,
+      totalBonus: 0,
+      totalOvertime: 4500,
+      totalNet: 117500,
+      status: PayrollStatus.PAID,
+      remarks: 'July 2026 Monthly Staff & Operator Salary Run',
+      generatedByUserId: adminUser.id,
+      approvedByUserId: adminUser.id,
+    },
+  });
+
+  // Payroll Items & Payments for July
+  for (const empCode of Object.keys(employees)) {
+    const emp = employees[empCode];
+    const item = await prisma.payrollItem.create({
+      data: {
+        payrollRunId: payrollRun.id,
+        employeeId: emp.id,
+        salaryType: emp.salaryType || 'Daily Wage',
+        periodType: 'MONTHLY',
+        baseWage: Number(emp.baseWage),
+        workingDaysInMonth: 26,
+        presentDays: 24,
+        absentDays: 2,
+        halfDays: 0,
+        leaveDays: 0,
+        holidayCount: 0,
+        weeklyOffCount: 4,
+        payableDays: 24,
+        basicSalary: 24 * Number(emp.baseWage),
+        overtimeHours: 6.0,
+        overtimeRate: Number(emp.otRatePerHour),
+        overtimeSalary: 6.0 * Number(emp.otRatePerHour),
+        grossSalary: 24 * Number(emp.baseWage) + 6.0 * Number(emp.otRatePerHour),
+        advanceDeduction: empCode === 'EMP-002' ? 2000 : 0,
+        totalDeductions: empCode === 'EMP-002' ? 2000 : 0,
+        netSalary: 24 * Number(emp.baseWage) + 6.0 * Number(emp.otRatePerHour) - (empCode === 'EMP-002' ? 2000 : 0),
+        status: PayrollStatus.PAID,
+      },
+    });
+
+    // Create Payment Record
+    await prisma.salaryPayment.create({
+      data: {
+        employeeId: emp.id,
+        payrollItemId: item.id,
+        paymentType: 'FULL_SETTLEMENT',
+        amount: item.netSalary,
+        paymentMethod: PaymentMethod.BANK_TRANSFER,
+        transactionRef: `NEFT-202607-${emp.employeeCode}`,
+        paymentDate: new Date('2026-08-01'),
+        remarks: `July 2026 Salary Settlement for ${emp.firstName}`,
+        paidByUserId: adminUser.id,
+      },
+    });
+  }
+
+  // =========================================================================
+  // 6. UNITS, CATEGORIES, STORAGE LOCATIONS & SUPPLIERS (5 records each)
+  // =========================================================================
+  console.log('🌱 [6/8] Seeding Masters: Units, Categories, Locations, Suppliers...');
+
   const unitsData = [
     { name: 'Kilogram', abbreviation: 'Kg' },
+    { name: 'Meter', abbreviation: 'm' },
     { name: 'Roll', abbreviation: 'Roll' },
-    { name: 'Meter', abbreviation: 'Meter' },
     { name: 'Piece', abbreviation: 'Pcs' },
-    { name: 'Pack', abbreviation: 'Pack' },
-    { name: 'Liter', abbreviation: 'Liter' },
     { name: 'Carton Box', abbreviation: 'Box' },
-    { name: 'Kit / Set', abbreviation: 'Set' },
   ];
 
-  const units: Record<string, string> = {};
+  const uoms: Record<string, string> = {};
   for (const u of unitsData) {
     const created = await prisma.unitOfMeasure.create({ data: u });
-    units[u.abbreviation] = created.id;
+    uoms[u.abbreviation] = created.id;
   }
-  console.log('✔ Units of Measure seeded.');
 
-  // 4. Seed Product & Material Master Categories
   const categoriesData = [
-    { name: 'Dressing Care / Surgical Products', description: 'Gauze bandages, X-ray detectable swabs, cotton rolls & balls' },
-    { name: 'Patient Safety & Hygienic Care', description: 'Surgeon gowns, disposable bed spreads, Knee-O drapes, drape packs & surgery kits' },
-    { name: "Women's Care", description: 'Maternity sanitary pads, delivery mats, period panties, underpads, bamboo & anion pads' },
-    { name: 'Adult Care', description: 'Fresh Feel adult diapers & Dr.C premium pullups (M, L, XL)' },
-    { name: 'Baby Care', description: 'Babio wet towels, natural dry mats & BeBe baby diapers (NB to XL)' },
-    { name: 'Mosquito Protection', description: 'Z Guard natural repellent spray (Lemongrass, Tulasi, Neem)' },
-    { name: 'Raw Materials - Textile & Cotton', description: 'Raw combed cotton, grey gauze woven fabric, bleached gauze & spandex yarn' },
-    { name: 'Raw Materials - Non-Wovens & Films', description: 'SMS medical non-woven, Spunbond PP, PE breathable film, fluff pulp & SAP' },
-    { name: 'Raw Materials - Liquids & Botanicals', description: 'Essential oils (Lemongrass, Tulasi, Neem) and Aloe Vera formulation base' },
-    { name: 'Packaging & Components', description: 'Mist spray bottles, sterilization pouches, adhesive fenestration tape & cartons' },
+    { name: 'Raw Cotton & Textile Yarn', description: 'High-grade combed cotton bales, grey yarn and woven gauze' },
+    { name: 'Bleached Medical Gauze & Fabrics', description: 'Scoured and peroxide-bleached medical gauze fabrics' },
+    { name: 'Non-Wovens & Films', description: 'SMS polypropylene, breathable PE film and spunbond fabrics' },
+    { name: 'Packaging Materials', description: 'Sterilization pouches, cartons, fenestration tape and rolls' },
+    { name: 'Finished Surgical Products', description: 'Sterile gauze swabs, roller bandages, gamjee pads and kits' },
   ];
 
-  const categories: Record<string, string> = {};
+  const cats: Record<string, string> = {};
   for (const c of categoriesData) {
     const created = await prisma.category.create({ data: c });
-    categories[c.name] = created.id;
+    cats[c.name] = created.id;
   }
-  console.log('✔ Master Categories seeded.');
 
-  // 5. Seed Storage Locations
   const locationsData = [
-    { code: 'LOC-RM-COTTON', name: 'Raw Cotton & Yarn Store', warehouseZone: 'Zone A', description: 'Combed cotton bales and grey fabric rolls bin' },
-    { code: 'LOC-RM-NONWOVEN', name: 'Non-Woven & Film Warehouse', warehouseZone: 'Zone B', description: 'SMS fabrics, PP rolls, fluff pulp & SAP polymer silos' },
-    { code: 'LOC-RM-BOTANICAL', name: 'Essential Oils & Liquid Vault', warehouseZone: 'Zone C', description: 'Lemongrass, Tulasi, Neem extract oils & formulation base' },
-    { code: 'LOC-PKG-DEPOT', name: 'Packaging Depot & Bottles', warehouseZone: 'Zone D', description: 'Spray bottles, mist pumps, pouches & master cartons' },
-    { code: 'LOC-FG-MAIN', name: 'Finished Goods Central Warehouse', warehouseZone: 'Zone E', description: 'Sterilized medical supplies and packaged hygiene care items' },
+    { code: 'LOC-RM-01', name: 'Raw Cotton Warehouse', warehouseZone: 'Zone A', description: 'Bale storage and grey roll staging' },
+    { code: 'LOC-PR-02', name: 'Bleaching & Chemical Bay', warehouseZone: 'Zone B', description: 'Kier boiling and scouring chemical vault' },
+    { code: 'LOC-NW-03', name: 'Non-Woven & Fabric Store', warehouseZone: 'Zone C', description: 'SMS fabrics, PP rolls and films' },
+    { code: 'LOC-PK-04', name: 'Packaging Depot', warehouseZone: 'Zone D', description: 'Corrugated cartons, rolls and pouches' },
+    { code: 'LOC-FG-05', name: 'Finished Goods Warehouse', warehouseZone: 'Zone E', description: 'Sterilized medical supplies ready for dispatch' },
   ];
 
-  const storageLocations: Record<string, string> = {};
+  const locs: Record<string, string> = {};
   for (const loc of locationsData) {
     const created = await prisma.storageLocation.create({ data: loc });
-    storageLocations[loc.code] = created.id;
+    locs[loc.code] = created.id;
   }
-  console.log('✔ Storage Locations seeded.');
 
-  // 6. Seed Suppliers
   const suppliersData = [
     {
-      code: 'SUP-COTTON-01',
+      code: 'SUP-001',
       name: 'Coimbatore Cotton Mills Ltd',
       contactPerson: 'S. K. Raman',
-      phone: '9843012345',
+      phone: '+91 98430 12345',
       email: 'sales@coimbatorecotton.com',
       gstin: '33AAACC1234A1Z1',
       address: 'Industrial Belt, Coimbatore, Tamil Nadu',
     },
     {
-      code: 'SUP-NONWOVEN-02',
+      code: 'SUP-002',
       name: 'Supreme Medical Nonwovens Pvt Ltd',
       contactPerson: 'R. Rajesh',
-      phone: '9842188442',
+      phone: '+91 98421 88442',
       email: 'orders@supremenonwovens.com',
       gstin: '33BBBDD4321B1Z4',
       address: 'SIPCOT Industrial Park, Perundurai, Tamil Nadu',
     },
     {
-      code: 'SUP-POLYMERS-03',
+      code: 'SUP-003',
       name: 'Reliance Hygiene Polymers & Films',
       contactPerson: 'Amitabh Sen',
-      phone: '9988776655',
+      phone: '+91 99887 76655',
       email: 'hygiene.supplies@reliancepolymers.com',
       gstin: '27AABCR1234C1Z9',
       address: 'Petrochemical Complex, Hazira, Gujarat',
     },
     {
-      code: 'SUP-HERBAL-04',
-      name: 'Nilgiri Botanical & Aroma Extracts Ltd',
+      code: 'SUP-004',
+      name: 'Nilgiri Botanical Extracts Ltd',
       contactPerson: 'V. Sundaram',
-      phone: '9443190876',
+      phone: '+91 94431 90876',
       email: 'botanicals@nilgiriaroma.in',
       gstin: '33CCCEE9876D1Z3',
-      address: 'Tea Estate Road, Ooty, Nilgiris, Tamil Nadu',
+      address: 'Tea Estate Road, Ooty, Tamil Nadu',
     },
     {
-      code: 'SUP-PACK-05',
-      name: 'Global Medical Packaging & Containers Ltd',
+      code: 'SUP-005',
+      name: 'Global Medical Packaging Ltd',
       contactPerson: 'P. Murugesan',
-      phone: '9841239900',
+      phone: '+91 98412 39900',
       email: 'contact@globalmedpack.in',
       gstin: '33FFFGG7654E1Z8',
       address: 'Ambattur Industrial Estate, Chennai, Tamil Nadu',
     },
   ];
 
-  const suppliers: Record<string, string> = {};
+  const sups: Record<string, string> = {};
   for (const s of suppliersData) {
     const created = await prisma.supplier.create({ data: s });
-    suppliers[s.code] = created.id;
+    sups[s.code] = created.id;
   }
-  console.log('✔ Suppliers seeded.');
 
-  // 7. Seed Job Work Subcontractor Companies
-  const jwCompaniesData = [
-    {
-      companyName: 'Sri Lakshmi Bleaching & Scouring Works',
-      contactPerson: 'K. Rajendran',
-      phone: '9842100912',
-      email: 'contact@lakshmibleaching.com',
-      gstin: '33AAAAA0000A1Z5',
-      address: '12/4 Industrial Estate, Erode, Tamil Nadu',
-      creditDays: 30,
-    },
-    {
-      companyName: 'Apex Medical Sterilization & Gamma Processing',
-      contactPerson: 'Dr. N. Swaminathan',
-      phone: '9442551122',
-      email: 'sterilization@apexgamma.com',
-      gstin: '33GGGGG8888G1Z1',
-      address: 'Plot 45, SIPCOT Phase II, Hosur, Tamil Nadu',
-      creditDays: 30,
-    },
-    {
-      companyName: 'Tirupur Elastic & Webbing Mills',
-      contactPerson: 'M. Shanmugam',
-      phone: '9443209123',
-      email: 'info@tirupurelastic.in',
-      gstin: '33BBBBB1111B1Z2',
-      address: '45 Weavers Colony, Tirupur, Tamil Nadu',
-      creditDays: 45,
-    },
-    {
-      companyName: 'Deccan Non-Woven Converting & Lamination Works',
-      contactPerson: 'S. Balamurugan',
-      phone: '9789012345',
-      email: 'converting@deccannonwoven.com',
-      gstin: '33CCCCC2222C1Z6',
-      address: 'Sulur Industrial Area, Coimbatore, Tamil Nadu',
-      creditDays: 30,
-    },
-  ];
+  // =========================================================================
+  // 7. RAW MATERIALS & INVENTORY BATCHES (5 records)
+  // =========================================================================
+  console.log('🌱 [7/8] Seeding 5 Core Raw Materials & Batches...');
 
-  const jwCompanies: Record<string, string> = {};
-  for (const jwc of jwCompaniesData) {
-    const created = await prisma.jobWorkCompany.create({ data: jwc });
-    jwCompanies[jwc.companyName] = created.id;
-  }
-  console.log('✔ Job Work Subcontractors seeded.');
-
-  // 8. Seed Raw Materials (Essential Components & Ingredients)
   const rawMaterialsData = [
-    // Cotton & Textile RMs
     {
-      sku: 'RM-COTTON-RAW',
+      sku: 'RM-COT-001',
       name: 'Raw Cotton 100% Combed Medical Grade',
-      description: 'High-grade long-staple combed cotton bales for absorbent balls & surgical rolls',
+      description: 'Long-staple combed cotton bales for absorbent balls and surgical rolls',
       hsnCode: '520100',
-      min: 1500,
-      max: 15000,
-      stock: 6800,
-      unitCost: 135.0,
-      cat: 'Raw Materials - Textile & Cotton',
-      uom: 'Kg',
-      sup: 'SUP-COTTON-01',
-      loc: 'LOC-RM-COTTON',
-    },
-    {
-      sku: 'RM-GAUZE-GREY',
-      name: 'Grey Woven Gauze Fabric Roll 48 Inch',
-      description: 'Unbleached grey gauze fabric rolls for scouring, bleaching & bandage conversion',
-      hsnCode: '520811',
-      min: 1000,
-      max: 10000,
-      stock: 4500,
-      unitCost: 145.0,
-      cat: 'Raw Materials - Textile & Cotton',
-      uom: 'Kg',
-      sup: 'SUP-COTTON-01',
-      loc: 'LOC-RM-COTTON',
-    },
-    {
-      sku: 'RM-GAUZE-BLEACH',
-      name: 'Bleached Gauze Fabric Roll 48 Inch (Medical Grade)',
-      description: 'Pharmacopoeia-grade scoured and bleached medical gauze roll (Ready for slitting)',
-      hsnCode: '300590',
-      min: 800,
-      max: 8000,
-      stock: 3200,
-      unitCost: 190.0,
-      cat: 'Raw Materials - Textile & Cotton',
-      uom: 'Kg',
-      sup: 'SUP-COTTON-01',
-      loc: 'LOC-RM-COTTON',
-    },
-    {
-      sku: 'RM-SPANDEX-YARN',
-      name: 'Polyurethane Spandex Elastic Yarn',
-      description: 'High elasticity Spandex yarn for elastic securing gauze bandages and pullup waist panels',
-      hsnCode: '540244',
-      min: 200,
-      max: 2000,
-      stock: 850,
-      unitCost: 320.0,
-      cat: 'Raw Materials - Textile & Cotton',
-      uom: 'Kg',
-      sup: 'SUP-COTTON-01',
-      loc: 'LOC-RM-COTTON',
-    },
-    {
-      sku: 'RM-XRAY-FILAMENT',
-      name: 'Barium Sulphate X-Ray Detectable Filament',
-      description: 'Radio-opaque barium sulphate monofilament thread for surgical gauze swabs',
-      hsnCode: '283321',
-      min: 100,
-      max: 1000,
-      stock: 380,
-      unitCost: 480.0,
-      cat: 'Raw Materials - Textile & Cotton',
-      uom: 'Kg',
-      sup: 'SUP-NONWOVEN-02',
-      loc: 'LOC-RM-COTTON',
-    },
-
-    // Non-Woven & Polymer RMs
-    {
-      sku: 'RM-SMS-FABRIC-45',
-      name: 'SMS Non-Woven Medical Blue Fabric 45 GSM',
-      description: 'Spunbond-Meltblown-Spunbond fluid-resistant medical grade fabric for Surgeon Gowns & Drape Packs',
-      hsnCode: '560312',
-      min: 1200,
-      max: 12000,
-      stock: 5400,
-      unitCost: 210.0,
-      cat: 'Raw Materials - Non-Wovens & Films',
-      uom: 'Kg',
-      sup: 'SUP-NONWOVEN-02',
-      loc: 'LOC-RM-NONWOVEN',
-    },
-    {
-      sku: 'RM-SPUNBOND-PP-30',
-      name: 'Spunbond Polypropylene (PP) Fabric 30 GSM',
-      description: 'Hydrophilic breathable PP non-woven for bed spreads, pillow covers & hygiene topsheets',
-      hsnCode: '560312',
-      min: 1000,
-      max: 10000,
-      stock: 4900,
-      unitCost: 175.0,
-      cat: 'Raw Materials - Non-Wovens & Films',
-      uom: 'Kg',
-      sup: 'SUP-NONWOVEN-02',
-      loc: 'LOC-RM-NONWOVEN',
-    },
-    {
-      sku: 'RM-PE-FILM-BREATH',
-      name: 'Laminated PE Breathable Backsheet Film Roll',
-      description: 'Impermeable microporous backsheet film for Poly Aprons, Underpads, Adult Diapers & Delivery Mats',
-      hsnCode: '392010',
-      min: 800,
-      max: 8000,
-      stock: 3800,
-      unitCost: 195.0,
-      cat: 'Raw Materials - Non-Wovens & Films',
-      uom: 'Kg',
-      sup: 'SUP-POLYMERS-03',
-      loc: 'LOC-RM-NONWOVEN',
-    },
-    {
-      sku: 'RM-FLUFF-PULP',
-      name: 'Super Bleached Untreated Fluff Pulp Rolls',
-      description: 'Elemental chlorine-free softwood fluff pulp roll for high absorbency pads & diapers',
-      hsnCode: '470321',
-      min: 2000,
-      max: 20000,
-      stock: 8900,
-      unitCost: 95.0,
-      cat: 'Raw Materials - Non-Wovens & Films',
-      uom: 'Kg',
-      sup: 'SUP-POLYMERS-03',
-      loc: 'LOC-RM-NONWOVEN',
-    },
-    {
-      sku: 'RM-SAP-POLYMER',
-      name: 'Super Absorbent Polymer (SAP) Sodium Polyacrylate',
-      description: 'Ultra-absorbent crosslinked polymer granules with 50x retention capacity for hygiene pads & diapers',
-      hsnCode: '390690',
-      min: 1000,
-      max: 10000,
-      stock: 4300,
-      unitCost: 240.0,
-      cat: 'Raw Materials - Non-Wovens & Films',
-      uom: 'Kg',
-      sup: 'SUP-POLYMERS-03',
-      loc: 'LOC-RM-NONWOVEN',
-    },
-    {
-      sku: 'RM-BAMBOO-NONWOVEN',
-      name: '100% Bamboo Natural Fibre Non-Woven Sheet',
-      description: 'Biodegradable, antibacterial organic bamboo fibre non-woven roll for Bamboo Sanitary Pads',
-      hsnCode: '560392',
       min: 500,
       max: 5000,
-      stock: 2100,
-      unitCost: 260.0,
-      cat: 'Raw Materials - Non-Wovens & Films',
+      stock: 1500,
+      unitCost: 135,
+      cat: 'Raw Cotton & Textile Yarn',
       uom: 'Kg',
-      sup: 'SUP-NONWOVEN-02',
-      loc: 'LOC-RM-NONWOVEN',
+      sup: 'SUP-001',
+      loc: 'LOC-RM-01',
     },
     {
-      sku: 'RM-ANION-STRIP',
-      name: 'Far-Infrared Anion Negative Ion Chip Strip',
-      description: 'Negative ion infused tourmaline chip strip for Anion Sanitary Pads with antibacterial protection',
-      hsnCode: '842139',
-      min: 3000,
-      max: 30000,
-      stock: 16500,
-      unitCost: 8.5,
-      cat: 'Raw Materials - Non-Wovens & Films',
-      uom: 'Meter',
-      sup: 'SUP-NONWOVEN-02',
-      loc: 'LOC-RM-NONWOVEN',
-    },
-    {
-      sku: 'RM-SPUNLACE-WIPE',
-      name: 'Cross-Lapped Spunlace Viscose Wipe Fabric Roll 50 GSM',
-      description: 'Extra soft textured viscose/polyester blend fabric for Babio Baby Wet Towels',
-      hsnCode: '560392',
-      min: 600,
-      max: 6000,
-      stock: 2600,
-      unitCost: 230.0,
-      cat: 'Raw Materials - Non-Wovens & Films',
+      sku: 'RM-GAU-002',
+      name: 'Grey Woven Gauze Fabric Roll 48"',
+      description: 'Unbleached grey gauze rolls ready for scouring and bleaching',
+      hsnCode: '520811',
+      min: 300,
+      max: 3000,
+      stock: 800,
+      unitCost: 145,
+      cat: 'Raw Cotton & Textile Yarn',
       uom: 'Kg',
-      sup: 'SUP-NONWOVEN-02',
-      loc: 'LOC-RM-NONWOVEN',
-    },
-
-    // Botanical & Liquid Formulations
-    {
-      sku: 'RM-OIL-LEMONGRASS',
-      name: 'Pure Natural Lemon Grass Essential Oil',
-      description: 'Steam-distilled 100% pure Cymbopogon Citratus oil for Z Guard mosquito repellent',
-      hsnCode: '330129',
-      min: 50,
-      max: 500,
-      stock: 190,
-      unitCost: 1450.0,
-      cat: 'Raw Materials - Liquids & Botanicals',
-      uom: 'Liter',
-      sup: 'SUP-HERBAL-04',
-      loc: 'LOC-RM-BOTANICAL',
+      sup: 'SUP-001',
+      loc: 'LOC-RM-01',
     },
     {
-      sku: 'RM-OIL-TULASI',
-      name: 'Pure Tulasi (Holy Basil) Extract Oil',
-      description: 'Ocimum Sanctum therapeutic active extract for antibacterial soothing repellent formulation',
-      hsnCode: '330129',
-      min: 30,
-      max: 300,
-      stock: 110,
-      unitCost: 2200.0,
-      cat: 'Raw Materials - Liquids & Botanicals',
-      uom: 'Liter',
-      sup: 'SUP-HERBAL-04',
-      loc: 'LOC-RM-BOTANICAL',
+      sku: 'RM-BLG-003',
+      name: 'Bleached Medical Gauze Roll 48"',
+      description: 'Pharmacopoeia-grade scoured and bleached surgical gauze fabric',
+      hsnCode: '300590',
+      min: 250,
+      max: 2500,
+      stock: 650,
+      unitCost: 190,
+      cat: 'Bleached Medical Gauze & Fabrics',
+      uom: 'Kg',
+      sup: 'SUP-001',
+      loc: 'LOC-PR-02',
     },
     {
-      sku: 'RM-OIL-NEEM',
-      name: 'Pure Cold-Pressed Neem Seed Oil',
-      description: 'Azadirachta Indica organic cold-pressed oil with high azadirachtin repellent efficacy',
-      hsnCode: '151590',
-      min: 80,
-      max: 800,
-      stock: 350,
-      unitCost: 450.0,
-      cat: 'Raw Materials - Liquids & Botanicals',
-      uom: 'Liter',
-      sup: 'SUP-HERBAL-04',
-      loc: 'LOC-RM-BOTANICAL',
+      sku: 'RM-SMS-004',
+      name: 'Medical Grade SMS Non-Woven 45 GSM',
+      description: 'Hydrophobic 3-ply SMS non-woven fabric for surgical drapes and gowns',
+      hsnCode: '560312',
+      min: 200,
+      max: 2000,
+      stock: 500,
+      unitCost: 210,
+      cat: 'Non-Wovens & Films',
+      uom: 'Kg',
+      sup: 'SUP-002',
+      loc: 'LOC-NW-03',
     },
     {
-      sku: 'RM-ALOE-BASE',
-      name: 'Purified Aloe Vera & Chamomile Liquid Base',
-      description: 'Hypoallergenic soothing formulation lotion base for Babio Baby Wet Towels',
-      hsnCode: '330499',
-      min: 150,
-      max: 1500,
-      stock: 720,
-      unitCost: 160.0,
-      cat: 'Raw Materials - Liquids & Botanicals',
-      uom: 'Liter',
-      sup: 'SUP-HERBAL-04',
-      loc: 'LOC-RM-BOTANICAL',
-    },
-
-    // Packaging & Auxiliary Components
-    {
-      sku: 'RM-BOTTLE-SPRAY-100',
-      name: 'HDPE 100ml Spray Bottle with Fine Mist Pump',
-      description: 'Opaque protective HDPE dispenser bottle with ergonomic mist nozzle for Z Guard Spray',
-      hsnCode: '392330',
-      min: 3000,
-      max: 30000,
-      stock: 13500,
-      unitCost: 12.0,
-      cat: 'Packaging & Components',
+      sku: 'PKG-BOX-005',
+      name: 'Corrugated 5-Ply Master Carton Box',
+      description: 'Heavy duty corrugated export box for surgical bandage packing',
+      hsnCode: '481910',
+      min: 100,
+      max: 1000,
+      stock: 400,
+      unitCost: 35,
+      cat: 'Packaging Materials',
       uom: 'Pcs',
-      sup: 'SUP-PACK-05',
-      loc: 'LOC-PKG-DEPOT',
-    },
-    {
-      sku: 'RM-ADHESIVE-TAPE',
-      name: 'Medical Grade Fenestration Adhesive Tape Roll',
-      description: 'Skin-friendly hypoallergenic transfer tape for surgical drapes & center hole sheets',
-      hsnCode: '300510',
-      min: 1500,
-      max: 15000,
-      stock: 6500,
-      unitCost: 15.0,
-      cat: 'Packaging & Components',
-      uom: 'Meter',
-      sup: 'SUP-PACK-05',
-      loc: 'LOC-PKG-DEPOT',
-    },
-    {
-      sku: 'RM-POUCH-STERILE',
-      name: 'Medical Grade Tyvek / Poly Sterilization Pouches',
-      description: 'Steam/ETO gas indicator peelable sterile pouches for kits and surgical swabs',
-      hsnCode: '392329',
-      min: 5000,
-      max: 50000,
-      stock: 28000,
-      unitCost: 4.5,
-      cat: 'Packaging & Components',
-      uom: 'Pcs',
-      sup: 'SUP-PACK-05',
-      loc: 'LOC-PKG-DEPOT',
+      sup: 'SUP-005',
+      loc: 'LOC-PK-04',
     },
   ];
 
-  const createdRawMaterials: Record<string, any> = {};
+  const rawMaterials: Record<string, any> = {};
   for (const rm of rawMaterialsData) {
     const created = await prisma.rawMaterial.create({
       data: {
@@ -527,1027 +655,416 @@ async function main() {
         hsnCode: rm.hsnCode,
         minimumStockLevel: rm.min,
         maximumStockLevel: rm.max,
-        reorderQuantity: rm.min * 1.5,
+        reorderQuantity: rm.min * 2,
         currentStockBalance: rm.stock,
         unitCost: rm.unitCost,
         lastPurchaseRate: rm.unitCost,
         avgCost: rm.unitCost,
-        gstRate: 12.0,
-        categoryId: categories[rm.cat],
-        unitId: units[rm.uom],
-        supplierId: suppliers[rm.sup],
-        storageLocationId: storageLocations[rm.loc],
+        gstRate: 5.0,
+        categoryId: cats[rm.cat],
+        unitId: uoms[rm.uom],
+        supplierId: sups[rm.sup],
+        storageLocationId: locs[rm.loc],
       },
     });
-    createdRawMaterials[rm.sku] = created;
+    rawMaterials[rm.sku] = created;
 
-    // Log Opening Inventory Balance Transaction
+    // Create Initial Batch
+    const batch = await prisma.inventoryBatch.create({
+      data: {
+        rawMaterialId: created.id,
+        batchNumber: `BAT-2026-${rm.sku.slice(-3)}`,
+        quantityReceived: rm.stock,
+        quantityRemaining: rm.stock,
+        receivedDate: new Date('2026-08-01'),
+        supplierInvoiceRef: `INV-2026-${rm.sku.slice(-3)}`,
+      },
+    });
+
+    // Create Inventory Transaction
     await prisma.inventoryTransaction.create({
       data: {
         rawMaterialId: created.id,
+        batchId: batch.id,
         transactionType: TransactionType.PURCHASE_RECEIPT,
         quantity: rm.stock,
         previousStock: 0,
         newStock: rm.stock,
         unitPrice: rm.unitCost,
-        referenceNumber: `INV-OPENING-${rm.sku.slice(-6)}`,
-        notes: `Opening inventory batch intake - Verified physical warehouse audit`,
+        referenceNumber: `GRN-2026-${rm.sku.slice(-3)}`,
+        referenceDocumentType: 'PURCHASE_ORDER',
+        notes: `Initial stock receipt of ${rm.name}`,
         createdByUserId: adminUser.id,
       },
     });
   }
-  console.log('✔ All Raw Materials & Opening Ledger seeded.');
 
-  // 9. Seed Authentic Finished Products Catalogue (Master Products + Inventory Representation + BOM)
-  const finishedProductsCatalog = [
-    // 🏥 1. Dressing Care / Surgical Products
-    {
-      code: 'FP-GAUZE-BANDAGE',
-      name: 'Elastic Securing Gauze Bandage',
-      cat: 'Dressing Care / Surgical Products',
-      hsn: '300590',
-      uom: 'Roll',
-      price: 45.0,
-      stock: 3500,
-      min: 500,
-      desc: 'High-elasticity securing gauze bandage for orthopedic & wound dressing support',
-      bom: [
-        { mat: 'Bleached Gauze Fabric Roll 48 Inch (Medical Grade)', qty: 0.08, uom: 'Kg' },
-        { mat: 'Polyurethane Spandex Elastic Yarn', qty: 0.02, uom: 'Kg' },
-      ],
-    },
-    {
-      code: 'FP-XRAY-SWABS',
-      name: 'Absorbent X-Ray Detectable Gauze Swabs',
-      cat: 'Dressing Care / Surgical Products',
-      hsn: '300590',
-      uom: 'Pack',
-      price: 120.0,
-      stock: 2200,
-      min: 300,
-      desc: '100% cotton sterile gauze swabs woven with radio-opaque barium sulphate X-ray filament',
-      bom: [
-        { mat: 'Bleached Gauze Fabric Roll 48 Inch (Medical Grade)', qty: 0.15, uom: 'Kg' },
-        { mat: 'Barium Sulphate X-Ray Detectable Filament', qty: 0.01, uom: 'Kg' },
-        { mat: 'Medical Grade Tyvek / Poly Sterilization Pouches', qty: 1, uom: 'Pcs' },
-      ],
-    },
-    {
-      code: 'FP-COTTON-ROLLS',
-      name: 'Cotton Rolls',
-      cat: 'Dressing Care / Surgical Products',
-      hsn: '300590',
-      uom: 'Roll',
-      price: 180.0,
-      stock: 1800,
-      min: 250,
-      desc: '500g high absorbency surgical cotton rolls conforming to pharmacopoeia standards',
-      bom: [
-        { mat: 'Raw Cotton 100% Combed Medical Grade', qty: 0.52, uom: 'Kg' },
-      ],
-    },
-    {
-      code: 'FP-COTTON-BALLS',
-      name: 'Cotton Balls',
-      cat: 'Dressing Care / Surgical Products',
-      hsn: '300590',
-      uom: 'Pack',
-      price: 65.0,
-      stock: 4500,
-      min: 600,
-      desc: 'Ultra soft pre-formed absorbent cotton balls for antiseptic application & cleansing',
-      bom: [
-        { mat: 'Raw Cotton 100% Combed Medical Grade', qty: 0.18, uom: 'Kg' },
-        { mat: 'Medical Grade Tyvek / Poly Sterilization Pouches', qty: 1, uom: 'Pcs' },
-      ],
-    },
+  // =========================================================================
+  // 8. SUBCONTRACTING JOB WORK, SERIALIZED ROLLS & WORK ORDERS (3-5 records)
+  // =========================================================================
+  console.log('🌱 [8/8] Seeding Job Work Subcontractors, Serialized Rolls & Work Orders...');
 
-    // 🧑‍⚕️ 2. Patient Safety & Hygienic Care
+  // 3 Job Work Subcontractor Companies
+  const jwCompaniesData = [
     {
-      code: 'FP-SURGEON-GOWN-KIT',
-      name: 'Surgeon’s Gown Kit',
-      cat: 'Patient Safety & Hygienic Care',
-      hsn: '621010',
-      uom: 'Set',
-      price: 380.0,
-      stock: 1400,
-      min: 200,
-      desc: 'Complete sterile surgical kit with SMS 45 GSM reinforced gown, hand towels & wrap',
-      bom: [
-        { mat: 'SMS Non-Woven Medical Blue Fabric 45 GSM', qty: 0.35, uom: 'Kg' },
-        { mat: 'Medical Grade Tyvek / Poly Sterilization Pouches', qty: 1, uom: 'Pcs' },
-      ],
+      companyName: 'Sri Lakshmi Bleaching & Scouring Works',
+      contactPerson: 'K. Rajendran',
+      phone: '+91 98421 00912',
+      email: 'contact@lakshmibleaching.com',
+      gstin: '33AAAAA0000A1Z5',
+      address: '12/4 Industrial Estate, Erode, Tamil Nadu',
+      creditDays: 30,
     },
     {
-      code: 'FP-DISP-BEDSPREAD',
-      name: 'Disposable Bed Spread / Pillow Cover',
-      cat: 'Patient Safety & Hygienic Care',
-      hsn: '630222',
-      uom: 'Set',
-      price: 95.0,
-      stock: 3200,
-      min: 400,
-      desc: 'Hygienic spunbond PP fluid-resistant bed spread and matching pillow cover for hospitals',
-      bom: [
-        { mat: 'Spunbond Polypropylene (PP) Fabric 30 GSM', qty: 0.22, uom: 'Kg' },
-      ],
+      companyName: 'Apex Medical Sterilization & Gamma Processing',
+      contactPerson: 'Dr. N. Swaminathan',
+      phone: '+91 94425 51122',
+      email: 'sterilization@apexgamma.com',
+      gstin: '33GGGGG8888G1Z1',
+      address: 'Plot 45, SIPCOT Phase II, Hosur, Tamil Nadu',
+      creditDays: 30,
     },
     {
-      code: 'FP-KNEE-O-DRAPE',
-      name: 'Knee-O Drape',
-      cat: 'Patient Safety & Hygienic Care',
-      hsn: '630790',
-      uom: 'Pcs',
-      price: 220.0,
-      stock: 950,
-      min: 150,
-      desc: 'Specialized arthroscopy surgical drape with circular elastic fenestration and fluid collection pouch',
-      bom: [
-        { mat: 'SMS Non-Woven Medical Blue Fabric 45 GSM', qty: 0.28, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.12, uom: 'Kg' },
-        { mat: 'Medical Grade Fenestration Adhesive Tape Roll', qty: 0.8, uom: 'Meter' },
-      ],
-    },
-    {
-      code: 'FP-CENTER-HOLE-SHEET',
-      name: 'Center Hole Sheet',
-      cat: 'Patient Safety & Hygienic Care',
-      hsn: '630790',
-      uom: 'Pcs',
-      price: 140.0,
-      stock: 1600,
-      min: 200,
-      desc: 'Impermeable surgical aperture sheet with medical adhesive border for localized procedures',
-      bom: [
-        { mat: 'SMS Non-Woven Medical Blue Fabric 45 GSM', qty: 0.18, uom: 'Kg' },
-        { mat: 'Medical Grade Fenestration Adhesive Tape Roll', qty: 0.6, uom: 'Meter' },
-      ],
-    },
-    {
-      code: 'FP-POLY-APRON',
-      name: 'Poly Apron',
-      cat: 'Patient Safety & Hygienic Care',
-      hsn: '392620',
-      uom: 'Pcs',
-      price: 22.0,
-      stock: 6000,
-      min: 1000,
-      desc: 'Impervious lightweight polyethylene apron with halter neck and tie waist for medical protection',
-      bom: [
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.05, uom: 'Kg' },
-      ],
-    },
-    {
-      code: 'FP-GEN-SURGERY-KIT',
-      name: 'General Surgery Kit',
-      cat: 'Patient Safety & Hygienic Care',
-      hsn: '901890',
-      uom: 'Set',
-      price: 850.0,
-      stock: 750,
-      min: 100,
-      desc: 'Comprehensive surgical drape kit with trolley covers, Mayo stand cover, side drapes & OP towels',
-      bom: [
-        { mat: 'SMS Non-Woven Medical Blue Fabric 45 GSM', qty: 0.75, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.25, uom: 'Kg' },
-        { mat: 'Medical Grade Fenestration Adhesive Tape Roll', qty: 2.0, uom: 'Meter' },
-      ],
-    },
-    {
-      code: 'FP-ORTHO-DRAPE-PACK',
-      name: 'Ortho Drape Pack',
-      cat: 'Patient Safety & Hygienic Care',
-      hsn: '901890',
-      uom: 'Set',
-      price: 1150.0,
-      stock: 520,
-      min: 80,
-      desc: 'Heavy-duty orthopedic surgical pack with fluid collection pouch, U-drapes and extremity sheets',
-      bom: [
-        { mat: 'SMS Non-Woven Medical Blue Fabric 45 GSM', qty: 1.10, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.40, uom: 'Kg' },
-        { mat: 'Medical Grade Fenestration Adhesive Tape Roll', qty: 3.5, uom: 'Meter' },
-      ],
-    },
-    {
-      code: 'FP-KNEE-DRAPE-PACK',
-      name: 'Knee-O Drape Pack',
-      cat: 'Patient Safety & Hygienic Care',
-      hsn: '901890',
-      uom: 'Set',
-      price: 980.0,
-      stock: 610,
-      min: 90,
-      desc: 'Dedicated knee arthroplasty & reconstruction drape pack with reinforced fluid suction connectors',
-      bom: [
-        { mat: 'SMS Non-Woven Medical Blue Fabric 45 GSM', qty: 0.95, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.35, uom: 'Kg' },
-        { mat: 'Medical Grade Fenestration Adhesive Tape Roll', qty: 2.8, uom: 'Meter' },
-      ],
-    },
-    {
-      code: 'FP-GEN-DRAPE-PACK',
-      name: 'General Drape Pack',
-      cat: 'Patient Safety & Hygienic Care',
-      hsn: '901890',
-      uom: 'Set',
-      price: 780.0,
-      stock: 830,
-      min: 120,
-      desc: 'Standard universal procedural drape pack with adhesive towels, top & bottom drapes',
-      bom: [
-        { mat: 'SMS Non-Woven Medical Blue Fabric 45 GSM', qty: 0.65, uom: 'Kg' },
-        { mat: 'Medical Grade Fenestration Adhesive Tape Roll', qty: 2.0, uom: 'Meter' },
-      ],
-    },
-    {
-      code: 'FP-DELIV-DRAPE-PACK',
-      name: 'Delivery Drape Pack',
-      cat: 'Patient Safety & Hygienic Care',
-      hsn: '901890',
-      uom: 'Set',
-      price: 890.0,
-      stock: 690,
-      min: 110,
-      desc: 'Obstetric delivery kit featuring under-buttocks drape with calibrated fluid collection bag and leggings',
-      bom: [
-        { mat: 'SMS Non-Woven Medical Blue Fabric 45 GSM', qty: 0.70, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.30, uom: 'Kg' },
-      ],
-    },
-
-    // 👩 3. Women’s Care
-    {
-      code: 'FP-MOMS-MATERNITY-PAD',
-      name: 'Mom’s Maternity Sanitary Pad & Fixator / Disposable Maternity Pad',
-      cat: "Women's Care",
-      hsn: '961900',
-      uom: 'Pack',
-      price: 195.0,
-      stock: 2800,
-      min: 400,
-      desc: 'Postpartum extra-length high absorbency maternity pad with elastic fixator waistband netting',
-      bom: [
-        { mat: 'Super Bleached Untreated Fluff Pulp Rolls', qty: 0.12, uom: 'Kg' },
-        { mat: 'Super Absorbent Polymer (SAP) Sodium Polyacrylate', qty: 0.03, uom: 'Kg' },
-        { mat: 'Spunbond Polypropylene (PP) Fabric 30 GSM', qty: 0.04, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.03, uom: 'Kg' },
-      ],
-    },
-    {
-      code: 'FP-DELIV-MAT-BAG',
-      name: 'Normal Delivery Mat with Collection Bag',
-      cat: "Women's Care",
-      hsn: '961900',
-      uom: 'Pcs',
-      price: 165.0,
-      stock: 1900,
-      min: 250,
-      desc: 'Sterile delivery under-pad with graduated fluid collection cone pouch for clinical volume monitoring',
-      bom: [
-        { mat: 'Spunbond Polypropylene (PP) Fabric 30 GSM', qty: 0.10, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.12, uom: 'Kg' },
-        { mat: 'Super Bleached Untreated Fluff Pulp Rolls', qty: 0.08, uom: 'Kg' },
-      ],
-    },
-    {
-      code: 'FP-REALCARE-PANTIES',
-      name: 'RealCare Period Panties',
-      cat: "Women's Care",
-      hsn: '961900',
-      uom: 'Pack',
-      price: 240.0,
-      stock: 2100,
-      min: 300,
-      desc: '360-degree leak-guard disposable menstrual panty with seamless 4-way stretch elastic waistband',
-      bom: [
-        { mat: 'Super Bleached Untreated Fluff Pulp Rolls', qty: 0.08, uom: 'Kg' },
-        { mat: 'Super Absorbent Polymer (SAP) Sodium Polyacrylate', qty: 0.02, uom: 'Kg' },
-        { mat: 'Polyurethane Spandex Elastic Yarn', qty: 0.03, uom: 'Kg' },
-        { mat: 'Spunbond Polypropylene (PP) Fabric 30 GSM', qty: 0.05, uom: 'Kg' },
-      ],
-    },
-    {
-      code: 'FP-REALCARE-UNDERPDS',
-      name: 'RealCare Underpads',
-      cat: "Women's Care",
-      hsn: '961900',
-      uom: 'Pack',
-      price: 310.0,
-      stock: 1750,
-      min: 250,
-      desc: '60x90 cm premium bed & chair underpads with diamond embossed SAP lock channels',
-      bom: [
-        { mat: 'Super Bleached Untreated Fluff Pulp Rolls', qty: 0.25, uom: 'Kg' },
-        { mat: 'Super Absorbent Polymer (SAP) Sodium Polyacrylate', qty: 0.05, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.08, uom: 'Kg' },
-        { mat: 'Spunbond Polypropylene (PP) Fabric 30 GSM', qty: 0.06, uom: 'Kg' },
-      ],
-    },
-    {
-      code: 'FP-DRLIKE-UNDERPDS',
-      name: 'Dr. Like Multipurpose Underpads',
-      cat: "Women's Care",
-      hsn: '961900',
-      uom: 'Pack',
-      price: 280.0,
-      stock: 2400,
-      min: 350,
-      desc: 'Multi-utility waterproof absorbent underpads for maternity, clinical beds & baby changing stations',
-      bom: [
-        { mat: 'Super Bleached Untreated Fluff Pulp Rolls', qty: 0.20, uom: 'Kg' },
-        { mat: 'Super Absorbent Polymer (SAP) Sodium Polyacrylate', qty: 0.04, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.07, uom: 'Kg' },
-      ],
-    },
-    {
-      code: 'FP-BAMBOO-PADS',
-      name: 'Bamboo Pads',
-      cat: "Women's Care",
-      hsn: '961900',
-      uom: 'Pack',
-      price: 175.0,
-      stock: 3100,
-      min: 450,
-      desc: '100% natural organic bamboo fibre ultra-thin antibacterial sanitary pads with wings',
-      bom: [
-        { mat: '100% Bamboo Natural Fibre Non-Woven Sheet', qty: 0.06, uom: 'Kg' },
-        { mat: 'Super Absorbent Polymer (SAP) Sodium Polyacrylate', qty: 0.02, uom: 'Kg' },
-        { mat: 'Super Bleached Untreated Fluff Pulp Rolls', qty: 0.04, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.02, uom: 'Kg' },
-      ],
-    },
-    {
-      code: 'FP-ANION-PADS',
-      name: 'Anion Pads',
-      cat: "Women's Care",
-      hsn: '961900',
-      uom: 'Pack',
-      price: 190.0,
-      stock: 2900,
-      min: 400,
-      desc: 'Far-infrared anion negative ion chip sanitary pad for active odor control and comfort',
-      bom: [
-        { mat: 'Far-Infrared Anion Negative Ion Chip Strip', qty: 0.25, uom: 'Meter' },
-        { mat: 'Super Bleached Untreated Fluff Pulp Rolls', qty: 0.05, uom: 'Kg' },
-        { mat: 'Super Absorbent Polymer (SAP) Sodium Polyacrylate', qty: 0.02, uom: 'Kg' },
-        { mat: 'Spunbond Polypropylene (PP) Fabric 30 GSM', qty: 0.03, uom: 'Kg' },
-      ],
-    },
-
-    // 👴 4. Adult Care
-    {
-      code: 'FP-LATHIKKA-ADULT-DIAPERS',
-      name: 'Lathikka Fresh Feel Adult Diapers',
-      cat: 'Adult Care',
-      hsn: '961900',
-      uom: 'Pack',
-      price: 480.0,
-      stock: 1600,
-      min: 250,
-      desc: 'All-night heavy absorbency adult diapers with refastenable frontal tape and wetness indicator',
-      bom: [
-        { mat: 'Super Bleached Untreated Fluff Pulp Rolls', qty: 0.35, uom: 'Kg' },
-        { mat: 'Super Absorbent Polymer (SAP) Sodium Polyacrylate', qty: 0.08, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.09, uom: 'Kg' },
-        { mat: 'Spunbond Polypropylene (PP) Fabric 30 GSM', qty: 0.08, uom: 'Kg' },
-      ],
-    },
-    {
-      code: 'FP-DRC-PULLUPS-M',
-      name: 'Dr.C Adult Pullups – Premium (Medium)',
-      cat: 'Adult Care',
-      hsn: '961900',
-      uom: 'Pack',
-      price: 540.0,
-      stock: 1200,
-      min: 200,
-      desc: 'Dr.C Medium (28-44 in) pullup pant with soft waist panel, super absorbency, antibacterial protection & leak guard',
-      bom: [
-        { mat: 'Super Bleached Untreated Fluff Pulp Rolls', qty: 0.30, uom: 'Kg' },
-        { mat: 'Super Absorbent Polymer (SAP) Sodium Polyacrylate', qty: 0.07, uom: 'Kg' },
-        { mat: 'Polyurethane Spandex Elastic Yarn', qty: 0.04, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.08, uom: 'Kg' },
-      ],
-    },
-    {
-      code: 'FP-DRC-PULLUPS-L',
-      name: 'Dr.C Adult Pullups – Premium (Large)',
-      cat: 'Adult Care',
-      hsn: '961900',
-      uom: 'Pack',
-      price: 560.0,
-      stock: 1450,
-      min: 220,
-      desc: 'Dr.C Large (38-54 in) pullup pant with soft waist panel, super absorbency, antibacterial protection & leak guard',
-      bom: [
-        { mat: 'Super Bleached Untreated Fluff Pulp Rolls', qty: 0.34, uom: 'Kg' },
-        { mat: 'Super Absorbent Polymer (SAP) Sodium Polyacrylate', qty: 0.08, uom: 'Kg' },
-        { mat: 'Polyurethane Spandex Elastic Yarn', qty: 0.04, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.09, uom: 'Kg' },
-      ],
-    },
-    {
-      code: 'FP-DRC-PULLUPS-XL',
-      name: 'Dr.C Adult Pullups – Premium (XL)',
-      cat: 'Adult Care',
-      hsn: '961900',
-      uom: 'Pack',
-      price: 590.0,
-      stock: 1100,
-      min: 180,
-      desc: 'Dr.C Extra Large (48-68 in) pullup pant with soft waist panel, super absorbency, antibacterial protection & leak guard',
-      bom: [
-        { mat: 'Super Bleached Untreated Fluff Pulp Rolls', qty: 0.38, uom: 'Kg' },
-        { mat: 'Super Absorbent Polymer (SAP) Sodium Polyacrylate', qty: 0.09, uom: 'Kg' },
-        { mat: 'Polyurethane Spandex Elastic Yarn', qty: 0.05, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.10, uom: 'Kg' },
-      ],
-    },
-
-    // 👶 5. Baby Care
-    {
-      code: 'FP-BABIO-WET-TOWELS',
-      name: 'Babio Baby Wet Towels',
-      cat: 'Baby Care',
-      hsn: '340119',
-      uom: 'Pack',
-      price: 115.0,
-      stock: 3800,
-      min: 500,
-      desc: '99% pure water wipes with organic Aloe Vera & Chamomile extract, alcohol-free & dermatologically tested',
-      bom: [
-        { mat: 'Cross-Lapped Spunlace Viscose Wipe Fabric Roll 50 GSM', qty: 0.14, uom: 'Kg' },
-        { mat: 'Purified Aloe Vera & Chamomile Liquid Base', qty: 0.12, uom: 'Liter' },
-      ],
-    },
-    {
-      code: 'FP-LATHIKKA-DRY-MAT',
-      name: 'Lathikka Naturals Dry Mat',
-      cat: 'Baby Care',
-      hsn: '630492',
-      uom: 'Pcs',
-      price: 295.0,
-      stock: 1950,
-      min: 250,
-      desc: 'Breathable waterproof fleece quick-dry bed protector sheet for babies, reusable & skin-friendly',
-      bom: [
-        { mat: 'Spunbond Polypropylene (PP) Fabric 30 GSM', qty: 0.12, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.10, uom: 'Kg' },
-      ],
-    },
-    {
-      code: 'FP-BEBE-DIAPERS-NB',
-      name: 'BeBe Baby Diapers (Premature / New Born)',
-      cat: 'Baby Care',
-      hsn: '961900',
-      uom: 'Pack',
-      price: 320.0,
-      stock: 2200,
-      min: 300,
-      desc: 'BeBe Baby Diapers Premature / New Born with umbilical cord cut-out & ultra-soft bubble topsheet',
-      bom: [
-        { mat: 'Super Bleached Untreated Fluff Pulp Rolls', qty: 0.15, uom: 'Kg' },
-        { mat: 'Super Absorbent Polymer (SAP) Sodium Polyacrylate', qty: 0.04, uom: 'Kg' },
-        { mat: 'Spunbond Polypropylene (PP) Fabric 30 GSM', qty: 0.05, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.04, uom: 'Kg' },
-      ],
-    },
-    {
-      code: 'FP-BEBE-DIAPERS-S',
-      name: 'BeBe Baby Diapers (Small)',
-      cat: 'Baby Care',
-      hsn: '961900',
-      uom: 'Pack',
-      price: 340.0,
-      stock: 2500,
-      min: 350,
-      desc: 'BeBe Baby Diapers Small (3-6 Kg) with 12-hour leak lock core & wetness indicator',
-      bom: [
-        { mat: 'Super Bleached Untreated Fluff Pulp Rolls', qty: 0.18, uom: 'Kg' },
-        { mat: 'Super Absorbent Polymer (SAP) Sodium Polyacrylate', qty: 0.05, uom: 'Kg' },
-        { mat: 'Spunbond Polypropylene (PP) Fabric 30 GSM', qty: 0.06, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.05, uom: 'Kg' },
-      ],
-    },
-    {
-      code: 'FP-BEBE-DIAPERS-M',
-      name: 'BeBe Baby Diapers (Medium)',
-      cat: 'Baby Care',
-      hsn: '961900',
-      uom: 'Pack',
-      price: 360.0,
-      stock: 2800,
-      min: 400,
-      desc: 'BeBe Baby Diapers Medium (6-11 Kg) with 3D leak guard & flexible stretch waistband',
-      bom: [
-        { mat: 'Super Bleached Untreated Fluff Pulp Rolls', qty: 0.22, uom: 'Kg' },
-        { mat: 'Super Absorbent Polymer (SAP) Sodium Polyacrylate', qty: 0.06, uom: 'Kg' },
-        { mat: 'Spunbond Polypropylene (PP) Fabric 30 GSM', qty: 0.07, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.06, uom: 'Kg' },
-      ],
-    },
-    {
-      code: 'FP-BEBE-DIAPERS-L',
-      name: 'BeBe Baby Diapers (Large)',
-      cat: 'Baby Care',
-      hsn: '961900',
-      uom: 'Pack',
-      price: 380.0,
-      stock: 2400,
-      min: 350,
-      desc: 'BeBe Baby Diapers Large (9-14 Kg) with active air channels & feather-soft leg cuffs',
-      bom: [
-        { mat: 'Super Bleached Untreated Fluff Pulp Rolls', qty: 0.25, uom: 'Kg' },
-        { mat: 'Super Absorbent Polymer (SAP) Sodium Polyacrylate', qty: 0.07, uom: 'Kg' },
-        { mat: 'Spunbond Polypropylene (PP) Fabric 30 GSM', qty: 0.08, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.07, uom: 'Kg' },
-      ],
-    },
-    {
-      code: 'FP-BEBE-DIAPERS-XL',
-      name: 'BeBe Baby Diapers (XL)',
-      cat: 'Baby Care',
-      hsn: '961900',
-      uom: 'Pack',
-      price: 400.0,
-      stock: 1900,
-      min: 250,
-      desc: 'BeBe Baby Diapers Extra Large (12-17 Kg) with max absorbency night lock channels',
-      bom: [
-        { mat: 'Super Bleached Untreated Fluff Pulp Rolls', qty: 0.28, uom: 'Kg' },
-        { mat: 'Super Absorbent Polymer (SAP) Sodium Polyacrylate', qty: 0.08, uom: 'Kg' },
-        { mat: 'Spunbond Polypropylene (PP) Fabric 30 GSM', qty: 0.09, uom: 'Kg' },
-        { mat: 'Laminated PE Breathable Backsheet Film Roll', qty: 0.08, uom: 'Kg' },
-      ],
-    },
-
-    // 🦟 6. Mosquito Protection
-    {
-      code: 'FP-ZGUARD-SPRAY-100',
-      name: 'Z Guard Natural Mosquito Repellent Spray',
-      cat: 'Mosquito Protection',
-      hsn: '380891',
-      uom: 'Pcs',
-      price: 145.0,
-      stock: 4200,
-      min: 600,
-      desc: '100% natural Ayurvedic DEET-free mosquito repellent spray with pure Lemon Grass, Tulasi Oil & Neem Oil',
-      bom: [
-        { mat: 'Pure Natural Lemon Grass Essential Oil', qty: 0.02, uom: 'Liter' },
-        { mat: 'Pure Tulasi (Holy Basil) Extract Oil', qty: 0.01, uom: 'Liter' },
-        { mat: 'Pure Cold-Pressed Neem Seed Oil', qty: 0.01, uom: 'Liter' },
-        { mat: 'HDPE 100ml Spray Bottle with Fine Mist Pump', qty: 1, uom: 'Pcs' },
-      ],
+      companyName: 'Tirupur Elastic & Webbing Mills',
+      contactPerson: 'M. Shanmugam',
+      phone: '+91 94432 09123',
+      email: 'info@tirupurelastic.in',
+      gstin: '33BBBBB1111B1Z2',
+      address: '45 Weavers Colony, Tirupur, Tamil Nadu',
+      creditDays: 45,
     },
   ];
 
-  const createdFinishedProducts: Record<string, any> = {};
+  const jwComps: Record<string, any> = {};
+  for (const jwc of jwCompaniesData) {
+    const created = await prisma.jobWorkCompany.create({ data: jwc });
+    jwComps[jwc.companyName] = created;
+  }
 
-  for (const fp of finishedProductsCatalog) {
-    // 1. Create in ProductMaster (Master Catalogue)
-    const productMaster = await prisma.productMaster.create({
-      data: {
-        productCode: fp.code,
-        name: fp.name,
-        category: fp.cat,
-        hsnCode: fp.hsn,
-        unitOfMeasure: fp.uom,
-        minStockLevel: fp.min,
-      },
-    });
+  // 3 Product Masters (Finished Goods)
+  const productsData = [
+    {
+      productCode: 'FG-GAU-100',
+      name: 'Sterile Roller Bandage 10cm x 4m',
+      category: 'Dressing Care',
+      hsnCode: '300590',
+      unitOfMeasure: 'Pcs',
+      standardWidth: 4,
+      standardLength: 4,
+      standardWeight: 0.045,
+      targetGsm: 32,
+      minStockLevel: 500,
+    },
+    {
+      productCode: 'FG-GAM-200',
+      name: 'Gamjee Pad 20cm x 20cm (Absorbent)',
+      category: 'Dressing Care',
+      hsnCode: '300590',
+      unitOfMeasure: 'Pcs',
+      standardWidth: 8,
+      standardLength: 8,
+      standardWeight: 0.08,
+      targetGsm: 180,
+      minStockLevel: 300,
+    },
+    {
+      productCode: 'FG-DRP-300',
+      name: 'Surgical SMS Drape Sheet 150cm x 200cm',
+      category: 'Patient Safety',
+      hsnCode: '630790',
+      unitOfMeasure: 'Pcs',
+      standardWidth: 60,
+      standardLength: 80,
+      standardWeight: 0.15,
+      targetGsm: 45,
+      minStockLevel: 200,
+    },
+  ];
 
-    // 2. Create Bill of Material (BOM Recipe)
+  const products: Record<string, any> = {};
+  for (const p of productsData) {
+    const created = await prisma.productMaster.create({ data: p });
+    products[p.productCode] = created;
+
+    // Create BOM Header
     const bom = await prisma.billOfMaterial.create({
       data: {
-        bomNumber: `BOM-${fp.code}`,
-        productId: productMaster.id,
+        bomNumber: `BOM-${p.productCode}`,
+        productId: created.id,
         version: '1.0',
-        description: `Standard Manufacturing Formula for ${fp.name}`,
-        items: {
-          create: fp.bom.map((b) => ({
-            materialName: b.mat,
-            quantity: b.qty,
-            uom: b.uom,
-            wastagePercent: 1.5,
-          })),
-        },
+        description: `Standard Bill of Material for ${p.name}`,
       },
     });
 
-    // 3. Create entry in RawMaterial table (As Finished Goods inventory) for stock tracking
-    const fgMaterial = await prisma.rawMaterial.create({
+    // Add BOM Item
+    await prisma.bOMItem.create({
       data: {
-        sku: fp.code,
-        name: fp.name,
-        description: fp.desc,
-        hsnCode: fp.hsn,
-        minimumStockLevel: fp.min,
-        maximumStockLevel: fp.min * 10,
-        reorderQuantity: fp.min * 2,
-        currentStockBalance: fp.stock,
-        unitCost: fp.price * 0.6, // Approximate manufacturing cost
-        lastPurchaseRate: fp.price * 0.6,
-        avgCost: fp.price * 0.6,
-        gstRate: 12.0,
-        categoryId: categories[fp.cat],
-        unitId: units[fp.uom],
-        storageLocationId: storageLocations['LOC-FG-MAIN'],
-      },
-    });
-
-    createdFinishedProducts[fp.code] = {
-      productMaster,
-      bom,
-      fgMaterial,
-    };
-
-    // Log Opening Finished Goods Transaction
-    await prisma.inventoryTransaction.create({
-      data: {
-        rawMaterialId: fgMaterial.id,
-        transactionType: TransactionType.ADJUSTMENT_ADD,
-        quantity: fp.stock,
-        previousStock: 0,
-        newStock: fp.stock,
-        unitPrice: fp.price * 0.6,
-        referenceNumber: `INV-OPENING-FG-${fp.code.slice(-6)}`,
-        notes: `Opening finished goods batch - ${fp.name} in Central Depot E`,
-        createdByUserId: adminUser.id,
+        bomId: bom.id,
+        materialName: 'Bleached Medical Gauze Fabric Roll 48"',
+        quantity: 0.05,
+        uom: 'Kg',
+        wastagePercent: 2.5,
       },
     });
   }
-  console.log('✔ All Finished Products, BOM Formulas & FG Stock seeded.');
 
-  // 10. Seed Realistic Job Work Orders & Delivery Challans (14-Day Subcontracting Flow)
-  const rmGrey = createdRawMaterials['RM-GAUZE-GREY'];
-  const rmBleached = createdRawMaterials['RM-GAUZE-BLEACH'];
-  const rmSpandex = createdRawMaterials['RM-SPANDEX-YARN'];
-  const rmSMS = createdRawMaterials['RM-SMS-FABRIC-45'];
-  const rmPEFilm = createdRawMaterials['RM-PE-FILM-BREATH'];
-  const rmCotton = createdRawMaterials['RM-COTTON-RAW'];
+  // 3 Production Batches / Work Orders
+  const batch1 = await prisma.productionBatch.create({
+    data: {
+      batchNumber: 'PB-2026-001',
+      workOrderNumber: 'WO-2026-001',
+      targetProduct: 'Sterile Roller Bandage 10cm x 4m',
+      plannedQty: 1000,
+      completedQty: 1000,
+      rejectedQty: 10,
+      status: ProductionWorkOrderStatus.COMPLETED,
+      startDate: new Date('2026-08-10'),
+      endDate: new Date('2026-08-12'),
+    },
+  });
 
-  const fpBandage = createdFinishedProducts['FP-GAUZE-BANDAGE'].fgMaterial;
-  const fpDelivMat = createdFinishedProducts['FP-DELIV-MAT-BAG'].fgMaterial;
-  const fpGownKit = createdFinishedProducts['FP-SURGEON-GOWN-KIT'].fgMaterial;
+  const batch2 = await prisma.productionBatch.create({
+    data: {
+      batchNumber: 'PB-2026-002',
+      workOrderNumber: 'WO-2026-002',
+      targetProduct: 'Gamjee Pad 20cm x 20cm (Absorbent)',
+      plannedQty: 500,
+      completedQty: 250,
+      rejectedQty: 5,
+      status: ProductionWorkOrderStatus.IN_PROGRESS,
+      startDate: new Date('2026-08-18'),
+    },
+  });
 
-  const jobWorkOrdersData = [
+  const batch3 = await prisma.productionBatch.create({
+    data: {
+      batchNumber: 'PB-2026-003',
+      workOrderNumber: 'WO-2026-003',
+      targetProduct: 'Surgical SMS Drape Sheet 150cm x 200cm',
+      plannedQty: 400,
+      completedQty: 0,
+      rejectedQty: 0,
+      status: ProductionWorkOrderStatus.PLANNED,
+    },
+  });
+
+  // 5 Serialized Cotton Rolls (Spanning Different Lifecycle Stages)
+  const rollsData = [
     {
-      jobWorkNumber: 'JW-2026-0101',
-      challanNumber: 'DC-2026-0801',
-      companyId: jwCompanies['Sri Lakshmi Bleaching & Scouring Works'],
-      rawMatId: rmGrey.id,
-      finishedProdId: rmBleached.id,
-      status: JobWorkStatus.COMPLETED,
-      daysAgo: 14,
-      issuedWeight: 1200.0,
-      issuedQty: 24,
-      returnedWeight: 1164.0,
-      returnedQty: 24,
-      wastageWeight: 36.0,
-      remarks: 'Subcontract scouring, bleaching & pharmacopoeia absorbency treatment for grey gauze',
+      rollNumber: 'ROLL-2026-001',
+      barcode: 'BAR-ROLL-2026-001',
+      batchNumber: 'BAT-2026-001',
+      materialName: 'Raw Cotton 100% Combed Medical Grade',
+      stage: RollStage.RAW_COTTON_BALE,
+      widthInches: 48,
+      lengthMeters: 250,
+      weightKg: 120.5,
+      gsm: 40,
+      currentStatus: RollStatus.STORED_IN_RM,
+      currentLocation: 'LOC-RM-01: Bay 1',
     },
     {
-      jobWorkNumber: 'JW-2026-0102',
-      challanNumber: 'DC-2026-0805',
-      companyId: jwCompanies['Tirupur Elastic & Webbing Mills'],
-      rawMatId: rmSpandex.id,
-      finishedProdId: fpBandage.id,
-      status: JobWorkStatus.COMPLETED,
-      daysAgo: 9,
-      issuedWeight: 600.0,
-      issuedQty: 15,
-      returnedWeight: 588.0,
-      returnedQty: 14,
-      wastageWeight: 12.0,
-      remarks: 'Weaving of high elasticity securing bandage web rolls',
+      rollNumber: 'ROLL-2026-002',
+      barcode: 'BAR-ROLL-2026-002',
+      batchNumber: 'BAT-2026-002',
+      materialName: 'Grey Woven Gauze Fabric Roll 48"',
+      stage: RollStage.GREY_FABRIC_ROLL,
+      widthInches: 48,
+      lengthMeters: 400,
+      weightKg: 85.0,
+      gsm: 32,
+      currentStatus: RollStatus.ISSUED_TO_JOBWORK,
+      currentLocation: 'Sri Lakshmi Bleaching & Scouring Works',
+      jobWorkCompanyId: jwComps['Sri Lakshmi Bleaching & Scouring Works'].id,
     },
     {
-      jobWorkNumber: 'JW-2026-0103',
-      challanNumber: 'DC-2026-0809',
-      companyId: jwCompanies['Deccan Non-Woven Converting & Lamination Works'],
-      rawMatId: rmSMS.id,
-      finishedProdId: fpDelivMat.id,
-      status: JobWorkStatus.PARTIAL_RETURN,
-      daysAgo: 5,
-      issuedWeight: 1500.0,
-      issuedQty: 30,
-      returnedWeight: 900.0,
-      returnedQty: 18,
-      wastageWeight: 18.0,
-      remarks: 'Ultrasonic lamination of SMS non-woven & PE film with collection bag cone',
+      rollNumber: 'ROLL-2026-003',
+      barcode: 'BAR-ROLL-2026-003',
+      batchNumber: 'BAT-2026-003',
+      materialName: 'Bleached Medical Gauze Roll 48"',
+      stage: RollStage.BLEACHED_GAUZE_ROLL,
+      widthInches: 48,
+      lengthMeters: 400,
+      weightKg: 82.5,
+      gsm: 30,
+      currentStatus: RollStatus.QC_APPROVED,
+      currentLocation: 'LOC-PR-02: Rack B-4',
+      productionBatchId: batch1.id,
     },
     {
-      jobWorkNumber: 'JW-2026-0104',
-      challanNumber: 'DC-2026-0813',
-      companyId: jwCompanies['Apex Medical Sterilization & Gamma Processing'],
-      rawMatId: rmSMS.id,
-      finishedProdId: fpGownKit.id,
-      status: JobWorkStatus.MATERIALS_ISSUED,
-      daysAgo: 2,
-      issuedWeight: 850.0,
-      issuedQty: 17,
-      returnedWeight: 0.0,
-      returnedQty: 0,
-      wastageWeight: 0.0,
-      remarks: 'ETO gas & Gamma radiation sterilization of packed Surgeon Gown Kits',
+      rollNumber: 'ROLL-2026-004',
+      barcode: 'BAR-ROLL-2026-004',
+      batchNumber: 'BAT-2026-004',
+      materialName: 'Slit Gauze Ribbon Roll 10cm',
+      stage: RollStage.SLIT_ROLL,
+      widthInches: 4,
+      lengthMeters: 800,
+      weightKg: 42.0,
+      gsm: 30,
+      currentStatus: RollStatus.IN_PRODUCTION,
+      currentLocation: 'LOC-PR-02: Cutting Station 1',
+      productionBatchId: batch2.id,
     },
     {
-      jobWorkNumber: 'JW-2026-0105',
-      challanNumber: null,
-      companyId: jwCompanies['Sri Lakshmi Bleaching & Scouring Works'],
-      rawMatId: rmCotton.id,
-      finishedProdId: createdFinishedProducts['FP-COTTON-ROLLS'].fgMaterial.id,
-      status: JobWorkStatus.CREATED,
-      daysAgo: 0,
-      issuedWeight: 1000.0,
-      issuedQty: 20,
-      returnedWeight: 0.0,
-      returnedQty: 0,
-      wastageWeight: 0.0,
-      remarks: 'Bleaching raw combed cotton bales for 500g absorbent surgical cotton rolls',
+      rollNumber: 'ROLL-2026-005',
+      barcode: 'BAR-ROLL-2026-005',
+      batchNumber: 'BAT-2026-005',
+      materialName: 'Finished Roller Bandage 10cm x 4m',
+      stage: RollStage.FINISHED_PRODUCT_ROLL,
+      widthInches: 4,
+      lengthMeters: 4,
+      weightKg: 0.045,
+      gsm: 32,
+      currentStatus: RollStatus.PACKED,
+      currentLocation: 'LOC-FG-05: Pouch Bin 12',
+      finishedProductId: products['FG-GAU-100'].id,
     },
   ];
 
-  for (const jw of jobWorkOrdersData) {
-    const jwOrder = await prisma.jobWorkOrder.create({
+  for (const r of rollsData) {
+    const createdRoll = await prisma.cottonRoll.create({ data: r });
+
+    // Status History
+    await prisma.rollStatusHistory.create({
       data: {
-        jobWorkNumber: jw.jobWorkNumber,
-        challanNumber: jw.challanNumber,
-        expectedReturnDate: getPastDate(jw.daysAgo - 7),
-        status: jw.status,
-        totalIssuedWeight: jw.issuedWeight,
-        totalIssuedQty: jw.issuedQty,
-        totalReturnedWeight: jw.returnedWeight,
-        totalReturnedQty: jw.returnedQty,
-        totalWastageWeight: jw.wastageWeight,
-        pendingWeight: Math.max(0, jw.issuedWeight - jw.returnedWeight - jw.wastageWeight),
-        pendingQty: Math.max(0, jw.issuedQty - jw.returnedQty),
-        jobWorkCompanyId: jw.companyId,
-        rawMaterialId: jw.rawMatId,
-        finishedProductId: jw.finishedProdId,
-        remarks: jw.remarks,
-        vehicleNumber: 'TN-38-CC-4521',
-        driverName: 'K. Senthil Kumar',
-        createdAt: getPastDate(jw.daysAgo),
-        issueItems: {
-          create: {
-            rollNumber: `ROL-${jw.jobWorkNumber.slice(-4)}-ISSUE-01`,
-            issuedWeight: jw.issuedWeight,
-            issuedQty: jw.issuedQty,
-            remarks: 'Subcontract material issue batch with security seal',
-          },
-        },
-        returnItems: jw.returnedWeight > 0 ? {
-          create: {
-            returnedDate: getPastDate(jw.daysAgo - 4),
-            rollNumber: `ROL-${jw.jobWorkNumber.slice(-4)}-RET-01`,
-            returnedWeight: jw.returnedWeight,
-            returnedQty: jw.returnedQty,
-            wastageWeight: jw.wastageWeight,
-            finishedProductId: jw.finishedProdId,
-            remarks: 'Processed material received back with vendor weight certificate & QC slip',
-            receivedByUserId: adminUser.id,
-          },
-        } : undefined,
-        statusHistory: {
-          create: [
-            {
-              fromStatus: null,
-              toStatus: JobWorkStatus.CREATED,
-              notes: 'Job work order registered and approved by Job Work Manager',
-              createdAt: getPastDate(jw.daysAgo),
-            },
-            ...(jw.status !== JobWorkStatus.CREATED ? [{
-              fromStatus: JobWorkStatus.CREATED,
-              toStatus: jw.status,
-              notes: `Order progressed to ${jw.status}`,
-              createdAt: getPastDate(Math.max(0, jw.daysAgo - 1)),
-            }] : []),
-          ],
-        },
+        rollId: createdRoll.id,
+        toStatus: r.currentStatus,
+        location: r.currentLocation,
+        performedBy: 'Ramesh Kumar (Supervisor)',
+        remarks: `Initialized roll ${r.rollNumber} at stage ${r.stage}`,
       },
     });
 
-    // Create Delivery Challan for issued job work orders
-    if (jw.challanNumber) {
-      await prisma.jobWorkChallan.create({
+    // QC Inspection for QC_APPROVED roll
+    if (r.currentStatus === RollStatus.QC_APPROVED) {
+      await prisma.qCInspection.create({
         data: {
-          challanNumber: jw.challanNumber,
-          dispatchDate: getPastDate(jw.daysAgo),
-          expectedReturnDate: getPastDate(jw.daysAgo - 7),
-          dispatchedQuantity: jw.issuedWeight,
-          returnedQuantity: jw.returnedWeight,
-          wastageQuantity: jw.wastageWeight,
-          processingChargePerUnit: 18.5,
-          status: jw.status === JobWorkStatus.COMPLETED ? 'COMPLETED' : 'DISPATCHED',
-          jobWorkCompanyId: jw.companyId,
-          rawMaterialId: jw.rawMatId,
+          inspectionNumber: `QC-INSP-2026-001`,
+          rollId: createdRoll.id,
+          productionBatchId: batch1.id,
+          testedGsm: 30.5,
+          testedAbsorbency: 1.8, // < 10 sec is standard
+          testedWhiteness: 88.5, // > 80% is medical grade
+          testedpH: 6.8, // Neutral
+          moistureContent: 6.2,
+          resultStatus: QCResultStatus.PASSED,
+          inspectorName: 'Anitha Krishnan (QC Lead)',
+          remarks: 'Pharmacopoeia standards met. Absorbency & whiteness approved.',
         },
       });
     }
   }
-  console.log('✔ Job Work Orders, Challans & Subcontracting Ledger seeded.');
 
-  // 11. Seed Serialized Fabric Rolls Ledger with QC Passed Records
-  const serializedRolls = [
-    {
-      num: 'ROL-20260801-001',
-      mat: 'Grey Gauze Fabric Roll 48 Inch',
-      stage: RollStage.GREY_FABRIC_ROLL,
-      status: RollStatus.CONVERTED,
-      weight: 48.5,
-      width: 48,
-      length: 500,
-      gsm: 28.0,
-      daysAgo: 14,
+  // 3 Job Work Orders
+  const jwo1 = await prisma.jobWorkOrder.create({
+    data: {
+      jobWorkNumber: 'JWO-2026-001',
+      challanNumber: 'CH-2026-001',
+      expectedReturnDate: new Date('2026-08-28'),
+      status: JobWorkStatus.IN_PROGRESS,
+      jobWorkCompanyId: jwComps['Sri Lakshmi Bleaching & Scouring Works'].id,
+      rawMaterialId: rawMaterials['RM-GAU-002'].id,
+      finishedProductId: rawMaterials['RM-BLG-003'].id,
+      totalIssuedWeight: 85.0,
+      totalIssuedQty: 1,
+      pendingWeight: 85.0,
+      pendingQty: 1,
+      vehicleNumber: 'TN-33-AX-8910',
+      driverName: 'Murugan K.',
+      remarks: 'Bleaching & scouring job work order for Grey Gauze Roll',
     },
-    {
-      num: 'ROL-20260804-002',
-      mat: 'Bleached Gauze Fabric Roll 48 Inch (Medical Grade)',
-      stage: RollStage.BLEACHED_GAUZE_ROLL,
-      status: RollStatus.QC_APPROVED,
-      weight: 44.2,
-      width: 48,
-      length: 480,
-      gsm: 28.5,
-      daysAgo: 10,
-    },
-    {
-      num: 'ROL-20260808-003',
-      mat: 'SMS Non-Woven Medical Blue Fabric 45 GSM',
-      stage: RollStage.SLIT_ROLL,
-      status: RollStatus.IN_PRODUCTION,
-      weight: 52.0,
-      width: 60,
-      length: 650,
-      gsm: 45.0,
-      daysAgo: 6,
-    },
-    {
-      num: 'ROL-20260811-004',
-      mat: '100% Bamboo Natural Fibre Non-Woven Sheet',
-      stage: RollStage.SLIT_ROLL,
-      status: RollStatus.IN_PRODUCTION,
-      weight: 36.8,
-      width: 40,
-      length: 400,
-      gsm: 32.0,
-      daysAgo: 4,
-    },
-    {
-      num: 'ROL-20260814-005',
-      mat: 'Cross-Lapped Spunlace Viscose Wipe Fabric Roll 50 GSM',
-      stage: RollStage.FINISHED_PRODUCT_ROLL,
-      status: RollStatus.PACKED,
-      weight: 32.0,
-      width: 36,
-      length: 350,
-      gsm: 50.0,
-      daysAgo: 2,
-    },
-    {
-      num: 'ROL-20260816-006',
-      mat: 'Raw Cotton 100% Combed Medical Grade',
-      stage: RollStage.RAW_COTTON_BALE,
-      status: RollStatus.STORED_IN_RM,
-      weight: 165.0,
-      width: 0,
-      length: 0,
-      gsm: 0,
-      daysAgo: 1,
-    },
-  ];
+  });
 
-  for (const r of serializedRolls) {
-    await prisma.cottonRoll.create({
-      data: {
-        rollNumber: r.num,
-        barcode: `BAR-${r.num}`,
-        batchNumber: `BAT-2026-AUG-${r.num.slice(-3)}`,
-        materialName: r.mat,
-        stage: r.stage,
-        widthInches: r.width,
-        lengthMeters: r.length,
-        weightKg: r.weight,
-        gsm: r.gsm > 0 ? r.gsm : null,
-        currentStatus: r.status,
-        currentLocation: r.status === RollStatus.STORED_IN_RM ? 'Raw Cotton Bay A' : 'Production Floor Area 1',
-        createdAt: getPastDate(r.daysAgo),
-        statusHistory: {
-          create: [
-            {
-              fromStatus: null,
-              toStatus: RollStatus.RAW_RECEIVED,
-              location: 'Warehouse Receiving Bay',
-              remarks: 'Intake and barcoded on receipt',
-              performedBy: 'Murugan Selvam (Store Keeper)',
-              createdAt: getPastDate(r.daysAgo),
-            },
-            {
-              fromStatus: RollStatus.RAW_RECEIVED,
-              toStatus: r.status,
-              location: 'Active Production / Storage Bin',
-              remarks: `Transitioned to state: ${r.status}`,
-              performedBy: 'Floor Supervisor',
-              createdAt: getPastDate(Math.max(0, r.daysAgo - 1)),
-            },
-          ],
-        },
-        qcInspections: {
-          create: {
-            inspectionNumber: `QC-INS-${r.num.slice(-6)}`,
-            testedGsm: r.gsm > 0 ? r.gsm + 0.5 : 28.5,
-            testedAbsorbency: 1.6, // < 10 seconds pharmacopoeia pass
-            testedWhiteness: 89.5, // > 80% pass
-            testedpH: 6.8,
-            moistureContent: 5.2,
-            resultStatus: QCResultStatus.PASSED,
-            remarks: 'Complies with Indian & British Pharmacopoeia Standards for Surgical Absorbency',
-            inspectorName: 'Priya Sharma (Lead QC)',
-            inspectedAt: getPastDate(Math.max(0, r.daysAgo - 1)),
-          },
-        },
-      },
-    });
-  }
-  console.log('✔ Serialized Rolls & QC Pharmacopoeia Lab Inspections seeded.');
+  await prisma.jobWorkIssueItem.create({
+    data: {
+      jobWorkOrderId: jwo1.id,
+      rollNumber: 'ROLL-2026-002',
+      issuedWeight: 85.0,
+      issuedQty: 1,
+      remarks: 'Dispatched for 48" scouring and chemical bleaching',
+    },
+  });
 
-  // 12. Seed Production Batches across Categories
-  const productionBatchesData = [
-    {
-      num: 'PB-2026-0801',
-      target: 'Elastic Securing Gauze Bandage',
-      planned: 5000,
-      completed: 5000,
-      status: ProductionWorkOrderStatus.COMPLETED,
-      daysAgo: 13,
+  await prisma.jobWorkStatusHistory.create({
+    data: {
+      jobWorkOrderId: jwo1.id,
+      fromStatus: JobWorkStatus.CREATED,
+      toStatus: JobWorkStatus.MATERIALS_ISSUED,
+      notes: 'Dispatched to Sri Lakshmi Bleaching via vehicle TN-33-AX-8910',
+      performedByUserId: adminUser.id,
     },
-    {
-      num: 'PB-2026-0802',
-      target: 'Mom’s Maternity Sanitary Pad & Fixator / Disposable Maternity Pad',
-      planned: 3000,
-      completed: 3000,
-      status: ProductionWorkOrderStatus.COMPLETED,
-      daysAgo: 10,
-    },
-    {
-      num: 'PB-2026-0803',
-      target: 'Dr.C Adult Pullups – Premium (Large)',
-      planned: 2000,
-      completed: 2000,
-      status: ProductionWorkOrderStatus.COMPLETED,
-      daysAgo: 7,
-    },
-    {
-      num: 'PB-2026-0804',
-      target: 'BeBe Baby Diapers (Medium)',
-      planned: 4000,
-      completed: 2800,
-      status: ProductionWorkOrderStatus.IN_PROGRESS,
-      daysAgo: 4,
-    },
-    {
-      num: 'PB-2026-0805',
-      target: 'Z Guard Natural Mosquito Repellent Spray',
-      planned: 3000,
-      completed: 1800,
-      status: ProductionWorkOrderStatus.IN_PROGRESS,
-      daysAgo: 2,
-    },
-    {
-      num: 'PB-2026-0806',
-      target: 'Surgeon’s Gown Kit',
-      planned: 1200,
-      completed: 0,
-      status: ProductionWorkOrderStatus.PLANNED,
-      daysAgo: 1,
-    },
-  ];
+  });
 
-  for (const pb of productionBatchesData) {
-    await prisma.productionBatch.create({
-      data: {
-        batchNumber: pb.num,
-        workOrderNumber: `WO-${pb.num}`,
-        targetProduct: pb.target,
-        plannedQty: pb.planned,
-        completedQty: pb.completed,
-        status: pb.status,
-        startDate: getPastDate(pb.daysAgo),
-        endDate: pb.status === ProductionWorkOrderStatus.COMPLETED ? getPastDate(pb.daysAgo - 2) : null,
-        createdAt: getPastDate(pb.daysAgo),
-      },
-    });
-  }
-  console.log('✔ Production Batches seeded.');
+  const jwo2 = await prisma.jobWorkOrder.create({
+    data: {
+      jobWorkNumber: 'JWO-2026-002',
+      challanNumber: 'CH-2026-002',
+      expectedReturnDate: new Date('2026-08-20'),
+      status: JobWorkStatus.COMPLETED,
+      jobWorkCompanyId: jwComps['Apex Medical Sterilization & Gamma Processing'].id,
+      rawMaterialId: rawMaterials['RM-BLG-003'].id,
+      finishedProductId: rawMaterials['RM-BLG-003'].id,
+      totalIssuedWeight: 150.0,
+      totalIssuedQty: 2,
+      totalReturnedWeight: 147.5,
+      totalReturnedQty: 2,
+      totalWastageWeight: 2.5,
+      totalWastageQty: 0,
+      pendingWeight: 0,
+      pendingQty: 0,
+      vehicleNumber: 'TN-29-BF-4412',
+      driverName: 'Senthil Kumar',
+      remarks: 'Gamma sterilization batch completed and returned',
+      closedAt: new Date('2026-08-20'),
+      closedByUserId: adminUser.id,
+    },
+  });
 
-  console.log('🚀 DB UPDATE COMPLETED: All new catalogue products, raw materials, and job work orders seeded successfully!');
+  await prisma.jobWorkReturnItem.create({
+    data: {
+      jobWorkOrderId: jwo2.id,
+      returnedDate: new Date('2026-08-20'),
+      rollNumber: 'ROLL-2026-003',
+      returnedWeight: 147.5,
+      returnedQty: 2,
+      wastageWeight: 2.5,
+      finishedProductId: rawMaterials['RM-BLG-003'].id,
+      remarks: 'Gamma sterilization passed with zero microbial load',
+      receivedByUserId: adminUser.id,
+    },
+  });
+
+  // 2 Packing Bundles
+  await prisma.packingBundle.create({
+    data: {
+      bundleBarcode: 'BUN-2026-001',
+      bundleType: 'Master Export Carton (500 units)',
+      grossWeightKg: 25.5,
+      netWeightKg: 22.5,
+      totalUnits: 500,
+      locationBin: 'LOC-FG-05: Rack E-1',
+      isDispatched: false,
+    },
+  });
+
+  await prisma.packingBundle.create({
+    data: {
+      bundleBarcode: 'BUN-2026-002',
+      bundleType: 'Standard Box (250 units)',
+      grossWeightKg: 13.0,
+      netWeightKg: 11.25,
+      totalUnits: 250,
+      locationBin: 'LOC-FG-05: Rack E-2',
+      isDispatched: true,
+    },
+  });
+
+  console.log('🎉 [DONE] Database successfully populated with exactly up to 5 clear records per module!');
 }
 
 main()
   .catch((e) => {
-    console.error('Seed execution error:', e);
+    console.error('❌ Error executing database seed:', e);
     process.exit(1);
   })
   .finally(async () => {

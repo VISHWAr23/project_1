@@ -176,6 +176,8 @@ model User {
   salaryAdjustmentsCreated SalaryAdjustment[]
   salaryPaymentsRecorded   SalaryPayment[]
   salarySlipsGenerated     SalarySlip[]
+  advancesIssued           EmployeeAdvance[]
+  advanceRepaymentsRecorded AdvanceRepayment[]
 
   @@index([email], map: "idx_users_email")
   @@index([role], map: "idx_users_role")
@@ -232,7 +234,9 @@ model Employee {
   employmentType  String?        @default("Permanent") @map("employment_type") @db.VarChar(50)
   shift           String?        @default("General Day") @db.VarChar(50)
   salaryType      String?        @default("Monthly Salary") @map("salary_type") @db.VarChar(50)
+  salaryCycle     String?        @default("MONTHLY") @map("salary_cycle") @db.VarChar(20) // MONTHLY, WEEKLY
   baseWage        Decimal?       @default(0) @map("base_wage") @db.Decimal(12, 2)
+  otRatePerHour   Decimal?       @default(0) @map("ot_rate_per_hour") @db.Decimal(10, 2)
   bankName        String?        @map("bank_name") @db.VarChar(100)
   bankAccountNo   String?        @map("bank_account_no") @db.VarChar(50)
   bankIfsc        String?        @map("bank_ifsc") @db.VarChar(20)
@@ -248,16 +252,18 @@ model Employee {
   designationId String?      @map("designation_id") @db.Uuid
   designation   Designation? @relation(fields: [designationId], references: [id], onDelete: SetNull)
 
-  user            User?
-  documents       EmployeeDocument[]
-  attendanceLogs  AttendanceLog[]
-  salaryStructure SalaryStructure?
-  payrollDetails  PayrollDetail[]
-  payrollItems    PayrollItem[]
+  user              User?
+  documents         EmployeeDocument[]
+  attendanceLogs    AttendanceLog[]
+  salaryStructure   SalaryStructure?
+  payrollDetails    PayrollDetail[]
+  payrollItems      PayrollItem[]
   salaryAdjustments SalaryAdjustment[]
-  salaryPayments   SalaryPayment[]
-  salaryHistories  SalaryHistory[]
-  salarySlips      SalarySlip[]
+  salaryPayments    SalaryPayment[]
+  salaryHistories   SalaryHistory[]
+  salarySlips       SalarySlip[]
+  advances          EmployeeAdvance[]
+  advanceRepayments AdvanceRepayment[]
 
   @@index([employeeCode], map: "idx_emp_code")
   @@index([status], map: "idx_emp_status")
@@ -285,8 +291,12 @@ model AttendanceLog {
   date          DateTime         @db.Date
   checkIn       DateTime?        @map("check_in")
   checkOut      DateTime?        @map("check_out")
+  lunchStart    DateTime?        @map("lunch_start")
+  lunchEnd      DateTime?        @map("lunch_end")
   status        AttendanceStatus @default(PRESENT)
   workingHours  Decimal          @default(0) @map("working_hours") @db.Decimal(5, 2)
+  overtimeHours Decimal          @default(0) @map("overtime_hours") @db.Decimal(5, 2)
+  otAmount      Decimal          @default(0) @map("ot_amount") @db.Decimal(10, 2)
   remarks       String?          @db.Text
   createdAt     DateTime         @default(now()) @map("created_at")
   updatedAt     DateTime         @updatedAt @map("updated_at")
@@ -327,10 +337,15 @@ model PayrollRun {
   payrollCode        String        @unique @map("payroll_code") @db.VarChar(50)
   month              Int
   year               Int
+  periodType         String        @default("MONTHLY") @map("period_type") @db.VarChar(20) // MONTHLY, WEEKLY
+  weekNumber         Int?          @map("week_number")
+  startDate          DateTime?     @map("start_date") @db.Date
+  endDate            DateTime?     @map("end_date") @db.Date
   totalEmployees     Int           @default(0) @map("total_employees")
   totalGross         Decimal       @default(0) @map("total_gross") @db.Decimal(14, 2)
   totalDeductions    Decimal       @default(0) @map("total_deductions") @db.Decimal(14, 2)
   totalBonus         Decimal       @default(0) @map("total_bonus") @db.Decimal(14, 2)
+  totalOvertime      Decimal       @default(0) @map("total_overtime") @db.Decimal(14, 2)
   totalNet           Decimal       @default(0) @map("total_net") @db.Decimal(14, 2)
   status             PayrollStatus @default(DRAFT)
   remarks            String?       @db.Text
@@ -381,6 +396,7 @@ model PayrollItem {
   employee           Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   salaryType         String        @default("Monthly Salary") @map("salary_type") @db.VarChar(50)
+  periodType         String        @default("MONTHLY") @map("period_type") @db.VarChar(20) // MONTHLY, WEEKLY
   baseWage           Decimal       @default(0) @map("base_wage") @db.Decimal(12, 2)
   
   workingDaysInMonth Int           @default(26) @map("working_days_in_month")
@@ -393,6 +409,11 @@ model PayrollItem {
   payableDays        Decimal       @default(0) @map("payable_days") @db.Decimal(5, 2)
 
   basicSalary        Decimal       @default(0) @map("basic_salary") @db.Decimal(12, 2)
+  
+  overtimeHours      Decimal       @default(0) @map("overtime_hours") @db.Decimal(6, 2)
+  overtimeRate       Decimal       @default(0) @map("overtime_rate") @db.Decimal(10, 2)
+  overtimeSalary     Decimal       @default(0) @map("overtime_salary") @db.Decimal(12, 2)
+
   grossSalary        Decimal       @default(0) @map("gross_salary") @db.Decimal(12, 2)
 
   bonusAmount        Decimal       @default(0) @map("bonus_amount") @db.Decimal(12, 2)
@@ -448,12 +469,13 @@ model SalaryAdjustment {
 
 model SalaryPayment {
   id                 String        @id @default(uuid()) @db.Uuid
-  payrollItemId      String        @map("payroll_item_id") @db.Uuid
-  payrollItem        PayrollItem   @relation(fields: [payrollItemId], references: [id], onDelete: Cascade)
+  payrollItemId      String?       @map("payroll_item_id") @db.Uuid
+  payrollItem        PayrollItem?  @relation(fields: [payrollItemId], references: [id], onDelete: SetNull)
 
   employeeId         String        @map("employee_id") @db.Uuid
   employee           Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
+  paymentType        String        @default("NORMAL_SALARY") @map("payment_type") @db.VarChar(50) // NORMAL_SALARY, OVERTIME_SALARY, ADVANCE_DISBURSEMENT, ADVANCE_REPAYMENT, FULL_SETTLEMENT
   amount             Decimal       @db.Decimal(12, 2)
   paymentMethod      PaymentMethod @default(BANK_TRANSFER) @map("payment_method")
   transactionRef     String?       @map("transaction_ref") @db.VarChar(100)
@@ -468,6 +490,55 @@ model SalaryPayment {
   @@index([payrollItemId], map: "idx_payment_payroll_item")
   @@index([employeeId], map: "idx_payment_employee")
   @@map("salary_payments")
+}
+
+model EmployeeAdvance {
+  id              String             @id @default(uuid()) @db.Uuid
+  employeeId      String             @map("employee_id") @db.Uuid
+  employee        Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  amount          Decimal            @db.Decimal(12, 2)
+  repaidAmount    Decimal            @default(0) @map("repaid_amount") @db.Decimal(12, 2)
+  balanceAmount   Decimal            @map("balance_amount") @db.Decimal(12, 2)
+  weeklyDeduction Decimal            @default(0) @map("weekly_deduction") @db.Decimal(12, 2)
+  reason          String?            @db.Text
+  status          String             @default("ACTIVE") @db.VarChar(50) // ACTIVE, FULLY_REPAID, CANCELLED
+  issueDate       DateTime           @default(now()) @map("issue_date") @db.Date
+  
+  repayments      AdvanceRepayment[]
+  
+  createdByUserId String?            @map("created_by_user_id") @db.Uuid
+  createdByUser   User?              @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  @@index([employeeId], map: "idx_emp_advance_emp")
+  @@map("employee_advances")
+}
+
+model AdvanceRepayment {
+  id               String           @id @default(uuid()) @db.Uuid
+  advanceId        String           @map("advance_id") @db.Uuid
+  advance          EmployeeAdvance  @relation(fields: [advanceId], references: [id], onDelete: Cascade)
+  
+  employeeId       String           @map("employee_id") @db.Uuid
+  employee         Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  amount           Decimal          @db.Decimal(12, 2)
+  paymentMethod    PaymentMethod    @default(CASH) @map("payment_method")
+  repaymentDate    DateTime         @default(now()) @map("repayment_date")
+  payrollItemId    String?          @map("payroll_item_id") @db.Uuid
+  notes            String?          @db.Text
+  
+  recordedByUserId String?          @map("recorded_by_user_id") @db.Uuid
+  recordedByUser   User?            @relation(fields: [recordedByUserId], references: [id], onDelete: SetNull)
+  
+  createdAt        DateTime         @default(now()) @map("created_at")
+
+  @@index([advanceId], map: "idx_adv_repay_adv")
+  @@index([employeeId], map: "idx_adv_repay_emp")
+  @@map("advance_repayments")
 }
 
 model SalaryHistory {

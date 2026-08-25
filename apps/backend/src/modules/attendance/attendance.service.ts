@@ -30,35 +30,70 @@ export class AttendanceService {
   }
 
   /**
-   * Helper: Auto-calculate working hours & overtime from checkIn/checkOut
+   * Helper: Auto-calculate working hours & overtime from checkIn/checkOut/lunch
+   * Standard Shift: 9:00 AM to 6:30 PM (8.5 hrs regular work + 1 hr lunch 1:30 PM - 2:30 PM)
    */
-  private calculateHours(checkInStr?: string, checkOutStr?: string, status?: AttendanceStatus) {
-    if (status === AttendanceStatus.ABSENT || status === AttendanceStatus.LEAVE || status === AttendanceStatus.HOLIDAY || status === AttendanceStatus.WEEKLY_OFF) {
-      return { workingHours: 0, overtimeHours: 0 };
+  private calculateHours(
+    checkInStr?: string | null,
+    checkOutStr?: string | null,
+    lunchStartStr?: string | null,
+    lunchEndStr?: string | null,
+    status?: AttendanceStatus,
+    otRatePerHour: number = 0,
+  ) {
+    if (
+      status === AttendanceStatus.ABSENT ||
+      status === AttendanceStatus.LEAVE ||
+      status === AttendanceStatus.HOLIDAY ||
+      status === AttendanceStatus.WEEKLY_OFF
+    ) {
+      return { workingHours: 0, overtimeHours: 0, otAmount: 0 };
     }
 
-    if (status === AttendanceStatus.HALF_DAY) {
-      return { workingHours: 4 };
-    }
+    const standardRegularHours = status === AttendanceStatus.HALF_DAY ? 4.25 : 8.5;
 
     if (!checkInStr || !checkOutStr) {
-      return { workingHours: 8 };
+      return { workingHours: standardRegularHours, overtimeHours: 0, otAmount: 0 };
     }
 
     try {
-      const inTime = new Date(checkInStr).getTime();
-      const outTime = new Date(checkOutStr).getTime();
-      if (outTime > inTime) {
-        const totalMinutes = (outTime - inTime) / (1000 * 60);
-        const totalHours = Math.round((totalMinutes / 60) * 100) / 100;
-        const workingHours = Math.min(totalHours, 8);
-        return { workingHours };
+      const inDate = new Date(checkInStr);
+      const outDate = new Date(checkOutStr);
+
+      if (outDate.getTime() > inDate.getTime()) {
+        const totalElapsedMinutes = (outDate.getTime() - inDate.getTime()) / (1000 * 60);
+
+        // Calculate lunch break deduction
+        let lunchMinutes = 0;
+        if (lunchStartStr && lunchEndStr) {
+          const lStart = new Date(lunchStartStr).getTime();
+          const lEnd = new Date(lunchEndStr).getTime();
+          if (lEnd > lStart && lEnd <= outDate.getTime() && lStart >= inDate.getTime()) {
+            lunchMinutes = (lEnd - lStart) / (1000 * 60);
+          }
+        } else if (totalElapsedMinutes >= 330) {
+          // Standard lunch break deduction if shift is >= 5.5 hours
+          lunchMinutes = 60;
+        }
+
+        const netWorkedMinutes = Math.max(0, totalElapsedMinutes - lunchMinutes);
+        const netWorkedHours = Math.round((netWorkedMinutes / 60) * 100) / 100;
+
+        if (netWorkedHours >= standardRegularHours) {
+          const workingHours = standardRegularHours;
+          const overtimeHours = Math.max(0, Math.round((netWorkedHours - standardRegularHours) * 100) / 100);
+          const otAmount = Math.round(overtimeHours * otRatePerHour * 100) / 100;
+          return { workingHours, overtimeHours, otAmount };
+        } else {
+          // If marked PRESENT (Full Day) or regular shift, standard regular hours apply
+          return { workingHours: standardRegularHours, overtimeHours: 0, otAmount: 0 };
+        }
       }
     } catch {
       // Fallback
     }
 
-    return { workingHours: 8 };
+    return { workingHours: standardRegularHours, overtimeHours: 0, otAmount: 0 };
   }
 
   /**
@@ -158,7 +193,7 @@ export class AttendanceService {
         date: dateUtc,
         employee: { deletedAt: null },
       },
-      select: { status: true },
+      select: { status: true, workingHours: true, overtimeHours: true, otAmount: true },
     });
 
     const presentCount = logs.filter((l) => l.status === AttendanceStatus.PRESENT).length;
@@ -166,6 +201,8 @@ export class AttendanceService {
     const halfDayCount = logs.filter((l) => l.status === AttendanceStatus.HALF_DAY).length;
     const leaveCount = logs.filter((l) => l.status === AttendanceStatus.LEAVE).length;
     const unmarkedCount = Math.max(0, activeEmployeesCount - logs.length);
+    const totalOvertimeHours = logs.reduce((acc, l) => acc + Number(l.overtimeHours || 0), 0);
+    const totalOvertimeAmount = logs.reduce((acc, l) => acc + Number(l.otAmount || 0), 0);
 
     return {
       date: dateUtc.toISOString().split('T')[0],
@@ -175,6 +212,8 @@ export class AttendanceService {
       halfDayToday: halfDayCount,
       leaveToday: leaveCount,
       unmarkedToday: unmarkedCount,
+      totalOvertimeHours: Math.round(totalOvertimeHours * 100) / 100,
+      totalOvertimeAmount: Math.round(totalOvertimeAmount * 100) / 100,
     };
   }
 
@@ -214,6 +253,8 @@ export class AttendanceService {
       const totalHalfDay = logs.filter((l) => l.status === AttendanceStatus.HALF_DAY).length;
       const totalLeave = logs.filter((l) => l.status === AttendanceStatus.LEAVE).length;
       const totalWorkingHours = logs.reduce((acc, l) => acc + Number(l.workingHours || 0), 0);
+      const totalOvertimeHours = logs.reduce((acc, l) => acc + Number(l.overtimeHours || 0), 0);
+      const totalOtAmount = logs.reduce((acc, l) => acc + Number(l.otAmount || 0), 0);
 
       return {
         employeeId: emp.id,
@@ -221,15 +262,25 @@ export class AttendanceService {
         name: `${emp.firstName} ${emp.lastName}`,
         department: emp.department?.name || 'Unassigned',
         designation: emp.designation?.name || 'Staff',
+        otRatePerHour: Number(emp.otRatePerHour || 0),
+        salaryCycle: emp.salaryCycle || 'MONTHLY',
         totalPresent,
         totalAbsent,
         totalHalfDay,
         totalLeave,
-        totalWorkingHours,
+        totalWorkingHours: Math.round(totalWorkingHours * 100) / 100,
+        totalOvertimeHours: Math.round(totalOvertimeHours * 100) / 100,
+        totalOtAmount: Math.round(totalOtAmount * 100) / 100,
         logs: logs.map((l) => ({
           date: l.date.toISOString().split('T')[0],
           status: l.status,
-          workingHours: l.workingHours,
+          workingHours: Number(l.workingHours || 0),
+          overtimeHours: Number(l.overtimeHours || 0),
+          otAmount: Number(l.otAmount || 0),
+          checkIn: l.checkIn,
+          checkOut: l.checkOut,
+          lunchStart: l.lunchStart,
+          lunchEnd: l.lunchEnd,
         })),
       };
     });
@@ -273,6 +324,8 @@ export class AttendanceService {
         id: employee.id,
         code: employee.employeeCode,
         name: `${employee.firstName} ${employee.lastName}`,
+        otRatePerHour: Number(employee.otRatePerHour || 0),
+        salaryCycle: employee.salaryCycle || 'MONTHLY',
       },
       logs,
     };
@@ -300,9 +353,15 @@ export class AttendanceService {
 
     const checkIn = dto.checkIn ? new Date(dto.checkIn) : null;
     const checkOut = dto.checkOut ? new Date(dto.checkOut) : null;
+    const lunchStart = dto.lunchStart ? new Date(dto.lunchStart) : null;
+    const lunchEnd = dto.lunchEnd ? new Date(dto.lunchEnd) : null;
 
-    const computed = this.calculateHours(dto.checkIn, dto.checkOut, dto.status);
+    const empOtRate = Number(employee.otRatePerHour || 0);
+    const computed = this.calculateHours(dto.checkIn, dto.checkOut, dto.lunchStart, dto.lunchEnd, dto.status, empOtRate);
+    
     const workingHours = dto.workingHours !== undefined ? dto.workingHours : computed.workingHours;
+    const overtimeHours = dto.overtimeHours !== undefined ? dto.overtimeHours : computed.overtimeHours;
+    const otAmount = dto.otAmount !== undefined ? dto.otAmount : computed.otAmount;
 
     const record = await prisma.attendanceLog.upsert({
       where: {
@@ -315,7 +374,11 @@ export class AttendanceService {
         status: dto.status,
         checkIn,
         checkOut,
+        lunchStart,
+        lunchEnd,
         workingHours,
+        overtimeHours,
+        otAmount,
         remarks: dto.remarks,
         createdByUserId: userId || null,
       },
@@ -325,7 +388,11 @@ export class AttendanceService {
         status: dto.status,
         checkIn,
         checkOut,
+        lunchStart,
+        lunchEnd,
         workingHours,
+        overtimeHours,
+        otAmount,
         remarks: dto.remarks,
         createdByUserId: userId || null,
       },
@@ -369,7 +436,11 @@ export class AttendanceService {
             status: item.status,
             checkIn: item.checkIn,
             checkOut: item.checkOut,
+            lunchStart: item.lunchStart,
+            lunchEnd: item.lunchEnd,
             workingHours: item.workingHours,
+            overtimeHours: item.overtimeHours,
+            otAmount: item.otAmount,
             remarks: item.remarks,
           },
           userId
@@ -391,7 +462,10 @@ export class AttendanceService {
    * Update existing attendance record
    */
   async update(id: string, dto: UpdateAttendanceDto, userId?: string) {
-    const existing = await prisma.attendanceLog.findUnique({ where: { id } });
+    const existing = await prisma.attendanceLog.findUnique({
+      where: { id },
+      include: { employee: true },
+    });
     if (!existing) {
       throw new NotFoundException(`Attendance record with ID ${id} not found`);
     }
@@ -400,7 +474,22 @@ export class AttendanceService {
     if (dto.status) dataToUpdate.status = dto.status;
     if (dto.checkIn !== undefined) dataToUpdate.checkIn = dto.checkIn ? new Date(dto.checkIn) : null;
     if (dto.checkOut !== undefined) dataToUpdate.checkOut = dto.checkOut ? new Date(dto.checkOut) : null;
-    if (dto.workingHours !== undefined) dataToUpdate.workingHours = dto.workingHours;
+    if (dto.lunchStart !== undefined) dataToUpdate.lunchStart = dto.lunchStart ? new Date(dto.lunchStart) : null;
+    if (dto.lunchEnd !== undefined) dataToUpdate.lunchEnd = dto.lunchEnd ? new Date(dto.lunchEnd) : null;
+    
+    const empOtRate = Number(existing.employee?.otRatePerHour || 0);
+    const computed = this.calculateHours(
+      dto.checkIn !== undefined ? dto.checkIn : (existing.checkIn?.toISOString() || null),
+      dto.checkOut !== undefined ? dto.checkOut : (existing.checkOut?.toISOString() || null),
+      dto.lunchStart !== undefined ? dto.lunchStart : (existing.lunchStart?.toISOString() || null),
+      dto.lunchEnd !== undefined ? dto.lunchEnd : (existing.lunchEnd?.toISOString() || null),
+      dto.status || existing.status,
+      empOtRate
+    );
+
+    dataToUpdate.workingHours = dto.workingHours !== undefined ? dto.workingHours : computed.workingHours;
+    dataToUpdate.overtimeHours = dto.overtimeHours !== undefined ? dto.overtimeHours : computed.overtimeHours;
+    dataToUpdate.otAmount = dto.otAmount !== undefined ? dto.otAmount : computed.otAmount;
     if (dto.remarks !== undefined) dataToUpdate.remarks = dto.remarks;
 
     const updated = await prisma.attendanceLog.update({

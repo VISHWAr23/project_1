@@ -6,15 +6,11 @@ export class RolesGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const { user } = context.switchToHttp().getRequest();
 
-    if (!user || !user.role) {
+    if (!user) {
       throw new ForbiddenException('User identity not established');
     }
 
-    // Single enterprise ADMIN role has full system access
-    if (user.role === UserRole.ADMIN) {
-      return true;
-    }
-
-    throw new ForbiddenException('Access restricted to System Administrators');
+    // Unified single-role model: all authenticated users have full access
+    return true;
   }
 }

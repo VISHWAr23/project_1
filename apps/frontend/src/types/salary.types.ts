@@ -25,8 +25,9 @@ export interface SalaryAdjustment {
 
 export interface SalaryPayment {
   id: string;
-  payrollItemId: string;
+  payrollItemId?: string | null;
   employeeId: string;
+  paymentType?: string;
   amount: number;
   paymentMethod: PaymentMethod;
   transactionRef?: string;
@@ -50,6 +51,7 @@ export interface PayrollItem {
   payrollRunId: string;
   employeeId: string;
   salaryType: string;
+  periodType?: 'MONTHLY' | 'WEEKLY' | string;
   baseWage: number;
   workingDaysInMonth: number;
   presentDays: number;
@@ -60,6 +62,9 @@ export interface PayrollItem {
   weeklyOffCount: number;
   payableDays: number;
   basicSalary: number;
+  overtimeHours?: number;
+  overtimeRate?: number;
+  overtimeSalary?: number;
   grossSalary: number;
   bonusAmount: number;
   incentiveAmount: number;
@@ -87,6 +92,8 @@ export interface PayrollItem {
     bankIfsc?: string;
     upiId?: string;
     panNo?: string;
+    salaryCycle?: string;
+    otRatePerHour?: number;
     department?: { id: string; name: string; code: string };
     designation?: { id: string; name: string; code: string };
   };
@@ -100,10 +107,15 @@ export interface PayrollRun {
   payrollCode: string;
   month: number;
   year: number;
+  periodType?: 'MONTHLY' | 'WEEKLY' | string;
+  weekNumber?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
   totalEmployees: number;
   totalGross: number;
   totalDeductions: number;
   totalBonus: number;
+  totalOvertime?: number;
   totalNet: number;
   status: PayrollStatus;
   remarks?: string;
@@ -144,10 +156,16 @@ export interface SalaryDashboardSummary {
 export interface GeneratePayrollPayload {
   month: number;
   year: number;
+  periodType?: 'MONTHLY' | 'WEEKLY';
+  weekNumber?: number;
+  startDate?: string;
+  endDate?: string;
   remarks?: string;
 }
 
 export interface UpdatePayrollItemAdjustmentPayload {
+  overtimeHours?: number;
+  overtimeRate?: number;
   bonusAmount?: number;
   incentiveAmount?: number;
   lateDeduction?: number;
@@ -161,7 +179,9 @@ export interface UpdatePayrollItemAdjustmentPayload {
 }
 
 export interface RecordSalaryPaymentPayload {
-  payrollItemId: string;
+  payrollItemId?: string;
+  employeeId?: string;
+  paymentType?: 'NORMAL_SALARY' | 'OVERTIME_SALARY' | 'ADVANCE_DISBURSEMENT' | 'ADVANCE_REPAYMENT' | 'FULL_SETTLEMENT';
   amount: number;
   paymentMethod: PaymentMethod;
   transactionRef?: string;

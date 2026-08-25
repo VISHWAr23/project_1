@@ -76,4 +76,33 @@ export const employeeService = {
       method: 'DELETE',
     });
   },
+
+  async getFinancialSummary(employeeId: string): Promise<any> {
+    return await apiClient<any>(`/employees/${employeeId}/financial-summary`);
+  },
+
+  async createAdvance(employeeId: string, payload: any): Promise<any> {
+    return await apiClient<any>(`/employees/${employeeId}/advances`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async repayAdvance(employeeId: string, payload: any): Promise<any> {
+    return await apiClient<any>(`/employees/${employeeId}/repay-advance`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async settlePayment(employeeId: string, payload: any): Promise<any> {
+    return await apiClient<any>(`/employees/${employeeId}/settle-payment`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getPaymentHistory(employeeId: string): Promise<any> {
+    return await apiClient<any>(`/employees/${employeeId}/payment-history`);
+  },
 };

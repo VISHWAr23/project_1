@@ -18,6 +18,18 @@ export class UpdatePayrollItemAdjustmentDto {
   @Type(() => Number)
   @IsNumber()
   @Min(0)
+  overtimeHours?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  overtimeRate?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   lateDeduction?: number;
 
   @IsOptional()

@@ -166,7 +166,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
                     {user?.email || 'admin@manufacturing.com'}
                   </p>
                   <p className="text-[10px] font-mono text-blue-600 dark:text-blue-400 font-semibold">
-                    {user?.role || 'SUPER_ADMIN'}
+                    {user?.role || 'ADMIN'}
                   </p>
                 </div>
               </div>

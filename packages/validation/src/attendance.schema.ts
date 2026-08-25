@@ -14,8 +14,12 @@ export const createAttendanceSchema = z.object({
   date: z.string().min(1, 'Date is required'),
   checkIn: z.string().optional().or(z.literal('')).nullable(),
   checkOut: z.string().optional().or(z.literal('')).nullable(),
+  lunchStart: z.string().optional().or(z.literal('')).nullable(),
+  lunchEnd: z.string().optional().or(z.literal('')).nullable(),
   status: attendanceStatusEnum.default('PRESENT'),
-  workingHours: z.number().min(0).max(24).optional().default(8),
+  workingHours: z.number().min(0).max(24).optional().default(8.5),
+  overtimeHours: z.number().min(0).max(24).optional().default(0),
+  otAmount: z.number().min(0).optional().default(0),
   remarks: z.string().optional().or(z.literal('')),
 });
 
@@ -24,7 +28,11 @@ export const bulkAttendanceItemSchema = z.object({
   status: attendanceStatusEnum.default('PRESENT'),
   checkIn: z.string().optional().or(z.literal('')).nullable(),
   checkOut: z.string().optional().or(z.literal('')).nullable(),
-  workingHours: z.number().optional().default(8),
+  lunchStart: z.string().optional().or(z.literal('')).nullable(),
+  lunchEnd: z.string().optional().or(z.literal('')).nullable(),
+  workingHours: z.number().optional().default(8.5),
+  overtimeHours: z.number().optional().default(0),
+  otAmount: z.number().optional().default(0),
   remarks: z.string().optional().or(z.literal('')),
 });
 

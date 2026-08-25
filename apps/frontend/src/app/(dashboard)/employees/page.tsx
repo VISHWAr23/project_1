@@ -67,7 +67,9 @@ export default function EmployeesPage() {
     email: '',
     joiningDate: new Date().toISOString().split('T')[0],
     salaryType: 'Monthly Salary',
-    baseWage: 850,
+    salaryCycle: 'MONTHLY',
+    baseWage: 15000,
+    otRatePerHour: 100,
     departmentId: '',
     designationId: '',
   });
@@ -98,7 +100,9 @@ export default function EmployeesPage() {
         email: '',
         joiningDate: new Date().toISOString().split('T')[0],
         salaryType: 'Monthly Salary',
-        baseWage: 850,
+        salaryCycle: 'MONTHLY',
+        baseWage: 15000,
+        otRatePerHour: 100,
         departmentId: '',
         designationId: '',
       });
@@ -176,6 +180,16 @@ export default function EmployeesPage() {
       render: (row) => (
         <span className="font-mono text-xs text-muted-foreground whitespace-nowrap">
           {new Date(row.joiningDate).toLocaleDateString()}
+        </span>
+      ),
+    },
+    {
+      key: 'baseWage',
+      header: 'Base Salary (₹/day)',
+      align: 'right',
+      render: (row) => (
+        <span className="font-mono text-xs font-bold text-emerald-500">
+          ₹{Number(row.baseWage || 0).toLocaleString()} / day
         </span>
       ),
     },
@@ -419,22 +433,34 @@ export default function EmployeesPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-muted-foreground block mb-1">Joining Date</label>
+              <label className="text-muted-foreground block mb-1">Salary Cycle *</label>
+              <select
+                value={formData.salaryCycle || 'MONTHLY'}
+                onChange={(e) => setFormData({ ...formData, salaryCycle: e.target.value })}
+                className="w-full bg-secondary/50 border border-border text-xs rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
+              >
+                <option value="MONTHLY">Monthly</option>
+                <option value="WEEKLY">Weekly (Saturday Pay)</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-muted-foreground block mb-1">Base Salary (₹ / Day) *</label>
               <Input
-                type="date"
-                value={formData.joiningDate}
-                onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
+                type="number"
+                placeholder="e.g. 850"
+                value={formData.baseWage || ''}
+                onChange={(e) => setFormData({ ...formData, baseWage: Number(e.target.value) })}
               />
             </div>
             <div>
-              <label className="text-muted-foreground block mb-1">Base Wage / Salary (₹)</label>
+              <label className="text-muted-foreground block mb-1">OT Rate / Hour (₹) *</label>
               <Input
                 type="number"
-                placeholder="850.00"
-                value={formData.baseWage || ''}
-                onChange={(e) => setFormData({ ...formData, baseWage: Number(e.target.value) })}
+                placeholder="e.g. 150"
+                value={formData.otRatePerHour || ''}
+                onChange={(e) => setFormData({ ...formData, otRatePerHour: Number(e.target.value) })}
               />
             </div>
           </div>

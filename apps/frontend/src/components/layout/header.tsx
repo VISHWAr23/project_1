@@ -106,7 +106,7 @@ export default function Header({ onMobileMenuOpen }: HeaderProps) {
               {user?.email || 'admin@manufacturing.com'}
             </p>
             <span className="text-[9px] font-mono font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-              {user?.role || 'SUPER_ADMIN'}
+              {user?.role || 'ADMIN'}
             </span>
           </div>
         </div>

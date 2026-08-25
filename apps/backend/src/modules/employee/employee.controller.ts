@@ -45,6 +45,39 @@ export class EmployeeController {
     return this.employeeService.getDesignations();
   }
 
+  @Get(':id/financial-summary')
+  @ApiOperation({ summary: 'Get financial and compensation summary including OT and advance balance' })
+  async getFinancialSummary(@Param('id') id: string) {
+    return this.employeeService.getFinancialSummary(id);
+  }
+
+  @Post(':id/advances')
+  @ApiOperation({ summary: 'Disburse a salary advance / loan to employee' })
+  async createAdvance(@Param('id') id: string, @Body() body: any, @Req() req: any) {
+    const userId = req?.user?.id;
+    return this.employeeService.createAdvance({ ...body, employeeId: id }, userId);
+  }
+
+  @Post(':id/repay-advance')
+  @ApiOperation({ summary: 'Record repayment of an advance installment' })
+  async repayAdvance(@Param('id') id: string, @Body() body: any, @Req() req: any) {
+    const userId = req?.user?.id;
+    return this.employeeService.repayAdvance(body, userId);
+  }
+
+  @Post(':id/settle-payment')
+  @ApiOperation({ summary: 'Direct payment settlement (Normal Salary, OT, Advance, Full Settlement)' })
+  async settlePayment(@Param('id') id: string, @Body() body: any, @Req() req: any) {
+    const userId = req?.user?.id;
+    return this.employeeService.settlePayment({ ...body, employeeId: id }, userId);
+  }
+
+  @Get(':id/payment-history')
+  @ApiOperation({ summary: 'Get all payment and advance transaction history for employee' })
+  async getPaymentHistory(@Param('id') id: string) {
+    return this.employeeService.getPaymentHistory(id);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get detailed profile of a single employee' })
   async findOne(@Param('id') id: string) {

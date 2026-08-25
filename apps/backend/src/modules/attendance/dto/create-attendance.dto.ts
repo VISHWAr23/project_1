@@ -23,16 +23,35 @@ export class CreateAttendanceDto {
   @IsOptional()
   checkOut?: string;
 
+  @ApiPropertyOptional({ description: 'Lunch Break Start Time (ISO string or HH:mm)' })
+  @IsString()
+  @IsOptional()
+  lunchStart?: string;
+
+  @ApiPropertyOptional({ description: 'Lunch Break End Time (ISO string or HH:mm)' })
+  @IsString()
+  @IsOptional()
+  lunchEnd?: string;
+
   @ApiProperty({ enum: AttendanceStatus, default: AttendanceStatus.PRESENT })
   @IsEnum(AttendanceStatus)
   @IsOptional()
   status?: AttendanceStatus;
 
-  @ApiPropertyOptional({ description: 'Working Hours' })
+  @ApiPropertyOptional({ description: 'Regular Working Hours (up to 8.5h)' })
   @IsNumber()
   @IsOptional()
   workingHours?: number;
 
+  @ApiPropertyOptional({ description: 'Overtime Hours' })
+  @IsNumber()
+  @IsOptional()
+  overtimeHours?: number;
+
+  @ApiPropertyOptional({ description: 'Calculated OT Amount (INR)' })
+  @IsNumber()
+  @IsOptional()
+  otAmount?: number;
 
   @ApiPropertyOptional({ description: 'Remarks' })
   @IsString()

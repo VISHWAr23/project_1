@@ -137,7 +137,7 @@ export default function SettingsPage() {
           <CardContent className="space-y-3 text-xs">
             <div className="p-3 rounded-lg bg-secondary/50 border border-border space-y-1">
               <p><span className="text-muted-foreground">Primary Admin Email:</span> admin@manufacturing.com</p>
-              <p><span className="text-muted-foreground">Access Role:</span> SUPER_ADMIN (Unrestricted)</p>
+              <p><span className="text-muted-foreground">Access Role:</span> ADMIN (Universal Access - Unrestricted)</p>
             </div>
           </CardContent>
         </Card>

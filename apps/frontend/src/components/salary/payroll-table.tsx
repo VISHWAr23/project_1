@@ -53,20 +53,20 @@ export function PayrollTable({ items, isLoading, onEditAdjustment, onRecordPayme
       sortable: true,
       render: (row) => (
         <div>
-          <span className="font-mono font-semibold text-[#2563EB]">{row.employee?.employeeCode}</span>
+          <span className="font-mono font-semibold text-blue-500">{row.employee?.employeeCode}</span>
           <p className="text-[11px] text-muted-foreground">{row.salaryType}</p>
         </div>
       ),
     },
     {
       key: 'employeeName',
-      header: 'Employee Name',
+      header: 'Employee Name & Cycle',
       sortable: true,
       render: (row) => (
         <div>
           <p className="font-semibold text-foreground">{row.employee?.firstName} {row.employee?.lastName}</p>
           <p className="text-[11px] text-muted-foreground">
-            {row.employee?.department?.name} • {row.employee?.designation?.name}
+            {row.employee?.department?.name} • <span className="text-purple-400 font-bold">{row.periodType || row.employee?.salaryCycle || 'MONTHLY'}</span>
           </p>
         </div>
       ),
@@ -84,33 +84,59 @@ export function PayrollTable({ items, isLoading, onEditAdjustment, onRecordPayme
         </div>
       ),
     },
-
     {
-      key: 'grossSalary',
-      header: 'Gross Salary',
+      key: 'basicSalary',
+      header: 'Base Salary',
       align: 'right',
       render: (row) => (
         <div className="text-right">
           <span className="font-mono text-xs font-semibold text-foreground">
-            ₹ {Number(row.grossSalary).toLocaleString('en-IN')}
+            ₹{Number(row.basicSalary || 0).toLocaleString('en-IN')}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'overtimeSalary',
+      header: 'Overtime (OT)',
+      align: 'right',
+      render: (row) => (
+        <div className="text-right">
+          <span className="font-mono text-xs font-semibold text-purple-400">
+            +₹{Number(row.overtimeSalary || 0).toLocaleString('en-IN')}
+          </span>
+          <p className="text-[10px] text-muted-foreground">
+            {Number(row.overtimeHours || 0)}h @ ₹{Number(row.overtimeRate || 0)}/h
+          </p>
+        </div>
+      ),
+    },
+    {
+      key: 'grossSalary',
+      header: 'Gross (Base+OT)',
+      align: 'right',
+      render: (row) => (
+        <div className="text-right">
+          <span className="font-mono text-xs font-bold text-emerald-400">
+            ₹{Number(row.grossSalary).toLocaleString('en-IN')}
           </span>
           {Number(row.bonusAmount) > 0 && (
-            <p className="text-[10px] text-emerald-500">+₹ {Number(row.bonusAmount)} Bonus</p>
+            <p className="text-[10px] text-emerald-500">+₹{Number(row.bonusAmount)} Bonus</p>
           )}
         </div>
       ),
     },
     {
       key: 'totalDeductions',
-      header: 'Deductions',
+      header: 'Deductions & Advance',
       align: 'right',
       render: (row) => (
         <div className="text-right">
-          <span className="font-mono text-xs font-semibold text-rose-500">
-            - ₹ {Number(row.totalDeductions).toLocaleString('en-IN')}
+          <span className="font-mono text-xs font-semibold text-rose-400">
+            -₹{Number(row.totalDeductions).toLocaleString('en-IN')}
           </span>
-          <p className="text-[10px] text-muted-foreground">
-            PT: ₹{Number(row.professionalTax)} | PF: ₹{Number(row.pfDeduction)}
+          <p className="text-[10px] text-amber-400">
+            Adv Ded: ₹{Number(row.advanceDeduction || 0)}
           </p>
         </div>
       ),
@@ -121,8 +147,8 @@ export function PayrollTable({ items, isLoading, onEditAdjustment, onRecordPayme
       align: 'right',
       render: (row) => (
         <div className="text-right">
-          <span className="font-mono text-sm font-bold text-[#2563EB]">
-            ₹ {Number(row.netSalary).toLocaleString('en-IN')}
+          <span className="font-mono text-sm font-bold text-blue-400">
+            ₹{Number(row.netSalary).toLocaleString('en-IN')}
           </span>
         </div>
       ),

@@ -109,15 +109,25 @@ export class CreateEmployeeDto {
   @IsOptional()
   shift?: string;
 
-  @ApiPropertyOptional({ description: 'Salary Structure Type (Monthly Salary / Daily Wage)' })
+  @ApiPropertyOptional({ description: 'Salary Structure Type (Monthly Salary / Weekly Wage)' })
   @IsString()
   @IsOptional()
   salaryType?: string;
+
+  @ApiPropertyOptional({ description: 'Salary Cycle (MONTHLY / WEEKLY)' })
+  @IsString()
+  @IsOptional()
+  salaryCycle?: string;
 
   @ApiPropertyOptional({ description: 'Base Wage or Salary Amount' })
   @IsNumber()
   @IsOptional()
   baseWage?: number;
+
+  @ApiPropertyOptional({ description: 'Overtime Hourly Rate (INR/hour)' })
+  @IsNumber()
+  @IsOptional()
+  otRatePerHour?: number;
 
 
   @ApiPropertyOptional({ description: 'Bank Name' })

@@ -11,8 +11,12 @@ export interface AttendanceRecord {
   date: string;
   checkIn?: string | null;
   checkOut?: string | null;
+  lunchStart?: string | null;
+  lunchEnd?: string | null;
   status: AttendanceStatus;
   workingHours: number;
+  overtimeHours?: number;
+  otAmount?: number;
   remarks?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -28,6 +32,8 @@ export interface TodayAttendanceStats {
   halfDayToday: number;
   leaveToday: number;
   unmarkedToday: number;
+  totalOvertimeHours?: number;
+  totalOvertimeAmount?: number;
 }
 
 export interface CreateAttendancePayload {
@@ -35,8 +41,12 @@ export interface CreateAttendancePayload {
   date: string;
   checkIn?: string | null;
   checkOut?: string | null;
+  lunchStart?: string | null;
+  lunchEnd?: string | null;
   status: AttendanceStatus;
   workingHours?: number;
+  overtimeHours?: number;
+  otAmount?: number;
   remarks?: string;
 }
 
@@ -45,7 +55,11 @@ export interface BulkAttendanceItemPayload {
   status: AttendanceStatus;
   checkIn?: string | null;
   checkOut?: string | null;
+  lunchStart?: string | null;
+  lunchEnd?: string | null;
   workingHours?: number;
+  overtimeHours?: number;
+  otAmount?: number;
   remarks?: string;
 }
 
@@ -71,6 +85,12 @@ export interface MonthSummaryEmployeeLog {
   date: string;
   status: AttendanceStatus;
   workingHours: number;
+  overtimeHours?: number;
+  otAmount?: number;
+  checkIn?: string | null;
+  checkOut?: string | null;
+  lunchStart?: string | null;
+  lunchEnd?: string | null;
 }
 
 export interface MonthSummaryEmployee {
@@ -79,11 +99,15 @@ export interface MonthSummaryEmployee {
   name: string;
   department: string;
   designation: string;
+  otRatePerHour?: number;
+  salaryCycle?: string;
   totalPresent: number;
   totalAbsent: number;
   totalHalfDay: number;
   totalLeave: number;
   totalWorkingHours: number;
+  totalOvertimeHours?: number;
+  totalOtAmount?: number;
   logs: MonthSummaryEmployeeLog[];
 }
 

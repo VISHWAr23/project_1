@@ -47,8 +47,10 @@ export interface Employee {
   joiningDate: string;
   employmentType?: 'Permanent' | 'Contract' | 'Temporary' | 'Intern' | string | null;
   shift?: string | null;
-  salaryType?: 'Monthly Salary' | 'Daily Wage' | string | null;
+  salaryType?: 'Monthly Salary' | 'Weekly Wage' | 'Daily Wage' | string | null;
+  salaryCycle?: 'MONTHLY' | 'WEEKLY' | string | null;
   baseWage?: number | string | null;
+  otRatePerHour?: number | string | null;
   bankName?: string | null;
   bankAccountNo?: string | null;
   bankIfsc?: string | null;
@@ -65,6 +67,100 @@ export interface Employee {
   designation?: Designation | null;
 
   documents?: EmployeeDocument[];
+  advances?: EmployeeAdvance[];
+}
+
+export interface EmployeeAdvance {
+  id: string;
+  employeeId: string;
+  amount: number;
+  repaidAmount: number;
+  balanceAmount: number;
+  weeklyDeduction: number;
+  reason?: string | null;
+  status: 'ACTIVE' | 'FULLY_REPAID' | 'CANCELLED';
+  issueDate: string;
+  createdAt: string;
+  repayments?: AdvanceRepayment[];
+}
+
+export interface AdvanceRepayment {
+  id: string;
+  advanceId: string;
+  employeeId: string;
+  amount: number;
+  paymentMethod: string;
+  notes?: string | null;
+  repaymentDate: string;
+  createdAt: string;
+}
+
+export interface EmployeeFinancialSummary {
+  employee: {
+    id: string;
+    employeeCode: string;
+    firstName: string;
+    lastName: string;
+    department: string;
+    designation: string;
+    salaryType: string;
+    salaryCycle: string;
+    baseWage: number;
+    otRatePerHour: number;
+  };
+  currentCycle: {
+    periodType: string;
+    startDate: string;
+    endDate: string;
+    presentDays: number;
+    halfDays: number;
+    totalWorkingHours: number;
+    totalOvertimeHours: number;
+    baseSalaryEarned: number;
+    otSalaryEarned: number;
+  };
+  advances: {
+    activeAdvances: EmployeeAdvance[];
+    totalAdvanceGiven: number;
+    totalAdvanceRepaid: number;
+    outstandingBalance: number;
+    weeklyDeductionTotal: number;
+  };
+  recentPayments: any[];
+  settlementSummary: {
+    baseSalaryEarned: number;
+    otSalaryEarned: number;
+    totalGrossEarned: number;
+    pendingAdvanceDeduction: number;
+    estimatedNetPayout: number;
+  };
+}
+
+export interface CreateAdvancePayload {
+  employeeId: string;
+  amount: number;
+  weeklyDeduction?: number;
+  reason?: string;
+  issueDate?: string;
+}
+
+export interface RepayAdvancePayload {
+  advanceId: string;
+  employeeId?: string;
+  amount: number;
+  paymentMethod?: string;
+  notes?: string;
+}
+
+export interface SettlePaymentPayload {
+  employeeId: string;
+  paymentType: 'NORMAL_SALARY' | 'OVERTIME_SALARY' | 'ADVANCE_DISBURSEMENT' | 'ADVANCE_REPAYMENT' | 'FULL_SETTLEMENT';
+  amount: number;
+  weeklyDeduction?: number;
+  paymentMethod?: string;
+  transactionRef?: string;
+  remarks?: string;
+  advanceId?: string;
 }
 
 export interface EmployeeStats {
@@ -97,7 +193,9 @@ export interface CreateEmployeePayload {
   employmentType?: string;
   shift?: string;
   salaryType?: string;
+  salaryCycle?: string;
   baseWage?: number;
+  otRatePerHour?: number;
   bankName?: string;
   bankAccountNo?: string;
   bankIfsc?: string;

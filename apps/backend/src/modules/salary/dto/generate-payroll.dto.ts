@@ -16,5 +16,22 @@ export class GeneratePayrollDto {
 
   @IsOptional()
   @IsString()
+  periodType?: 'MONTHLY' | 'WEEKLY';
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  weekNumber?: number;
+
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsString()
   remarks?: string;
 }
