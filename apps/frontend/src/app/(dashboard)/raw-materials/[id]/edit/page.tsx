@@ -136,8 +136,8 @@ export default function EditRawMaterialPage() {
               <Package className="h-5 w-5 text-[#3ECF8E]" />
               Edit Raw Material Master - {material?.sku}
             </h1>
-            <p className="text-xs text-muted-foreground">Modify item master details, threshold limits & pricing</p>
           </div>
+
         </div>
       </div>
 

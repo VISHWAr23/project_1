@@ -142,8 +142,9 @@ export function QuoteModal({ isOpen, onClose, initialProduct = '' }: QuoteModalP
                   <span className="text-muted-foreground">Estimated Tier Price: </span>
                   <span className="font-mono font-bold text-foreground">₹{unitPrice} / unit</span>
                   <span className="text-[10px] text-emerald-500 font-semibold ml-2">
-                    {quantity >= 1000 ? '⚡ Bulk Wholesale Tier Applied' : 'Standard B2B Tier'}
+                    {quantity >= 1000 ? 'Bulk Wholesale Tier Applied' : 'Standard B2B Tier'}
                   </span>
+
                 </div>
                 <div className="text-right">
                   <span className="text-muted-foreground">Approx Total (Excl. GST): </span>

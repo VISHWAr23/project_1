@@ -215,8 +215,9 @@ export function MultiRollIssueTable({ rows, onChange, maxAvailableStock }: Multi
               <td colSpan={2} className="p-3">
                 {isExceedingStock ? (
                   <span className="text-red-400 text-[11px] font-semibold">
-                    ⚠️ Exceeds available stock balance ({maxAvailableStock} available)
+                    Exceeds available stock balance ({maxAvailableStock} available)
                   </span>
+
                 ) : (
                   <span className="text-muted-foreground text-[11px]">
                     Available stock balance: {maxAvailableStock} units

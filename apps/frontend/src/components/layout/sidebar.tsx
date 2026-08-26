@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
+  Factory,
   Package,
   Truck,
   Users,
@@ -31,8 +32,9 @@ interface NavItem {
 
 export const navItems: NavItem[] = [
   { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { title: 'Gauze Production', href: '/gauze-production', icon: Factory, badge: 'Workflow' },
   { title: 'Materials & Products', href: '/raw-materials', icon: Package },
-  { title: 'Job Work', href: '/job-work', icon: Truck, badge: 'Workflow' },
+  { title: 'Job Work', href: '/job-work', icon: Truck },
   { title: 'Employees', href: '/employees', icon: Users },
   { title: 'Attendance', href: '/attendance', icon: CalendarCheck },
   { title: 'Salary & Payroll', href: '/salary', icon: CircleDollarSign },

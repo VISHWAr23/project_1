@@ -205,13 +205,14 @@ export default function MaterialDetailPage() {
       {/* Main Content Tabs */}
       <Tabs
         tabs={[
-          { id: 'overview', label: '📊 Material Overview & Analytics' },
-          { id: 'history', label: `📜 Stock History Ledger (${material.inventoryTransactions?.length || 0})` },
-          { id: 'job-work', label: `🚚 Linked Job Work Orders (${jobWorkOrders.length})` },
+          { id: 'overview', label: 'Material Overview & Analytics' },
+          { id: 'history', label: `Stock History Ledger (${material.inventoryTransactions?.length || 0})` },
+          { id: 'job-work', label: `Linked Job Work Orders (${jobWorkOrders.length})` },
         ]}
         activeTab={activeTab}
         onChange={setActiveTab}
       />
+
 
       {activeTab === 'overview' && (
         <div className="space-y-6">

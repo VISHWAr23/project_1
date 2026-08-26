@@ -224,3 +224,73 @@ export interface EmployeeListResponse {
   };
   stats: EmployeeStats;
 }
+
+export interface EmployeeReportDailyLog {
+  id: string;
+  date: string;
+  dayOfWeek: string;
+  status: string;
+  checkIn: string | null;
+  checkOut: string | null;
+  workingHours: number;
+  overtimeHours: number;
+  otAmount: number;
+  remarks?: string | null;
+}
+
+export interface EmployeeReportData {
+  employee: {
+    id: string;
+    employeeCode: string;
+    firstName: string;
+    lastName: string;
+    phone?: string | null;
+    email?: string | null;
+    department: string;
+    designation: string;
+    joiningDate: string;
+    employmentType: string;
+    shift: string;
+    salaryType: string;
+    salaryCycle: string;
+    baseWage: number;
+    otRatePerHour: number;
+    bankName?: string | null;
+    bankAccountNo?: string | null;
+    bankIfsc?: string | null;
+    panNo?: string | null;
+    aadhaarNo?: string | null;
+  };
+  period: {
+    startDate: string;
+    endDate: string;
+    totalCalendarDays: number;
+    formattedRange: string;
+  };
+  attendanceSummary: {
+    totalLoggedRecords: number;
+    presentDays: number;
+    halfDays: number;
+    absentDays: number;
+    leaveDays: number;
+    payableDays: number;
+    totalWorkingHours: number;
+    totalOvertimeHours: number;
+  };
+  financialSummary: {
+    baseWage: number;
+    otRatePerHour: number;
+    payableDays: number;
+    baseSalaryEarned: number;
+    otSalaryEarned: number;
+    totalGrossEarned: number;
+    periodAdvanceGiven: number;
+    totalOutstandingAdvance: number;
+    totalDisbursedInPeriod: number;
+  };
+  dailyLogs: EmployeeReportDailyLog[];
+  payments: any[];
+  advances: any[];
+  generatedAt: string;
+}
+

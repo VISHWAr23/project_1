@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   UserCheck,
   UserX,
+  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +31,7 @@ import {
   useDeleteEmployee,
 } from '@/hooks/useEmployees';
 import { Employee, CreateEmployeePayload } from '@/types/employee.types';
+import { EmployeeReportModal } from '@/components/employee/employee-report-modal';
 
 export default function EmployeesPage() {
   const { toast } = useToast();
@@ -43,6 +45,7 @@ export default function EmployeesPage() {
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [reportEmployee, setReportEmployee] = useState<Employee | null>(null);
 
   // Queries & Mutations
   const { data: employeesData, isLoading, refetch } = useEmployees({
@@ -211,6 +214,15 @@ export default function EmployeesPage() {
       align: 'right',
       render: (row) => (
         <div className="flex items-center justify-end gap-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setReportEmployee(row)}
+            leftIcon={<FileText className="h-3.5 w-3.5 text-blue-400" />}
+            className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+          >
+            Report
+          </Button>
           <Link href={`/employees/${row.id}`}>
             <Button variant="ghost" size="sm" leftIcon={<Eye className="h-3.5 w-3.5" />}>
               Profile
@@ -356,7 +368,6 @@ export default function EmployeesPage() {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         title="New Employee Intake Form"
-        description="Register a new staff member into the ERP database."
       >
         <form onSubmit={handleCreateSubmit} className="space-y-4 pt-2 font-mono text-xs">
           <div className="grid grid-cols-2 gap-3">
@@ -481,8 +492,8 @@ export default function EmployeesPage() {
         isOpen={Boolean(deleteTargetId)}
         onClose={() => setDeleteTargetId(null)}
         title="Soft Delete Employee Record"
-        description="Are you sure you want to deactivate and soft-delete this staff member?"
       >
+
         <div className="space-y-4 pt-2">
           <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-start gap-3 text-amber-400 text-xs">
             <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
@@ -506,6 +517,17 @@ export default function EmployeesPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Employee Report Modal */}
+      {reportEmployee && (
+        <EmployeeReportModal
+          isOpen={Boolean(reportEmployee)}
+          onClose={() => setReportEmployee(null)}
+          employeeId={reportEmployee.id}
+          employeeName={`${reportEmployee.firstName} ${reportEmployee.lastName}`}
+        />
+      )}
     </motion.div>
   );
 }
+

@@ -104,15 +104,16 @@ export function StockAdjustmentDialog({ isOpen, onClose, material }: StockAdjust
             <label className="block text-xs font-medium text-muted-foreground mb-1">Transaction Type</label>
             <Select
               options={[
-                { label: '📥 Purchase Receipt (+)', value: 'PURCHASE_RECEIPT' },
-                { label: '➕ Adjustment Add (+)', value: 'ADJUSTMENT_ADD' },
-                { label: '🔄 Job Work Return (+)', value: 'JOB_WORK_RETURN' },
-                { label: '📤 Issue to Work Order (-)', value: 'WORK_ORDER_ISSUE' },
-                { label: '🚚 Job Work Dispatch (-)', value: 'JOB_WORK_DISPATCH' },
-                { label: '➖ Adjustment Subtract (-)', value: 'ADJUSTMENT_SUBTRACT' },
-                { label: '🔀 Warehouse Transfer (-)', value: 'TRANSFER' },
-                { label: '✏️ Manual Correction', value: 'MANUAL_CORRECTION' },
+                { label: 'Purchase Receipt (+)', value: 'PURCHASE_RECEIPT' },
+                { label: 'Adjustment Add (+)', value: 'ADJUSTMENT_ADD' },
+                { label: 'Job Work Return (+)', value: 'JOB_WORK_RETURN' },
+                { label: 'Issue to Work Order (-)', value: 'WORK_ORDER_ISSUE' },
+                { label: 'Job Work Dispatch (-)', value: 'JOB_WORK_DISPATCH' },
+                { label: 'Adjustment Subtract (-)', value: 'ADJUSTMENT_SUBTRACT' },
+                { label: 'Warehouse Transfer (-)', value: 'TRANSFER' },
+                { label: 'Manual Correction', value: 'MANUAL_CORRECTION' },
               ]}
+
               value={transactionType}
               onChange={(e) => setTransactionType(e.target.value as any)}
             />

@@ -664,6 +664,38 @@ export class RawMaterialsService {
     });
   }
 
+  async updateCategory(id: string, name?: string, description?: string) {
+    const category = await prisma.category.findUnique({ where: { id } });
+    if (!category) {
+      throw new NotFoundException(`Category with ID ${id} not found.`);
+    }
+    if (name && name !== category.name) {
+      const exists = await prisma.category.findUnique({ where: { name } });
+      if (exists) {
+        throw new ConflictException(`Category "${name}" already exists.`);
+      }
+    }
+    return await prisma.category.update({
+      where: { id },
+      data: {
+        ...(name !== undefined ? { name } : {}),
+        ...(description !== undefined ? { description } : {}),
+      },
+    });
+  }
+
+  async deleteCategory(id: string) {
+    const category = await prisma.category.findUnique({ where: { id } });
+    if (!category) {
+      throw new NotFoundException(`Category with ID ${id} not found.`);
+    }
+    await prisma.rawMaterial.updateMany({
+      where: { categoryId: id },
+      data: { categoryId: null },
+    });
+    return await prisma.category.delete({ where: { id } });
+  }
+
   /**
    * Units list & create
    */

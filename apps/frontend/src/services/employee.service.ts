@@ -105,4 +105,18 @@ export const employeeService = {
   async getPaymentHistory(employeeId: string): Promise<any> {
     return await apiClient<any>(`/employees/${employeeId}/payment-history`);
   },
+
+  async getReport(
+    employeeId: string,
+    params?: { startDate?: string; endDate?: string; month?: number; year?: number }
+  ): Promise<any> {
+    const query = new URLSearchParams();
+    if (params?.startDate) query.append('startDate', params.startDate);
+    if (params?.endDate) query.append('endDate', params.endDate);
+    if (params?.month) query.append('month', String(params.month));
+    if (params?.year) query.append('year', String(params.year));
+
+    return await apiClient<any>(`/employees/${employeeId}/report?${query.toString()}`);
+  },
 };
+

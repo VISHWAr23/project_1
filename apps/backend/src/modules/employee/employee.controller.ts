@@ -72,10 +72,25 @@ export class EmployeeController {
     return this.employeeService.settlePayment({ ...body, employeeId: id }, userId);
   }
 
-  @Get(':id/payment-history')
-  @ApiOperation({ summary: 'Get all payment and advance transaction history for employee' })
-  async getPaymentHistory(@Param('id') id: string) {
-    return this.employeeService.getPaymentHistory(id);
+  @Get(':id/report')
+  @ApiOperation({ summary: 'Generate detailed attendance, overtime, work hours, and earnings report for employee' })
+  @ApiQuery({ name: 'startDate', required: false, description: 'Start date (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'endDate', required: false, description: 'End date (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'month', required: false, description: 'Month (1-12)' })
+  @ApiQuery({ name: 'year', required: false, description: 'Year (e.g. 2026)' })
+  async getEmployeeReport(
+    @Param('id') id: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('month') month?: number,
+    @Query('year') year?: number,
+  ) {
+    return this.employeeService.getEmployeeReport(id, {
+      startDate,
+      endDate,
+      month: month ? Number(month) : undefined,
+      year: year ? Number(year) : undefined,
+    });
   }
 
   @Get(':id')
@@ -83,6 +98,7 @@ export class EmployeeController {
   async findOne(@Param('id') id: string) {
     return this.employeeService.findOne(id);
   }
+
 
   @Post()
   @ApiOperation({ summary: 'Create a new employee profile' })

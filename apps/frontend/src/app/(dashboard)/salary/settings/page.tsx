@@ -30,8 +30,8 @@ export default function SalarySettingsPage() {
         </Link>
         <div>
           <h1 className="text-xl font-bold text-foreground">Payroll & Tax Rule Configuration</h1>
-          <p className="text-xs text-muted-foreground">Standard working days, Professional Tax, PF and ESI parameters</p>
         </div>
+
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">

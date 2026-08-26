@@ -850,4 +850,193 @@ export class EmployeeService {
 
     return desigs;
   }
+
+  /**
+   * Generate detailed attendance, overtime, work hours, and earnings report for employee
+   */
+  async getEmployeeReport(
+    employeeId: string,
+    query: { startDate?: string; endDate?: string; month?: number; year?: number },
+  ) {
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+      include: {
+        department: true,
+        designation: true,
+        salaryStructure: true,
+        advances: {
+          orderBy: { createdAt: 'desc' },
+        },
+        salaryPayments: {
+          orderBy: { paymentDate: 'desc' },
+        },
+      },
+    });
+
+    if (!employee) {
+      throw new NotFoundException(`Employee with ID ${employeeId} not found`);
+    }
+
+    const now = new Date();
+    let start: Date;
+    let end: Date;
+
+    if (query.startDate && query.endDate) {
+      start = new Date(`${query.startDate}T00:00:00.000Z`);
+      end = new Date(`${query.endDate}T23:59:59.999Z`);
+    } else if (query.month && query.year) {
+      const y = Number(query.year);
+      const m = Number(query.month) - 1;
+      start = new Date(Date.UTC(y, m, 1, 0, 0, 0));
+      end = new Date(Date.UTC(y, m + 1, 0, 23, 59, 59, 999));
+    } else if (query.startDate) {
+      start = new Date(`${query.startDate}T00:00:00.000Z`);
+      end = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999));
+    } else {
+      // Default to current month
+      start = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1, 0, 0, 0));
+      end = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999));
+    }
+
+    // Attendance records in date range
+    const attendanceLogs = await prisma.attendanceLog.findMany({
+      where: {
+        employeeId,
+        date: {
+          gte: start,
+          lte: end,
+        },
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
+
+    let presentDays = 0;
+    let halfDays = 0;
+    let absentDays = 0;
+    let leaveDays = 0;
+    let totalWorkingHours = 0;
+    let totalOvertimeHours = 0;
+    let totalOtAmount = 0;
+
+    for (const log of attendanceLogs) {
+      if (log.status === 'PRESENT') presentDays += 1;
+      else if (log.status === 'HALF_DAY') halfDays += 1;
+      else if (log.status === 'ABSENT') absentDays += 1;
+      else if (log.status === 'LEAVE') leaveDays += 1;
+
+      totalWorkingHours += Number(log.workingHours || 0);
+      totalOvertimeHours += Number(log.overtimeHours || 0);
+      totalOtAmount += Number(log.otAmount || 0);
+    }
+
+    const baseWage = Number(employee.baseWage || (employee.salaryStructure ? employee.salaryStructure.baseSalary : 0));
+    const otRatePerHour = Number(employee.otRatePerHour || 0);
+    const payableDays = presentDays + 0.5 * halfDays;
+    const baseSalaryEarned = Math.round(baseWage * payableDays * 100) / 100;
+    const otSalaryEarned = Math.round(totalOvertimeHours * otRatePerHour * 100) / 100;
+    const totalGrossEarned = Math.round((baseSalaryEarned + otSalaryEarned) * 100) / 100;
+
+    // Filter advances in this range
+    const periodAdvances = employee.advances.filter((a) => {
+      const d = new Date(a.issueDate);
+      return d >= start && d <= end;
+    });
+    const periodAdvanceGiven = periodAdvances.reduce((acc, a) => acc + Number(a.amount || 0), 0);
+
+    // Active advance summary
+    const activeAdvances = employee.advances.filter((a) => a.status === 'ACTIVE');
+    const totalOutstandingAdvance = activeAdvances.reduce((acc, a) => acc + Number(a.balanceAmount || 0), 0);
+
+    // Filter payments in this range
+    const periodPayments = employee.salaryPayments.filter((p) => {
+      const d = new Date(p.paymentDate);
+      return d >= start && d <= end;
+    });
+    const totalDisbursedInPeriod = periodPayments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
+
+    // Daily log mapping
+    const dailyLogs = attendanceLogs.map((l) => ({
+      id: l.id,
+      date: l.date.toISOString().split('T')[0],
+      dayOfWeek: new Date(l.date).toLocaleDateString('en-IN', { weekday: 'short' }),
+      status: l.status,
+      checkIn: l.checkIn ? l.checkIn.toISOString() : null,
+      checkOut: l.checkOut ? l.checkOut.toISOString() : null,
+      workingHours: Number(l.workingHours || 0),
+      overtimeHours: Number(l.overtimeHours || 0),
+      otAmount: Number(l.otAmount || 0),
+      remarks: l.remarks,
+    }));
+
+    const diffDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+
+    const startDateStr = start.toISOString().split('T')[0];
+    const endDateStr = end.toISOString().split('T')[0];
+
+    const formatDatePretty = (dStr: string) => {
+      const [year, month, day] = dStr.split('-').map(Number);
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${String(day).padStart(2, '0')} ${months[month - 1]} ${year}`;
+    };
+
+    return {
+      employee: {
+        id: employee.id,
+        employeeCode: employee.employeeCode,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        phone: employee.phone,
+        email: employee.email,
+        department: employee.department?.name || 'Unassigned',
+        designation: employee.designation?.name || 'Staff',
+        joiningDate: employee.joiningDate,
+        employmentType: employee.employmentType || 'Permanent',
+        shift: employee.shift || 'General Day (09:00 - 18:30)',
+        salaryType: employee.salaryType || 'Monthly Salary',
+        salaryCycle: employee.salaryCycle || 'MONTHLY',
+        baseWage,
+        otRatePerHour,
+        bankName: employee.bankName,
+        bankAccountNo: employee.bankAccountNo,
+        bankIfsc: employee.bankIfsc,
+        panNo: employee.panNo,
+        aadhaarNo: employee.aadhaarNo,
+      },
+      period: {
+        startDate: startDateStr,
+        endDate: endDateStr,
+        totalCalendarDays: diffDays,
+        formattedRange: `${formatDatePretty(startDateStr)} to ${formatDatePretty(endDateStr)}`,
+      },
+
+      attendanceSummary: {
+        totalLoggedRecords: attendanceLogs.length,
+        presentDays,
+        halfDays,
+        absentDays,
+        leaveDays,
+        payableDays,
+        totalWorkingHours: Math.round(totalWorkingHours * 100) / 100,
+        totalOvertimeHours: Math.round(totalOvertimeHours * 100) / 100,
+      },
+      financialSummary: {
+        baseWage,
+        otRatePerHour,
+        payableDays,
+        baseSalaryEarned,
+        otSalaryEarned,
+        totalGrossEarned,
+        periodAdvanceGiven,
+        totalOutstandingAdvance,
+        totalDisbursedInPeriod,
+      },
+      dailyLogs,
+      payments: periodPayments,
+      advances: periodAdvances,
+      generatedAt: new Date().toISOString(),
+    };
+  }
 }
+

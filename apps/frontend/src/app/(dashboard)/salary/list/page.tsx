@@ -120,8 +120,8 @@ export default function PayrollListPage() {
           </Link>
           <div>
             <h1 className="text-xl font-bold text-foreground">Monthly Payroll Batches</h1>
-            <p className="text-xs text-muted-foreground">Historical list of calculated payroll runs</p>
           </div>
+
         </div>
         <Button
           variant="primary"

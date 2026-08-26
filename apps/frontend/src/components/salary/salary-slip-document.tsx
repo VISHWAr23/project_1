@@ -2,6 +2,7 @@ import React from 'react';
 import { Printer, Download, CheckCircle, ShieldCheck, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PayrollItem } from '@/types/salary.types';
+import { formatWorkHours } from '@/lib/date-utils';
 
 interface SalarySlipDocumentProps {
   item: PayrollItem;
@@ -156,7 +157,7 @@ export function SalarySlipDocument({ item }: SalarySlipDocumentProps) {
               </div>
               {Number(item.overtimeSalary || 0) > 0 && (
                 <div className="flex justify-between text-emerald-700 font-semibold">
-                  <span>Overtime ({Number(item.overtimeHours || 0)}h @ ₹{Number(item.overtimeRate || 0)}/h)</span>
+                  <span>Overtime ({formatWorkHours(item.overtimeHours, { zeroText: '0 hr' })} @ ₹{Number(item.overtimeRate || 0)}/hr)</span>
                   <span>+₹ {Number(item.overtimeSalary || 0).toLocaleString('en-IN')}</span>
                 </div>
               )}

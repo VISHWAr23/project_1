@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PayrollItem } from '@/types/salary.types';
+import { formatWorkHours } from '@/lib/date-utils';
 
 interface PayrollTableProps {
   items: PayrollItem[];
@@ -106,7 +107,7 @@ export function PayrollTable({ items, isLoading, onEditAdjustment, onRecordPayme
             +₹{Number(row.overtimeSalary || 0).toLocaleString('en-IN')}
           </span>
           <p className="text-[10px] text-muted-foreground">
-            {Number(row.overtimeHours || 0)}h @ ₹{Number(row.overtimeRate || 0)}/h
+            {formatWorkHours(row.overtimeHours, { zeroText: '0 hr' })} @ ₹{Number(row.overtimeRate || 0)}/hr
           </p>
         </div>
       ),

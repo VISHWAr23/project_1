@@ -91,18 +91,19 @@ export default function GlobalStockHistoryPage() {
           <Select
             options={[
               { label: 'All Transaction Types', value: '' },
-              { label: '📥 Purchase Receipt', value: 'PURCHASE_RECEIPT' },
-              { label: '➕ Stock Add', value: 'ADJUSTMENT_ADD' },
-              { label: '🔄 Job Work Return', value: 'JOB_WORK_RETURN' },
-              { label: '📤 Work Order Issue', value: 'WORK_ORDER_ISSUE' },
-              { label: '🚚 Job Work Dispatch', value: 'JOB_WORK_DISPATCH' },
-              { label: '➖ Stock Subtract', value: 'ADJUSTMENT_SUBTRACT' },
-              { label: '🔀 Transfer', value: 'TRANSFER' },
-              { label: '✏️ Manual Correction', value: 'MANUAL_CORRECTION' },
+              { label: 'Purchase Receipt', value: 'PURCHASE_RECEIPT' },
+              { label: 'Stock Add', value: 'ADJUSTMENT_ADD' },
+              { label: 'Job Work Return', value: 'JOB_WORK_RETURN' },
+              { label: 'Work Order Issue', value: 'WORK_ORDER_ISSUE' },
+              { label: 'Job Work Dispatch', value: 'JOB_WORK_DISPATCH' },
+              { label: 'Stock Subtract', value: 'ADJUSTMENT_SUBTRACT' },
+              { label: 'Transfer', value: 'TRANSFER' },
+              { label: 'Manual Correction', value: 'MANUAL_CORRECTION' },
             ]}
             value={selectedTransactionType}
             onChange={(e) => setSelectedTransactionType(e.target.value)}
           />
+
         </div>
       </div>
 

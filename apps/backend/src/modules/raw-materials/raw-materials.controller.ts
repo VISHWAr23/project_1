@@ -58,6 +58,21 @@ export class RawMaterialsController {
     return this.rawMaterialsService.createCategory(body.name, body.description);
   }
 
+  @Patch('categories/:id')
+  @ApiOperation({ summary: 'Update raw material category' })
+  async updateCategory(
+    @Param('id') id: string,
+    @Body() body: { name?: string; description?: string },
+  ) {
+    return this.rawMaterialsService.updateCategory(id, body.name, body.description);
+  }
+
+  @Delete('categories/:id')
+  @ApiOperation({ summary: 'Delete raw material category' })
+  async deleteCategory(@Param('id') id: string) {
+    return this.rawMaterialsService.deleteCategory(id);
+  }
+
   @Get('units')
   @ApiOperation({ summary: 'Get all units of measure' })
   async getUnits() {

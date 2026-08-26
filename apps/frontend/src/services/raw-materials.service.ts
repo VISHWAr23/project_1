@@ -114,6 +114,19 @@ export const rawMaterialsService = {
     });
   },
 
+  async updateCategory(id: string, name: string, description?: string): Promise<Category> {
+    return await apiClient<Category>(`/raw-materials/categories/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name, description }),
+    });
+  },
+
+  async deleteCategory(id: string): Promise<any> {
+    return await apiClient<any>(`/raw-materials/categories/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
   async getUnits(): Promise<UnitOfMeasure[]> {
     try {
       return await apiClient<UnitOfMeasure[]>('/raw-materials/units');
@@ -145,6 +158,19 @@ export const rawMaterialsService = {
     });
   },
 
+  async updateSupplier(id: string, payload: any): Promise<Supplier> {
+    return await apiClient<Supplier>(`/suppliers/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async deleteSupplier(id: string): Promise<any> {
+    return await apiClient<any>(`/suppliers/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
   async getStorageLocations(search?: string): Promise<StorageLocation[]> {
     const query = search ? `?search=${encodeURIComponent(search)}` : '';
     try {
@@ -158,6 +184,19 @@ export const rawMaterialsService = {
     return await apiClient<StorageLocation>('/storage-locations', {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  },
+
+  async updateStorageLocation(id: string, payload: any): Promise<StorageLocation> {
+    return await apiClient<StorageLocation>(`/storage-locations/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async deleteStorageLocation(id: string): Promise<any> {
+    return await apiClient<any>(`/storage-locations/${id}`, {
+      method: 'DELETE',
     });
   },
 };

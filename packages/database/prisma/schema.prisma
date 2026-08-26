@@ -145,6 +145,20 @@ enum AdjustmentType {
 }
 
 
+enum GauzeProductionStatus {
+  DRAFT
+  RAW_MATERIAL_RECEIVED
+  READY_FOR_BLEACHING
+  SENT_TO_BLEACHING
+  BLEACHING_RECEIVED
+  IN_PROCESSING
+  READY_FOR_PACKING
+  PACKED
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
+
 // ==========================================
 // MODELS
 // ==========================================
@@ -178,6 +192,14 @@ model User {
   salarySlipsGenerated     SalarySlip[]
   advancesIssued           EmployeeAdvance[]
   advanceRepaymentsRecorded AdvanceRepayment[]
+
+  gauzeProductionBatchesCreated GauzeProductionBatch[]
+  gauzeBleachingJobsCreated     GauzeBleachingJob[]
+  gauzeBleachingReceiptsCreated GauzeBleachingReceipt[]
+  gauzeOperationsCreated        GauzeProductionOperation[]
+  gauzePackingEntriesCreated    GauzePackingEntry[]
+  gauzeMovementsCreated         GauzeMaterialMovement[]
+  gauzeStatusChanges            GauzeBatchStatusHistory[]
 
   @@index([email], map: "idx_users_email")
   @@index([role], map: "idx_users_role")
@@ -264,6 +286,7 @@ model Employee {
   salarySlips       SalarySlip[]
   advances          EmployeeAdvance[]
   advanceRepayments AdvanceRepayment[]
+  gauzeOperations   GauzeProductionOperation[]
 
   @@index([employeeCode], map: "idx_emp_code")
   @@index([status], map: "idx_emp_status")
@@ -596,9 +619,10 @@ model JobWorkCompany {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  jobWorkChallans JobWorkChallan[]
-  jobWorkOrders   JobWorkOrder[]
-  cottonRolls     CottonRoll[]
+  jobWorkChallans    JobWorkChallan[]
+  jobWorkOrders      JobWorkOrder[]
+  cottonRolls        CottonRoll[]
+  gauzeBleachingJobs GauzeBleachingJob[]
 
   @@index([companyName], map: "idx_jwc_name")
   @@map("job_work_companies")
@@ -639,7 +663,9 @@ model Supplier {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  rawMaterials RawMaterial[]
+  rawMaterials      RawMaterial[]
+  gauzeBatches      GauzeProductionBatch[]
+  gauzeRawMaterials GauzeRawMaterial[]
 
   @@index([name], map: "idx_supplier_name")
   @@map("suppliers")
@@ -655,7 +681,11 @@ model StorageLocation {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  rawMaterials RawMaterial[]
+  rawMaterials        RawMaterial[]
+  gauzeRawMaterials   GauzeRawMaterial[]
+  gauzePackingEntries GauzePackingEntry[]
+  fromGauzeMovements  GauzeMaterialMovement[] @relation("FromGauzeLocation")
+  toGauzeMovements    GauzeMaterialMovement[] @relation("ToGauzeLocation")
 
   @@index([name], map: "idx_location_name")
   @@map("storage_locations")
@@ -702,6 +732,10 @@ model RawMaterial {
   returnedJobWorkOrders JobWorkOrder[]      @relation("ReturnedFinishedProduct")
   returnedItems         JobWorkReturnItem[] @relation("ReturnedProduct")
 
+  gauzeBatches        GauzeProductionBatch[]
+  gauzeRawMaterials   GauzeRawMaterial[]
+  gauzePackingEntries GauzePackingEntry[]
+
   @@index([sku], map: "idx_rm_sku")
   @@index([currentStockBalance, minimumStockLevel], map: "idx_rm_low_stock")
   @@map("raw_materials")
@@ -722,6 +756,7 @@ model InventoryBatch {
 
   inventoryTransactions InventoryTransaction[]
   jobWorkIssueItems     JobWorkIssueItem[]
+  gauzeBatches          GauzeProductionBatch[]
 
   @@index([rawMaterialId], map: "idx_batch_rm")
   @@map("inventory_batches")
@@ -1142,3 +1177,351 @@ model PackingBundleItem {
 
   @@map("packing_bundle_items")
 }
+
+// ==========================================
+// GAUZE PRODUCTION TRACKING SYSTEM
+// ==========================================
+
+model GauzeType {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(100)
+  code        String   @unique @db.VarChar(50)
+  description String?  @db.Text
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  batches      GauzeProductionBatch[]
+  rawMaterials GauzeRawMaterial[]
+
+  @@map("gauze_types")
+}
+
+model GauzeSize {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(100)
+  width       Decimal  @db.Decimal(10, 2)
+  widthUom    String   @default("cm") @map("width_uom") @db.VarChar(20)
+  length      Decimal  @db.Decimal(10, 2)
+  lengthUom   String   @default("m") @map("length_uom") @db.VarChar(20)
+  description String?  @db.Text
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  batches      GauzeProductionBatch[]
+  rawMaterials GauzeRawMaterial[]
+
+  @@map("gauze_sizes")
+}
+
+model BleachingType {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(100)
+  code        String   @unique @db.VarChar(50)
+  description String?  @db.Text
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  bleachingJobs GauzeBleachingJob[]
+
+  @@map("bleaching_types")
+}
+
+model GauzeOperationType {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(100)
+  code        String   @unique @db.VarChar(50)
+  description String?  @db.Text
+  sequence    Int      @default(1)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  operations GauzeProductionOperation[]
+
+  @@map("gauze_operation_types")
+}
+
+model GauzeProductionBatch {
+  id                     String                @id @default(uuid()) @db.Uuid
+  batchNumber            String                @unique @map("batch_number") @db.VarChar(100)
+  
+  productId              String                @map("product_id") @db.Uuid
+  product                RawMaterial           @relation(fields: [productId], references: [id])
+
+  gauzeTypeId            String?               @map("gauze_type_id") @db.Uuid
+  gauzeType              GauzeType?            @relation(fields: [gauzeTypeId], references: [id], onDelete: SetNull)
+
+  gauzeSizeId            String?               @map("gauze_size_id") @db.Uuid
+  gauzeSize              GauzeSize?            @relation(fields: [gauzeSizeId], references: [id], onDelete: SetNull)
+
+  rawMaterialBatchId     String?               @map("raw_material_batch_id") @db.Uuid
+  rawMaterialBatch       InventoryBatch?       @relation(fields: [rawMaterialBatchId], references: [id], onDelete: SetNull)
+
+  supplierId             String?               @map("supplier_id") @db.Uuid
+  supplier               Supplier?             @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  inputQuantity          Decimal               @map("input_quantity") @db.Decimal(12, 3)
+  inputUom               String                @map("input_uom") @db.VarChar(20)
+
+  currentQuantity        Decimal               @default(0) @map("current_quantity") @db.Decimal(12, 3)
+  currentUom             String                @map("current_uom") @db.VarChar(20)
+
+  currentStage           String                @default("RAW_MATERIAL") @map("current_stage") @db.VarChar(50)
+  status                 GauzeProductionStatus @default(DRAFT)
+
+  productionStartDate    DateTime?             @map("production_start_date") @db.Date
+  expectedCompletionDate DateTime?             @map("expected_completion_date") @db.Date
+  completionDate         DateTime?             @map("completion_date") @db.Date
+  notes                  String?               @db.Text
+
+  createdById            String?               @map("created_by") @db.Uuid
+  createdBy              User?                 @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt              DateTime              @default(now()) @map("created_at")
+  updatedAt              DateTime              @updatedAt @map("updated_at")
+
+  rawMaterials      GauzeRawMaterial[]
+  bleachingJobs     GauzeBleachingJob[]
+  bleachingReceipts GauzeBleachingReceipt[]
+  operations        GauzeProductionOperation[]
+  packingEntries    GauzePackingEntry[]
+  materialMovements GauzeMaterialMovement[]
+  statusHistory     GauzeBatchStatusHistory[]
+
+  @@index([batchNumber], map: "idx_gz_batch_num")
+  @@index([status], map: "idx_gz_batch_status")
+  @@index([productId], map: "idx_gz_batch_prod")
+  @@map("gauze_production_batches")
+}
+
+model GauzeRawMaterial {
+  id                 String               @id @default(uuid()) @db.Uuid
+  productionBatchId  String               @map("production_batch_id") @db.Uuid
+  productionBatch    GauzeProductionBatch @relation(fields: [productionBatchId], references: [id], onDelete: Cascade)
+
+  productId          String               @map("product_id") @db.Uuid
+  product            RawMaterial          @relation(fields: [productId], references: [id])
+
+  supplierId         String?              @map("supplier_id") @db.Uuid
+  supplier           Supplier?            @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  supplierReference  String?              @map("supplier_reference") @db.VarChar(100)
+  rollOrThansNumber  String?              @map("roll_or_thans_number") @db.VarChar(100)
+
+  gauzeTypeId        String?              @map("gauze_type_id") @db.Uuid
+  gauzeType          GauzeType?           @relation(fields: [gauzeTypeId], references: [id], onDelete: SetNull)
+
+  gauzeSizeId        String?              @map("gauze_size_id") @db.Uuid
+  gauzeSize          GauzeSize?           @relation(fields: [gauzeSizeId], references: [id], onDelete: SetNull)
+
+  quantity           Decimal              @db.Decimal(12, 3)
+  uom                String               @db.VarChar(20)
+  receivedDate       DateTime?            @map("received_date") @db.Date
+
+  warehouseId        String?              @map("warehouse_id") @db.Uuid
+  warehouse          StorageLocation?     @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+
+  notes              String?              @db.Text
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+
+  @@index([productionBatchId], map: "idx_gz_rm_batch")
+  @@map("gauze_raw_materials")
+}
+
+model GauzeBleachingJob {
+  id                 String               @id @default(uuid()) @db.Uuid
+  jobNumber          String               @unique @map("job_number") @db.VarChar(100)
+
+  productionBatchId  String               @map("production_batch_id") @db.Uuid
+  productionBatch    GauzeProductionBatch @relation(fields: [productionBatchId], references: [id], onDelete: Cascade)
+
+  vendorId           String               @map("vendor_id") @db.Uuid
+  vendor             JobWorkCompany       @relation(fields: [vendorId], references: [id])
+
+  bleachingTypeId    String               @map("bleaching_type_id") @db.Uuid
+  bleachingType      BleachingType        @relation(fields: [bleachingTypeId], references: [id])
+
+  quantitySent       Decimal              @map("quantity_sent") @db.Decimal(12, 3)
+  uom                String               @db.VarChar(20)
+  sentDate           DateTime             @map("sent_date") @db.Date
+  expectedReturnDate DateTime?            @map("expected_return_date") @db.Date
+
+  rate               Decimal?             @db.Decimal(10, 2)
+  estimatedCost      Decimal?             @map("estimated_cost") @db.Decimal(12, 2)
+  actualCost         Decimal?             @map("actual_cost") @db.Decimal(12, 2)
+
+  status             String               @default("SENT") @db.VarChar(50)
+  notes              String?              @db.Text
+
+  createdById        String?              @map("created_by") @db.Uuid
+  createdBy          User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+
+  receipts           GauzeBleachingReceipt[]
+
+  @@index([jobNumber], map: "idx_gz_bj_num")
+  @@index([productionBatchId], map: "idx_gz_bj_batch")
+  @@index([vendorId], map: "idx_gz_bj_vendor")
+  @@map("gauze_bleaching_jobs")
+}
+
+model GauzeBleachingReceipt {
+  id                 String               @id @default(uuid()) @db.Uuid
+  receiptNumber      String               @unique @map("receipt_number") @db.VarChar(100)
+
+  bleachingJobId     String               @map("bleaching_job_id") @db.Uuid
+  bleachingJob       GauzeBleachingJob    @relation(fields: [bleachingJobId], references: [id], onDelete: Cascade)
+
+  productionBatchId  String               @map("production_batch_id") @db.Uuid
+  productionBatch    GauzeProductionBatch @relation(fields: [productionBatchId], references: [id], onDelete: Cascade)
+
+  quantitySent       Decimal              @map("quantity_sent") @db.Decimal(12, 3)
+  quantityReceived   Decimal              @map("quantity_received") @db.Decimal(12, 3)
+  wastageQuantity    Decimal              @default(0) @map("wastage_quantity") @db.Decimal(12, 3)
+  rejectedQuantity   Decimal              @default(0) @map("rejected_quantity") @db.Decimal(12, 3)
+  uom                String               @db.VarChar(20)
+
+  receivedDate       DateTime             @map("received_date") @db.Date
+  qualityStatus      String?              @default("PASSED") @map("quality_status") @db.VarChar(50)
+  notes              String?              @db.Text
+
+  createdById        String?              @map("created_by") @db.Uuid
+  createdBy          User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+
+  @@index([receiptNumber], map: "idx_gz_br_num")
+  @@index([bleachingJobId], map: "idx_gz_br_job")
+  @@index([productionBatchId], map: "idx_gz_br_batch")
+  @@map("gauze_bleaching_receipts")
+}
+
+model GauzeProductionOperation {
+  id                 String               @id @default(uuid()) @db.Uuid
+  operationNumber    String               @unique @map("operation_number") @db.VarChar(100)
+
+  productionBatchId  String               @map("production_batch_id") @db.Uuid
+  productionBatch    GauzeProductionBatch @relation(fields: [productionBatchId], references: [id], onDelete: Cascade)
+
+  operationTypeId    String               @map("operation_type_id") @db.Uuid
+  operationType      GauzeOperationType   @relation(fields: [operationTypeId], references: [id])
+
+  sequenceNumber     Int                  @map("sequence_number")
+  inputQuantity      Decimal              @map("input_quantity") @db.Decimal(12, 3)
+  outputQuantity     Decimal              @map("output_quantity") @db.Decimal(12, 3)
+  wastageQuantity    Decimal              @default(0) @map("wastage_quantity") @db.Decimal(12, 3)
+  rejectedQuantity   Decimal              @default(0) @map("rejected_quantity") @db.Decimal(12, 3)
+  uom                String               @db.VarChar(20)
+
+  employeeId         String?              @map("employee_id") @db.Uuid
+  employee           Employee?            @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  machineId          String?              @map("machine_id") @db.VarChar(100)
+  operationDate      DateTime             @map("operation_date") @db.Date
+  status             String               @default("COMPLETED") @db.VarChar(50)
+  notes              String?              @db.Text
+
+  createdById        String?              @map("created_by") @db.Uuid
+  createdBy          User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+
+  @@index([operationNumber], map: "idx_gz_op_num")
+  @@index([productionBatchId], map: "idx_gz_op_batch")
+  @@map("gauze_production_operations")
+}
+
+model GauzePackingEntry {
+  id                       String               @id @default(uuid()) @db.Uuid
+  packingNumber            String               @unique @map("packing_number") @db.VarChar(100)
+
+  productionBatchId        String               @map("production_batch_id") @db.Uuid
+  productionBatch          GauzeProductionBatch @relation(fields: [productionBatchId], references: [id], onDelete: Cascade)
+
+  productId                String               @map("product_id") @db.Uuid
+  product                  RawMaterial          @relation(fields: [productId], references: [id])
+
+  sizeDescription          String?              @map("size_description") @db.VarChar(100)
+  ply                      Int?
+  piecesPerPack            Int                  @map("pieces_per_pack")
+  numberOfPacks            Int                  @map("number_of_packs")
+  totalPieces              Int                  @map("total_pieces")
+
+  packingDate              DateTime             @map("packing_date") @db.Date
+
+  finishedGoodsWarehouseId String?              @map("finished_goods_warehouse_id") @db.Uuid
+  finishedGoodsWarehouse   StorageLocation?     @relation(fields: [finishedGoodsWarehouseId], references: [id], onDelete: SetNull)
+
+  status                   String               @default("PACKED") @db.VarChar(50)
+  notes                    String?              @db.Text
+
+  createdById              String?              @map("created_by") @db.Uuid
+  createdBy                User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt                DateTime             @default(now()) @map("created_at")
+  updatedAt                DateTime             @updatedAt @map("updated_at")
+
+  @@index([packingNumber], map: "idx_gz_pk_num")
+  @@index([productionBatchId], map: "idx_gz_pk_batch")
+  @@map("gauze_packing_entries")
+}
+
+model GauzeMaterialMovement {
+  id                 String               @id @default(uuid()) @db.Uuid
+  productionBatchId  String               @map("production_batch_id") @db.Uuid
+  productionBatch    GauzeProductionBatch @relation(fields: [productionBatchId], references: [id], onDelete: Cascade)
+
+  referenceType      String               @map("reference_type") @db.VarChar(50)
+  referenceId        String               @map("reference_id") @db.Uuid
+  movementType       String               @map("movement_type") @db.VarChar(50)
+
+  fromLocationId     String?              @map("from_location_id") @db.Uuid
+  fromLocation       StorageLocation?     @relation("FromGauzeLocation", fields: [fromLocationId], references: [id], onDelete: SetNull)
+
+  toLocationId       String?              @map("to_location_id") @db.Uuid
+  toLocation         StorageLocation?     @relation("ToGauzeLocation", fields: [toLocationId], references: [id], onDelete: SetNull)
+
+  fromLocationName   String?              @map("from_location_name") @db.VarChar(150)
+  toLocationName     String?              @map("to_location_name") @db.VarChar(150)
+
+  quantity           Decimal              @db.Decimal(12, 3)
+  uom                String               @db.VarChar(20)
+  movementDate       DateTime             @map("movement_date") @db.Date
+  notes              String?              @db.Text
+
+  createdById        String?              @map("created_by") @db.Uuid
+  createdBy          User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt          DateTime             @default(now()) @map("created_at")
+
+  @@index([productionBatchId], map: "idx_gz_mov_batch")
+  @@index([movementType], map: "idx_gz_mov_type")
+  @@map("gauze_material_movements")
+}
+
+model GauzeBatchStatusHistory {
+  id                String               @id @default(uuid()) @db.Uuid
+  productionBatchId String               @map("production_batch_id") @db.Uuid
+  productionBatch   GauzeProductionBatch @relation(fields: [productionBatchId], references: [id], onDelete: Cascade)
+
+  oldStatus         String?              @map("old_status") @db.VarChar(50)
+  newStatus         String               @map("new_status") @db.VarChar(50)
+
+  changedById       String?              @map("changed_by") @db.Uuid
+  changedByUser     User?                @relation(fields: [changedById], references: [id], onDelete: SetNull)
+
+  changedAt         DateTime             @default(now()) @map("changed_at")
+  remarks           String?              @db.Text
+
+  @@index([productionBatchId], map: "idx_gz_sh_batch")
+  @@map("gauze_batch_status_history")
+}
+

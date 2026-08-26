@@ -45,7 +45,11 @@ export class StorageLocationsService {
   }
 
   async update(id: string, dto: Partial<CreateStorageLocationDto>) {
-    await this.findOne(id);
+    const location = await this.findOne(id);
+    if (dto.code && dto.code !== location.code) {
+      const exists = await prisma.storageLocation.findUnique({ where: { code: dto.code } });
+      if (exists) throw new ConflictException(`Location code ${dto.code} already exists.`);
+    }
     return await prisma.storageLocation.update({
       where: { id },
       data: dto,
@@ -53,13 +57,11 @@ export class StorageLocationsService {
   }
 
   async remove(id: string) {
-    const location = await this.findOne(id);
-    if (location.rawMaterials.length > 0) {
-      return await prisma.storageLocation.update({
-        where: { id },
-        data: { isActive: false },
-      });
-    }
+    await this.findOne(id);
+    await prisma.rawMaterial.updateMany({
+      where: { storageLocationId: id },
+      data: { storageLocationId: null },
+    });
     return await prisma.storageLocation.delete({ where: { id } });
   }
 }

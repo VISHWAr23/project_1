@@ -423,13 +423,14 @@ export default function RawMaterialsPage() {
             options={[
               { label: 'All Stock Statuses', value: '' },
               { label: 'Optimal Stock', value: 'OPTIMAL' },
-              { label: '⚠️ Low Stock', value: 'LOW_STOCK' },
-              { label: '📈 Overstock', value: 'OVERSTOCK' },
-              { label: '🚨 Out of Stock', value: 'OUT_OF_STOCK' },
+              { label: 'Low Stock', value: 'LOW_STOCK' },
+              { label: 'Overstock', value: 'OVERSTOCK' },
+              { label: 'Out of Stock', value: 'OUT_OF_STOCK' },
             ]}
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
           />
+
         </div>
       </div>
 

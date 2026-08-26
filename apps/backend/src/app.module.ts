@@ -9,6 +9,7 @@ import { RollTrackingModule } from './modules/roll-tracking/roll-tracking.module
 import { EmployeeModule } from './modules/employee/employee.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { SalaryModule } from './modules/salary/salary.module';
+import { GauzeProductionModule } from './modules/gauze-production/gauze-production.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { SalaryModule } from './modules/salary/salary.module';
     EmployeeModule,
     AttendanceModule,
     SalaryModule,
+    GauzeProductionModule,
   ],
 })
 export class AppModule {}

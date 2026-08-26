@@ -150,3 +150,16 @@ export function useEmployeePaymentHistory(employeeId: string) {
     enabled: Boolean(employeeId),
   });
 }
+
+export function useEmployeeReport(
+  employeeId: string,
+  params?: { startDate?: string; endDate?: string; month?: number; year?: number },
+  options?: { enabled?: boolean }
+) {
+  return useQuery({
+    queryKey: ['employee-report', employeeId, params],
+    queryFn: () => employeeService.getReport(employeeId, params),
+    enabled: Boolean(employeeId) && (options?.enabled !== undefined ? options.enabled : true),
+  });
+}
+

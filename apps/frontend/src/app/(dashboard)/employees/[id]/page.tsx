@@ -20,7 +20,9 @@ import {
   Plus,
   PiggyBank,
   CheckCircle2,
+  FileText,
 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
@@ -39,17 +41,21 @@ import {
   useSettlePayment,
   useEmployeePaymentHistory,
 } from '@/hooks/useEmployees';
+import { formatWorkHours } from '@/lib/date-utils';
+import { EmployeeReportModal } from '@/components/employee/employee-report-modal';
+import { EmployeeReportTab } from '@/components/employee/employee-report-tab';
 
 export default function EmployeeProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = React.use(params);
   const empId = resolvedParams?.id;
   const { toast } = useToast();
 
-  const [activeTab, setActiveTab] = useState<'financial' | 'history' | 'personal' | 'salary'>('financial');
+  const [activeTab, setActiveTab] = useState<'financial' | 'report' | 'history' | 'personal' | 'salary'>('financial');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSettleModalOpen, setIsSettleModalOpen] = useState(false);
   const [isAdvanceModalOpen, setIsAdvanceModalOpen] = useState(false);
   const [isRepayModalOpen, setIsRepayModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [selectedAdvanceId, setSelectedAdvanceId] = useState<string>('');
 
   // Fetch Data
@@ -345,7 +351,7 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
                   {employee.employeeCode}
                 </span>
                 <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-500 border border-purple-500/30">
-                  {employee.salaryCycle === 'WEEKLY' ? '🗓️ Weekly (Saturday Pay)' : '🗓️ Monthly Cycle'}
+                  {employee.salaryCycle === 'WEEKLY' ? 'Weekly (Saturday Pay)' : 'Monthly Cycle'}
                 </span>
                 <Badge variant={employee.status === 'ACTIVE' ? 'success' : 'warning'}>
                   {employee.status}
@@ -372,7 +378,17 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
               leftIcon={<Zap className="h-4 w-4 text-amber-300" />}
               className="bg-gradient-to-r from-blue-600 to-indigo-600 shadow-md font-bold"
             >
-              ⚡ Pay / Settle Amount
+              Pay / Settle Amount
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsReportModalOpen(true)}
+              leftIcon={<FileText className="h-4 w-4 text-blue-500" />}
+              className="font-bold border-blue-500/30 text-blue-500 hover:bg-blue-500/10"
+            >
+              Generate Report
             </Button>
 
             <Button
@@ -381,7 +397,7 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
               onClick={() => setIsAdvanceModalOpen(true)}
               leftIcon={<PiggyBank className="h-4 w-4 text-emerald-500" />}
             >
-              ➕ Give Advance
+              Give Advance
             </Button>
 
             <Button
@@ -434,7 +450,7 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
           </div>
           <div className="text-[11px] text-muted-foreground flex items-center justify-between pt-1 border-t border-border/40">
             <span>Logged OT:</span>
-            <strong className="text-foreground">{fin?.currentCycle?.totalOvertimeHours || 0} hrs (@ ₹{employee.otRatePerHour || 0}/h)</strong>
+            <strong className="text-foreground">{formatWorkHours(fin?.currentCycle?.totalOvertimeHours, { zeroText: '0 hr' })} (@ ₹{employee.otRatePerHour || 0}/hr)</strong>
           </div>
         </div>
 
@@ -477,10 +493,11 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
       {/* Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto font-mono text-xs">
         {[
-          { key: 'financial', label: '💰 Financial Summary' },
-          { key: 'history', label: '📜 Payment History & Settlements' },
-          { key: 'personal', label: '👤 Personal Details' },
-          { key: 'salary', label: '🏦 Bank & Structure' },
+          { key: 'financial', label: 'Financial Summary' },
+          { key: 'report', label: 'Work & Attendance Report' },
+          { key: 'history', label: 'Payment History & Settlements' },
+          { key: 'personal', label: 'Personal Details' },
+          { key: 'salary', label: 'Bank & Structure' },
         ].map((tab) => (
           <button
             key={`tab-${tab.key}`}
@@ -539,14 +556,14 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
               <div className="p-3 bg-secondary/30 rounded-xl">
                 <div className="text-muted-foreground text-[10px]">Regular Worked Hours</div>
                 <div className="text-base font-bold text-foreground mt-0.5">
-                  {fin?.currentCycle?.totalWorkingHours || 0} hrs
+                  {formatWorkHours(fin?.currentCycle?.totalWorkingHours, { zeroText: '0 hr' })}
                 </div>
               </div>
 
               <div className="p-3 bg-secondary/30 rounded-xl">
                 <div className="text-muted-foreground text-[10px]">Overtime Worked</div>
                 <div className="text-base font-bold text-purple-500 mt-0.5">
-                  +{fin?.currentCycle?.totalOvertimeHours || 0} hrs
+                  {fin?.currentCycle?.totalOvertimeHours > 0 ? `+${formatWorkHours(fin?.currentCycle?.totalOvertimeHours)}` : '0 hr'}
                 </div>
               </div>
 
@@ -650,6 +667,11 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
             )}
           </div>
         </div>
+      )}
+
+      {/* Tab 2: Work & Attendance Report */}
+      {activeTab === 'report' && (
+        <EmployeeReportTab employeeId={empId} employee={employee} />
       )}
 
       {/* Tab 2: Payment History & Settlements */}
@@ -870,12 +892,11 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
         </div>
       )}
 
-      {/* Modal 1: ⚡ Settle Payment Modal (With Advance Deduction Option) */}
+      {/* Modal 1: Settle Payment Modal */}
       <Modal
         isOpen={isSettleModalOpen}
         onClose={() => setIsSettleModalOpen(false)}
-        title="⚡ Settle & Pay Salary"
-        description={`Record direct payout for ${employee.firstName} ${employee.lastName}`}
+        title="Settle & Pay Salary"
       >
         <form onSubmit={handleSettleSubmit} className="space-y-4 pt-2 font-mono text-xs">
           <div>
@@ -1047,12 +1068,11 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
         </form>
       </Modal>
 
-      {/* Modal 2: ➕ Disburse Advance Modal */}
+      {/* Modal 2: Disburse Advance Modal */}
       <Modal
         isOpen={isAdvanceModalOpen}
         onClose={() => setIsAdvanceModalOpen(false)}
-        title="➕ Disburse Salary Advance / Loan"
-        description={`Issue an advance loan to ${employee.firstName} with weekly repayment deduction`}
+        title="Disburse Salary Advance / Loan"
       >
         <form onSubmit={handleAdvanceSubmit} className="space-y-4 pt-2 font-mono text-xs">
           <div className="grid grid-cols-2 gap-3">
@@ -1099,12 +1119,11 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
         </form>
       </Modal>
 
-      {/* Modal 3: 💵 Repay Advance Modal */}
+      {/* Modal 3: Repay Advance Modal */}
       <Modal
         isOpen={isRepayModalOpen}
         onClose={() => setIsRepayModalOpen(false)}
-        title="💵 Record Advance Repayment"
-        description="Record an installment payment towards outstanding advance"
+        title="Record Advance Repayment"
       >
         <form onSubmit={handleRepaySubmit} className="space-y-4 pt-2 font-mono text-xs">
           <div className="grid grid-cols-2 gap-3">
@@ -1153,12 +1172,11 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
         </form>
       </Modal>
 
-      {/* Edit Profile Modal */}
+      {/* Modal 4: Edit Staff Modal */}
       <Modal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         title={`Edit Staff Profile: ${employee.employeeCode}`}
-        description="Update staff profile and compensation structure."
       >
         <form onSubmit={handleEditSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto pr-2 font-mono text-xs">
           {/* Section 1: Basic Identity */}
@@ -1345,6 +1363,16 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
           </div>
         </form>
       </Modal>
+
+      {/* Modal 5: Generate Report Modal */}
+      <EmployeeReportModal
+
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        employeeId={empId}
+        employeeName={`${employee?.firstName || ''} ${employee?.lastName || ''}`}
+      />
     </motion.div>
   );
 }
+

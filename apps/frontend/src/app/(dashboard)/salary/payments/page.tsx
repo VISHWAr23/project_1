@@ -22,8 +22,8 @@ export default function SalaryPaymentsPage() {
         </Link>
         <div>
           <h1 className="text-xl font-bold text-foreground">Salary Disbursement & Payment Ledger</h1>
-          <p className="text-xs text-muted-foreground">Record UTRs, Cheques, and Cash payouts for approved batches</p>
         </div>
+
       </div>
 
       <Card className="p-5 border border-border/60 space-y-4">

@@ -20,6 +20,19 @@ async function main() {
   console.log('🧹 [1/8] Removing all existing data from database across all modules...');
 
   // 1. Clean in strict foreign key order
+  await prisma.gauzeMaterialMovement.deleteMany({});
+  await prisma.gauzeBatchStatusHistory.deleteMany({});
+  await prisma.gauzePackingEntry.deleteMany({});
+  await prisma.gauzeProductionOperation.deleteMany({});
+  await prisma.gauzeBleachingReceipt.deleteMany({});
+  await prisma.gauzeBleachingJob.deleteMany({});
+  await prisma.gauzeRawMaterial.deleteMany({});
+  await prisma.gauzeProductionBatch.deleteMany({});
+  await prisma.gauzeOperationType.deleteMany({});
+  await prisma.bleachingType.deleteMany({});
+  await prisma.gauzeSize.deleteMany({});
+  await prisma.gauzeType.deleteMany({});
+
   await prisma.auditLog.deleteMany({});
   await prisma.packingBundleItem.deleteMany({});
   await prisma.packingBundle.deleteMany({});
@@ -1059,7 +1072,395 @@ async function main() {
     },
   });
 
-  console.log('🎉 [DONE] Database successfully populated with exactly up to 5 clear records per module!');
+  // 9. GAUZE PRODUCTION MODULE MASTERS & GOLDEN TEST CASE
+  console.log('🏭 [9/9] Seeding Gauze Production Module & Golden Test Case...');
+
+  const gzTypeBP17 = await prisma.gauzeType.create({
+    data: {
+      name: 'BP17 Absorbent Gauze',
+      code: 'GZ-BP17',
+      description: 'British Pharmacopoeia 17 threads/sq.cm standard surgical gauze fabric',
+      active: true,
+    },
+  });
+
+  const gzTypeLight = await prisma.gauzeType.create({
+    data: {
+      name: 'Type 13 Light Gauze',
+      code: 'GZ-TYP13',
+      description: '13 threads/sq.cm lightweight gauze for absorbent pads and bandages',
+      active: true,
+    },
+  });
+
+  const gzSizeThan = await prisma.gauzeSize.create({
+    data: {
+      name: '120 cm x 20 m (Than Roll)',
+      width: 120,
+      widthUom: 'cm',
+      length: 20,
+      lengthUom: 'm',
+      description: 'Standard loom than roll dimensions',
+      active: true,
+    },
+  });
+
+  const gzSizePack = await prisma.gauzeSize.create({
+    data: {
+      name: '10 cm x 10 cm (Swab)',
+      width: 10,
+      widthUom: 'cm',
+      length: 10,
+      lengthUom: 'cm',
+      description: 'Finished sterile 8-ply swab dimension',
+      active: true,
+    },
+  });
+
+  const bleachH2O2 = await prisma.bleachingType.create({
+    data: {
+      name: 'Hydrogen Peroxide Bleaching',
+      code: 'BLEACH-H2O2',
+      description: 'Eco-friendly, chlorine-free peroxide process ensuring high absorbency & optimal whiteness',
+      active: true,
+    },
+  });
+
+  const bleachKier = await prisma.bleachingType.create({
+    data: {
+      name: 'Kier Boiling & Scouring',
+      code: 'BLEACH-KIER',
+      description: 'Pressure kier scouring with caustic soda for maximum dewaxing and absorbency',
+      active: true,
+    },
+  });
+
+  const opCutting = await prisma.gauzeOperationType.create({
+    data: {
+      name: 'Cutting & Slitting',
+      code: 'OP-CUT',
+      description: 'Rotary cutting and continuous slitting to precise width',
+      sequence: 1,
+      active: true,
+    },
+  });
+
+  const opFolding = await prisma.gauzeOperationType.create({
+    data: {
+      name: 'Folding & Layering',
+      code: 'OP-FOLD',
+      description: 'Automatic folding into multi-ply layers with tucked edges',
+      sequence: 2,
+      active: true,
+    },
+  });
+
+  const opInspection = await prisma.gauzeOperationType.create({
+    data: {
+      name: 'Visual QC & Inspection',
+      code: 'OP-INSP',
+      description: '100% backlit visual inspection for thread defects, foreign matter, and dimensional tolerance',
+      sequence: 3,
+      active: true,
+    },
+  });
+
+  // Target Raw Material, Supplier, and Warehouse IDs from existing seeded entities
+  const rawGauzeProduct = rawMaterials['RM-COT-001'] || Object.values(rawMaterials)[0];
+  const gauzeSupplierId = sups['SUP-001'];
+  const bleachingVendor = jwComps['Sri Lakshmi Bleaching & Scouring Works'] || Object.values(jwComps)[0];
+  const targetFinishedProduct = rawMaterials['RM-BLG-001'] || rawGauzeProduct;
+  const mainWarehouseId = locs['LOC-RM-01'];
+  const finishedWarehouseId = locs['LOC-FG-05'];
+
+  // Golden Test Case Batch: GZ-2026-00001
+  const goldenBatch = await prisma.gauzeProductionBatch.create({
+    data: {
+      batchNumber: 'GZ-2026-00001',
+      productId: rawGauzeProduct.id,
+      gauzeTypeId: gzTypeBP17.id,
+      gauzeSizeId: gzSizeThan.id,
+      supplierId: gauzeSupplierId,
+      inputQuantity: 1000,
+      inputUom: 'meter',
+      currentQuantity: 0, // Fully packed and converted
+      currentUom: 'meter',
+      currentStage: 'FINISHED_GOODS_STOCK',
+      status: 'COMPLETED',
+      productionStartDate: new Date('2026-08-10'),
+      expectedCompletionDate: new Date('2026-08-18'),
+      completionDate: new Date('2026-08-18'),
+      notes: 'Golden Test Case — End-to-end verified from unbleached roll through bleaching, cutting, folding & finished packs',
+      createdById: adminUser.id,
+    },
+  });
+
+  // 1. Raw Material Inward
+  await prisma.gauzeRawMaterial.create({
+    data: {
+      productionBatchId: goldenBatch.id,
+      productId: rawGauzeProduct.id,
+      supplierId: gauzeSupplierId,
+      supplierReference: 'INV-SLCM-2026-9901',
+      rollOrThansNumber: 'LOT-SLCM-TH01-50',
+      gauzeTypeId: gzTypeBP17.id,
+      gauzeSizeId: gzSizeThan.id,
+      quantity: 1000,
+      uom: 'meter',
+      receivedDate: new Date('2026-08-10'),
+      warehouseId: mainWarehouseId,
+      notes: '50 thans received @ 20m per than in pristine condition',
+    },
+  });
+
+  await prisma.gauzeMaterialMovement.create({
+    data: {
+      productionBatchId: goldenBatch.id,
+      referenceType: 'RAW_MATERIAL_RECEIPT',
+      referenceId: goldenBatch.id,
+      movementType: 'RAW_MATERIAL_RECEIPT',
+      fromLocationName: 'Coimbatore Cotton Mills Ltd',
+      toLocationId: mainWarehouseId,
+      toLocationName: 'Raw Cotton Warehouse',
+      quantity: 1000,
+      uom: 'meter',
+      movementDate: new Date('2026-08-10'),
+      notes: 'Initial raw gauze receipt from mill',
+    },
+  });
+
+  // 2. Bleaching Dispatch
+  const bleachingJob = await prisma.gauzeBleachingJob.create({
+    data: {
+      jobNumber: 'BJ-2026-00001',
+      productionBatchId: goldenBatch.id,
+      vendorId: bleachingVendor.id,
+      bleachingTypeId: bleachH2O2.id,
+      quantitySent: 1000,
+      uom: 'meter',
+      sentDate: new Date('2026-08-11'),
+      expectedReturnDate: new Date('2026-08-14'),
+      rate: 3.5,
+      estimatedCost: 3500,
+      actualCost: 3500,
+      status: 'COMPLETED',
+      notes: 'Dispatched via Vehicle TN-29-BF-4412 for peroxide bleaching process',
+    },
+  });
+
+  await prisma.gauzeMaterialMovement.create({
+    data: {
+      productionBatchId: goldenBatch.id,
+      referenceType: 'BLEACHING_JOB',
+      referenceId: bleachingJob.id,
+      movementType: 'SEND_TO_BLEACHING',
+      fromLocationId: mainWarehouseId,
+      fromLocationName: 'Raw Cotton Warehouse',
+      toLocationName: bleachingVendor.companyName,
+      quantity: 1000,
+      uom: 'meter',
+      movementDate: new Date('2026-08-11'),
+      notes: `Dispatched to bleaching vendor ${bleachingVendor.companyName}`,
+    },
+  });
+
+  // 3. Bleaching Return Receipt
+  const bleachingReceipt = await prisma.gauzeBleachingReceipt.create({
+    data: {
+      receiptNumber: 'BR-2026-00001',
+      bleachingJobId: bleachingJob.id,
+      productionBatchId: goldenBatch.id,
+      quantitySent: 1000,
+      quantityReceived: 950,
+      wastageQuantity: 30,
+      rejectedQuantity: 20,
+      uom: 'meter',
+      receivedDate: new Date('2026-08-14'),
+      qualityStatus: 'PASSED',
+      notes: 'Returned with 950m accepted good yield, 30m process shrinkage, 20m edge discoloration scrap',
+    },
+  });
+
+  await prisma.gauzeMaterialMovement.create({
+    data: {
+      productionBatchId: goldenBatch.id,
+      referenceType: 'BLEACHING_RECEIPT',
+      referenceId: bleachingReceipt.id,
+      movementType: 'RECEIVE_FROM_BLEACHING',
+      fromLocationName: bleachingVendor.companyName,
+      toLocationId: mainWarehouseId,
+      toLocationName: 'Raw Cotton Warehouse',
+      quantity: 950,
+      uom: 'meter',
+      movementDate: new Date('2026-08-14'),
+      notes: 'Received bleached fabric back to shop floor',
+    },
+  });
+
+  // 4. Internal Operations
+  const op1 = await prisma.gauzeProductionOperation.create({
+    data: {
+      operationNumber: 'PR-2026-00001',
+      productionBatchId: goldenBatch.id,
+      operationTypeId: opCutting.id,
+      sequenceNumber: 1,
+      inputQuantity: 950,
+      outputQuantity: 910,
+      wastageQuantity: 40,
+      rejectedQuantity: 0,
+      uom: 'meter',
+      operationDate: new Date('2026-08-15'),
+      status: 'COMPLETED',
+      notes: 'Rotary slit into 10cm continuous width strips. 40m selvage edge scrap.',
+    },
+  });
+
+  const op2 = await prisma.gauzeProductionOperation.create({
+    data: {
+      operationNumber: 'PR-2026-00002',
+      productionBatchId: goldenBatch.id,
+      operationTypeId: opFolding.id,
+      sequenceNumber: 2,
+      inputQuantity: 910,
+      outputQuantity: 900,
+      wastageQuantity: 10,
+      rejectedQuantity: 0,
+      uom: 'meter',
+      operationDate: new Date('2026-08-16'),
+      status: 'COMPLETED',
+      notes: 'Folded into 8-ply 10cm x 10cm squares with tucked in sealed edges.',
+    },
+  });
+
+  // 5. Finished Goods Packing
+  const packingEntry = await prisma.gauzePackingEntry.create({
+    data: {
+      packingNumber: 'PK-2026-00001',
+      productionBatchId: goldenBatch.id,
+      productId: targetFinishedProduct.id,
+      sizeDescription: '10cm x 10cm (8-Ply)',
+      ply: 8,
+      piecesPerPack: 100,
+      numberOfPacks: 50,
+      totalPieces: 5000,
+      packingDate: new Date('2026-08-18'),
+      finishedGoodsWarehouseId: finishedWarehouseId,
+      status: 'COMPLETED',
+      notes: '50 sealed sterile packs of 100 pcs each inwarded to Finished Goods Warehouse.',
+    },
+  });
+
+  await prisma.gauzeMaterialMovement.create({
+    data: {
+      productionBatchId: goldenBatch.id,
+      referenceType: 'PACKING_ENTRY',
+      referenceId: packingEntry.id,
+      movementType: 'FINISHED_GOODS_RECEIPT',
+      fromLocationName: 'Shop Floor Packing Station',
+      toLocationId: finishedWarehouseId,
+      toLocationName: 'Finished Goods Warehouse',
+      quantity: 5000,
+      uom: 'piece',
+      movementDate: new Date('2026-08-18'),
+      notes: '5,000 finished gauze swab pieces placed into stock',
+    },
+  });
+
+  // Status History
+  await prisma.gauzeBatchStatusHistory.create({
+    data: {
+      productionBatchId: goldenBatch.id,
+      oldStatus: 'DRAFT',
+      newStatus: 'RAW_MATERIAL_RECEIVED',
+      changedById: adminUser.id,
+      changedAt: new Date('2026-08-10'),
+      remarks: 'Raw material intake recorded',
+    },
+  });
+
+  await prisma.gauzeBatchStatusHistory.create({
+    data: {
+      productionBatchId: goldenBatch.id,
+      oldStatus: 'RAW_MATERIAL_RECEIVED',
+      newStatus: 'SENT_TO_BLEACHING',
+      changedById: adminUser.id,
+      changedAt: new Date('2026-08-11'),
+      remarks: 'Material dispatched to Kaveri Bleaching',
+    },
+  });
+
+  await prisma.gauzeBatchStatusHistory.create({
+    data: {
+      productionBatchId: goldenBatch.id,
+      oldStatus: 'SENT_TO_BLEACHING',
+      newStatus: 'BLEACHING_RECEIVED',
+      changedById: adminUser.id,
+      changedAt: new Date('2026-08-14'),
+      remarks: 'Bleached fabric received with 950m accepted yield',
+    },
+  });
+
+  await prisma.gauzeBatchStatusHistory.create({
+    data: {
+      productionBatchId: goldenBatch.id,
+      oldStatus: 'BLEACHING_RECEIVED',
+      newStatus: 'IN_PROCESSING',
+      changedById: adminUser.id,
+      changedAt: new Date('2026-08-15'),
+      remarks: 'Internal cutting and folding begun',
+    },
+  });
+
+  await prisma.gauzeBatchStatusHistory.create({
+    data: {
+      productionBatchId: goldenBatch.id,
+      oldStatus: 'IN_PROCESSING',
+      newStatus: 'COMPLETED',
+      changedById: adminUser.id,
+      changedAt: new Date('2026-08-18'),
+      remarks: 'Batch packing finished — 5,000 units added to finished goods inventory',
+    },
+  });
+
+  // Create another active batch in progress: GZ-2026-00002
+  const gzBatch2 = await prisma.gauzeProductionBatch.create({
+    data: {
+      batchNumber: 'GZ-2026-00002',
+      productId: rawGauzeProduct.id,
+      gauzeTypeId: gzTypeLight.id,
+      gauzeSizeId: gzSizeThan.id,
+      supplierId: gauzeSupplierId,
+      inputQuantity: 2000,
+      inputUom: 'meter',
+      currentQuantity: 2000,
+      currentUom: 'meter',
+      currentStage: 'SENT_TO_BLEACHING',
+      status: 'SENT_TO_BLEACHING',
+      productionStartDate: new Date('2026-08-22'),
+      expectedCompletionDate: new Date('2026-08-28'),
+      notes: 'Large batch for Type 13 light absorbent gauze roll production',
+      createdById: adminUser.id,
+    },
+  });
+
+  await prisma.gauzeBleachingJob.create({
+    data: {
+      jobNumber: 'BJ-2026-00002',
+      productionBatchId: gzBatch2.id,
+      vendorId: bleachingVendor.id,
+      bleachingTypeId: bleachKier.id,
+      quantitySent: 2000,
+      uom: 'meter',
+      sentDate: new Date('2026-08-23'),
+      expectedReturnDate: new Date('2026-08-27'),
+      rate: 3.8,
+      estimatedCost: 7600,
+      status: 'SENT',
+      notes: 'Currently undergoing pressure kier scouring at Kaveri Bleaching',
+    },
+  });
+
+  console.log('🎉 [DONE] Database successfully populated with exactly up to 5 clear records per module + Gauze Production tracking!');
 }
 
 main()
@@ -1070,3 +1471,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

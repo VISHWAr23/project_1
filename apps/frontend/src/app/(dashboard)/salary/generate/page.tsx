@@ -58,8 +58,8 @@ export default function GeneratePayrollPage() {
         </Link>
         <div>
           <h1 className="text-xl font-bold text-foreground">Generate Payroll Run</h1>
-          <p className="text-xs text-muted-foreground">Extract attendance logs and run salary calculation rules</p>
         </div>
+
       </div>
 
       <Card className="p-6 space-y-6">
@@ -165,10 +165,11 @@ export default function GeneratePayrollPage() {
             </div>
             <ul className="list-disc pl-5 space-y-1 text-[11px] text-muted-foreground">
               <li>Pulls attendance logs for active employees matching the <strong>{periodType}</strong> cycle.</li>
-              <li>Standard Shift: <strong>09:00 AM – 06:30 PM</strong> (8.5 regular hours) with 1h Lunch (1:30 - 2:30 PM).</li>
-              <li>Calculates Overtime = net worked hours beyond 8.5h × individual OT hourly rate.</li>
+              <li>Standard Shift: <strong>09:00 AM – 06:30 PM</strong> (8 hr 30 min regular work) with 1 hr Lunch (1:30 - 2:30 PM).</li>
+              <li>Calculates Overtime = net worked hours beyond 8 hr 30 min × individual OT hourly rate.</li>
               <li>Automatically deducts weekly advance repayment installments from gross wages.</li>
             </ul>
+
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">

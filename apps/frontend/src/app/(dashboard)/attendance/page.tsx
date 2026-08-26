@@ -37,6 +37,7 @@ import {
 } from '@/hooks/useAttendance';
 import { useEmployees, useDepartments } from '@/hooks/useEmployees';
 import { AttendanceRecord, AttendanceStatus } from '@/types/attendance.types';
+import { formatWorkHours } from '@/lib/date-utils';
 
 // ==========================================
 // IST Date & Time Local Utility Functions
@@ -535,10 +536,10 @@ export default function AttendancePage() {
         }
         return (
           <div className="text-right font-mono text-xs space-y-0.5">
-            <div className="text-foreground font-semibold">{reg} hrs</div>
+            <div className="text-foreground font-semibold">{formatWorkHours(reg)}</div>
             {ot > 0 && (
               <span className="inline-block text-[11px] font-bold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-1.5 py-0.2 rounded border border-purple-500/20">
-                +{ot}h OT
+                +{formatWorkHours(ot)} OT
               </span>
             )}
           </div>
@@ -665,7 +666,7 @@ export default function AttendancePage() {
               : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
           }`}
         >
-          📅 Daily Attendance Register
+          Daily Attendance Register
         </button>
         <button
           onClick={() => setActiveTab('monthly')}
@@ -675,7 +676,7 @@ export default function AttendancePage() {
               : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
           }`}
         >
-          🗓️ Monthly Calendar Overview
+          Monthly Calendar Overview
         </button>
       </div>
 
@@ -718,10 +719,10 @@ export default function AttendancePage() {
                 <Zap className="h-4 w-4 text-purple-500" />
               </div>
               <div className="text-2xl font-bold font-mono text-purple-500">
-                {todayStats?.totalOvertimeHours || 0} hrs
+                {formatWorkHours(todayStats?.totalOvertimeHours, { zeroText: '0 hr' })}
               </div>
               <p className="text-[11px] font-mono text-muted-foreground">
-                Beyond 8.5h standard shift
+                Beyond 8 hr 30 min standard shift
               </p>
             </div>
 
@@ -805,9 +806,9 @@ export default function AttendancePage() {
                   className="w-full justify-center font-bold"
                 >
                   {punchForm.actionType === 'IN'
-                    ? '🟢 Record Punch IN'
+                    ? 'Record Punch IN'
                     : punchForm.actionType === 'OUT'
-                    ? '🔴 Record Punch OUT'
+                    ? 'Record Punch OUT'
                     : 'Save Attendance'}
                 </Button>
               </div>
@@ -1080,13 +1081,13 @@ export default function AttendancePage() {
                           {/* OT */}
                           <td className="p-3 text-right">
                             <span className="text-purple-500 font-bold">
-                              {emp.totalOvertimeHours > 0 ? `+${emp.totalOvertimeHours} hrs` : '0 hrs'}
+                              {emp.totalOvertimeHours > 0 ? `+${formatWorkHours(emp.totalOvertimeHours)}` : '0 hr'}
                             </span>
                           </td>
 
                           {/* Total Hours */}
                           <td className="p-3 text-right font-bold text-foreground">
-                            {emp.totalWorkingHours || 0} hrs
+                            {formatWorkHours(emp.totalWorkingHours, { zeroText: '0 hr' })}
                           </td>
                         </tr>
                       ))}
@@ -1239,10 +1240,10 @@ export default function AttendancePage() {
                               {emp.totalPresent || 0}
                             </td>
                             <td className="p-2 border-l border-border font-bold text-foreground">
-                              {emp.totalWorkingHours || 0}h
+                              {formatWorkHours(emp.totalWorkingHours, { zeroText: '0 hr' })}
                             </td>
                             <td className="p-2 border-l border-border font-bold text-purple-600 dark:text-purple-400">
-                              {emp.totalOvertimeHours > 0 ? `+${emp.totalOvertimeHours}h` : '0h'}
+                              {emp.totalOvertimeHours > 0 ? `+${formatWorkHours(emp.totalOvertimeHours)}` : '0 hr'}
                             </td>
                           </tr>
                         );
@@ -1383,7 +1384,6 @@ export default function AttendancePage() {
         isOpen={Boolean(editingRecord)}
         onClose={() => setEditingRecord(null)}
         title={`Edit Attendance: ${editingRecord?.employee?.firstName} ${editingRecord?.employee?.lastName}`}
-        description="Update punch times in Indian Standard Time (IST)."
       >
         {editingRecord && (
           <form onSubmit={handleEditSubmit} className="space-y-4 pt-2 font-mono text-xs">

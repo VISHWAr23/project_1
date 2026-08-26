@@ -134,3 +134,72 @@ export function useCreateCategory() {
     },
   });
 }
+
+export function useUpdateCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, name, description }: { id: string; name: string; description?: string }) =>
+      rawMaterialsService.updateCategory(id, name, description),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rawMaterialCategories'] });
+      queryClient.invalidateQueries({ queryKey: ['rawMaterials'] });
+    },
+  });
+}
+
+export function useDeleteCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => rawMaterialsService.deleteCategory(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rawMaterialCategories'] });
+      queryClient.invalidateQueries({ queryKey: ['rawMaterials'] });
+    },
+  });
+}
+
+export function useUpdateSupplier() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: any }) =>
+      rawMaterialsService.updateSupplier(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      queryClient.invalidateQueries({ queryKey: ['rawMaterials'] });
+    },
+  });
+}
+
+export function useDeleteSupplier() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => rawMaterialsService.deleteSupplier(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      queryClient.invalidateQueries({ queryKey: ['rawMaterials'] });
+    },
+  });
+}
+
+export function useUpdateStorageLocation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: any }) =>
+      rawMaterialsService.updateStorageLocation(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['storageLocations'] });
+      queryClient.invalidateQueries({ queryKey: ['rawMaterials'] });
+    },
+  });
+}
+
+export function useDeleteStorageLocation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => rawMaterialsService.deleteStorageLocation(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['storageLocations'] });
+      queryClient.invalidateQueries({ queryKey: ['rawMaterials'] });
+    },
+  });
+}

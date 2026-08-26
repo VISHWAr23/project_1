@@ -4,5 +4,6 @@ export * from './material.schema';
 export * from './job-work.schema';
 export * from './attendance.schema';
 export * from './salary.schema';
+export * from './gauze-production.schema';
 
 

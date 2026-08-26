@@ -45,7 +45,11 @@ export class SuppliersService {
   }
 
   async update(id: string, dto: Partial<CreateSupplierDto>) {
-    await this.findOne(id);
+    const supplier = await this.findOne(id);
+    if (dto.code && dto.code !== supplier.code) {
+      const exists = await prisma.supplier.findUnique({ where: { code: dto.code } });
+      if (exists) throw new ConflictException(`Supplier code ${dto.code} already exists.`);
+    }
     return await prisma.supplier.update({
       where: { id },
       data: dto,
@@ -53,13 +57,11 @@ export class SuppliersService {
   }
 
   async remove(id: string) {
-    const supplier = await this.findOne(id);
-    if (supplier.rawMaterials.length > 0) {
-      return await prisma.supplier.update({
-        where: { id },
-        data: { isActive: false },
-      });
-    }
+    await this.findOne(id);
+    await prisma.rawMaterial.updateMany({
+      where: { supplierId: id },
+      data: { supplierId: null },
+    });
     return await prisma.supplier.delete({ where: { id } });
   }
 }
