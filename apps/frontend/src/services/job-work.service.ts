@@ -149,6 +149,26 @@ export const jobWorkService = {
     }
   },
 
+  async createCompany(payload: Partial<JobWorkCompany>): Promise<JobWorkCompany> {
+    return await apiClient<JobWorkCompany>('/job-work/companies', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async updateCompany(id: string, payload: Partial<JobWorkCompany>): Promise<JobWorkCompany> {
+    return await apiClient<JobWorkCompany>(`/job-work/companies/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async deleteCompany(id: string): Promise<{ success: boolean; message: string }> {
+    return await apiClient<{ success: boolean; message: string }>(`/job-work/companies/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
   async getMaterials(): Promise<RawMaterialItem[]> {
     try {
       return await apiClient<RawMaterialItem[]>('/job-work/materials');
@@ -165,12 +185,12 @@ export const jobWorkService = {
 export const mockCompanies: JobWorkCompany[] = [
   {
     id: 'c1',
-    companyName: 'Apex Precision Electroplating Pvt Ltd',
+    companyName: 'Shri Meenakshi Bleaching & Processing Mill',
     contactPerson: 'Rajesh Sharma',
     phone: '+91 98765 43210',
-    email: 'contact@apexelectro.com',
-    gstin: '27AAACA12341Z5',
-    address: 'Plot 42, GIDC Industrial Estate, Umbergaon, Gujarat - 396171',
+    email: 'contact@meenakshibleaching.com',
+    gstin: '33AAACM12341Z5',
+    address: 'Shed 42, Textile Industrial Complex, Rajapalayam, Tamil Nadu - 626102',
     creditDays: 30,
     isActive: true,
     createdAt: new Date().toISOString(),
@@ -503,7 +523,7 @@ function mockJobWorkList(params?: any): JobWorkListResponse {
       jobWorkCompanyId: 'c3',
       jobWorkCompany: {
         id: 'c3',
-        companyName: 'Apex Bleaching & Processing Mill',
+        companyName: 'Shri Meenakshi Bleaching & Processing Mill',
         contactPerson: 'M. Anand',
         phone: '+91 97890 55443',
         creditDays: 30,

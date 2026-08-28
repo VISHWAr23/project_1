@@ -365,10 +365,10 @@ export function EmployeeReportModal({
                     </div>
                     <div>
                       <h1 className="text-base sm:text-lg font-bold text-foreground print:text-black tracking-tight">
-                        Apex Surgical Products Manufacturing Ltd.
+                        Shri Lathikka Surgicals
                       </h1>
                       <p className="text-xs text-muted-foreground print:text-slate-600">
-                        Shri Lathikka Surgicals • Plot No. 42, Textile Industrial Park, Tamil Nadu
+                        Samsigapuram, Rajapalayam, Tamil Nadu - 626102
                       </p>
                     </div>
                   </div>
@@ -634,7 +634,7 @@ export function EmployeeReportModal({
 
         {/* Modal Bottom Footer (Screen Only) */}
         <div className="flex items-center justify-between px-6 py-3.5 border-t border-border bg-secondary/30 text-xs text-muted-foreground print:hidden">
-          <span>Apex ERP • Industrial Attendance & Payroll Engine</span>
+          <span>Shri Lathikka Surgicals ERP • Attendance & Payroll Engine</span>
           <Button variant="outline" size="sm" onClick={onClose}>
             Close Report
           </Button>

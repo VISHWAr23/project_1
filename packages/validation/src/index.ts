@@ -5,5 +5,6 @@ export * from './job-work.schema';
 export * from './attendance.schema';
 export * from './salary.schema';
 export * from './gauze-production.schema';
+export * from './gamjee-production.schema';
 
 

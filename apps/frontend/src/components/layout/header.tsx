@@ -66,30 +66,30 @@ export default function Header({ onMobileMenuOpen }: HeaderProps) {
           {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-700" />}
         </button>
 
-        {/* Notifications */}
+          {/* Notifications */}
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
             className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-sm transition-colors relative"
           >
             <Bell className="h-4 w-4" />
-            <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse"></span>
+            <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse"></span>
           </button>
 
           {showNotifications && (
             <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-popover border border-border rounded-md shadow-2xl p-3.5 z-50 text-xs space-y-3">
               <div className="flex items-center justify-between border-b border-border pb-2">
                 <span className="font-semibold text-foreground">Notifications</span>
-                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-mono font-bold">2 Unread</span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">2 Unread</span>
               </div>
               <div className="space-y-2">
                 <div className="p-2 rounded-sm bg-secondary/50 border border-border/60">
-                  <p className="font-medium text-foreground">Low Stock Alert: RM-ALU-001</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Aluminum Sheet stock below 120 Kg</p>
+                  <p className="font-medium text-foreground">Low Stock Alert: RM-YARN-40S</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Cotton Yarn stock below 120 Kg</p>
                 </div>
                 <div className="p-2 rounded-sm bg-secondary/50 border border-border/60">
                   <p className="font-medium text-foreground">Delivery Challan Reconciliation</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">DC-2026-0012 dispatched to Apex</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">DC-2026-0012 dispatched for Bleaching</p>
                 </div>
               </div>
             </div>
@@ -105,7 +105,7 @@ export default function Header({ onMobileMenuOpen }: HeaderProps) {
             <p className="text-xs font-semibold text-foreground leading-tight truncate max-w-[120px]">
               {user?.email || 'admin@manufacturing.com'}
             </p>
-            <span className="text-[9px] font-mono font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+            <span className="text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
               {user?.role || 'ADMIN'}
             </span>
           </div>

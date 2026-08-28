@@ -20,6 +20,8 @@ import {
   Edit,
   ArrowUpDown,
   RefreshCw,
+  UserCheck,
+  Archive,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,7 +46,7 @@ export default function RawMaterialsPage() {
   const [selectedSupplier, setSelectedSupplier] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
-  const [typeTab, setTypeTab] = useState<'ALL' | 'RM' | 'FG'>('ALL');
+  const [typeTab, setTypeTab] = useState<'ALL' | 'RM' | 'PM' | 'FG'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
 
   const [adjustmentMaterial, setAdjustmentMaterial] = useState<RawMaterial | null>(null);
@@ -70,16 +72,56 @@ export default function RawMaterialsPage() {
     totalValuation: 0,
     lowStockCount: 0,
     outOfStockCount: 0,
+    packagingSkusCount: 0,
+    packagingValuation: 0,
+  };
+
+  const isItemPM = (row: RawMaterial) => {
+    if (row.isPackagingMaterial !== undefined) return row.isPackagingMaterial;
+    const sku = row.sku || '';
+    if (
+      sku.startsWith('PM-') ||
+      sku.startsWith('PKG-') ||
+      sku.startsWith('BX-') ||
+      sku.startsWith('TP-') ||
+      sku.startsWith('CV-')
+    ) {
+      return true;
+    }
+    const catName = row.category?.name?.toLowerCase() || '';
+    const name = row.name?.toLowerCase() || '';
+    return (
+      catName.includes('packaging') ||
+      catName.includes('box') ||
+      catName.includes('cover') ||
+      catName.includes('tape') ||
+      catName.includes('carton') ||
+      catName.includes('pouch') ||
+      catName.includes('bag') ||
+      catName.includes('wrapper') ||
+      name.includes('box') ||
+      name.includes('tape') ||
+      name.includes('cover') ||
+      name.includes('carton') ||
+      name.includes('pouch') ||
+      name.includes('polybag') ||
+      name.includes('poly bag') ||
+      name.includes('roll tape')
+    );
   };
 
   const isItemFG = (row: RawMaterial) => {
-    if (row.sku?.startsWith('FP-') || row.sku?.startsWith('FG-')) return true;
+    if (row.isFinishedGood !== undefined) return row.isFinishedGood;
+    if (isItemPM(row)) return false;
+    if (row.sku?.startsWith('FP-') || row.sku?.startsWith('FG-') || row.sku?.startsWith('PROD-')) return true;
     if (row.sku?.startsWith('RM-')) return false;
     const catName = row.category?.name?.toLowerCase() || '';
     if (
       catName.includes('raw') ||
-      catName.includes('packaging') ||
+      catName.includes('yarn') ||
+      catName.includes('cotton') ||
       catName.includes('liquid') ||
+      catName.includes('chemical') ||
       catName.includes('botanical') ||
       catName.includes('component') ||
       catName.includes('metals')
@@ -98,7 +140,7 @@ export default function RawMaterialsPage() {
       render: (row) => (
         <Link
           href={`/raw-materials/${row.id}`}
-          className="font-mono font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+          className="font-mono font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
         >
           {row.sku}
         </Link>
@@ -107,15 +149,26 @@ export default function RawMaterialsPage() {
     {
       key: 'type' as any,
       header: 'Classification',
-      width: '135px',
+      width: '140px',
       render: (row) => {
-        const isFG = isItemFG(row);
-        return isFG ? (
+        const isPM = isItemPM(row);
+        const isFG = !isPM && isItemFG(row);
+        if (isPM) {
+          return (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+              PACKAGING
+            </span>
+          );
+        }
+        if (isFG) {
+          return (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              FINISHED GOOD
+            </span>
+          );
+        }
+        return (
           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            FINISHED GOOD
-          </span>
-        ) : (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
             RAW MATERIAL
           </span>
         );
@@ -126,13 +179,28 @@ export default function RawMaterialsPage() {
       header: 'Item Name & Category',
       sortable: true,
       render: (row) => (
-        <div>
-          <Link href={`/raw-materials/${row.id}`} className="font-medium text-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+        <div className="space-y-1">
+          <Link href={`/raw-materials/${row.id}`} className="font-medium text-foreground hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
             {row.name}
           </Link>
-          <span className="block text-[11px] text-muted-foreground">
-            {row.category?.name || 'General Inventory'} • HSN: {row.hsnCode || 'N/A'}
-          </span>
+          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+            <span>{row.category?.name || 'General Inventory'} • HSN: {row.hsnCode || 'N/A'}</span>
+            {row.size && (
+              <span className="px-1.5 py-0.2 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded font-semibold text-[10px]">
+                {row.size} {row.dimensionInches ? `(${row.dimensionInches})` : ''}
+              </span>
+            )}
+            {row.packSize && (
+              <span className="px-1.5 py-0.2 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded font-mono text-[10px]">
+                {row.packSize}
+              </span>
+            )}
+            {row.boxSize && (
+              <span className="px-1.5 py-0.2 bg-secondary text-foreground border border-border rounded font-mono text-[10px]">
+                {row.boxSize}
+              </span>
+            )}
+          </div>
         </div>
       ),
     },
@@ -146,6 +214,12 @@ export default function RawMaterialsPage() {
           <span className="font-mono font-bold text-xs text-foreground block">
             {Number(row.currentStockBalance).toFixed(2)} {row.unit?.abbreviation || 'Units'}
           </span>
+          {Boolean(row.conversionFactor && (row.secondaryUnit || row.secondaryUnitName)) && (
+            <span className="text-[10px] text-blue-500 block font-mono">
+              ~{(Number(row.currentStockBalance) / (Number(row.conversionFactor) || 1)).toFixed(1)}{' '}
+              {row.secondaryUnit?.abbreviation || row.secondaryUnitName}
+            </span>
+          )}
           {Number(row.reservedStock) > 0 && (
             <span className="text-[10px] text-amber-400 block font-mono">
               ({Number(row.reservedStock).toFixed(2)} Reserved)
@@ -203,7 +277,7 @@ export default function RawMaterialsPage() {
             onClick={() => setAdjustmentMaterial(row)}
             title="Record Stock Movement"
           >
-            <ArrowUpDown className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+            <ArrowUpDown className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
           </Button>
           <Link href={`/raw-materials/${row.id}`}>
             <Button variant="ghost" size="sm" title="View Details">
@@ -231,9 +305,12 @@ export default function RawMaterialsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
-            <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-            Materials & Finished Goods Master
+            <Package className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+            Materials & Packaging Master Catalog
           </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Manage Raw Materials, Packaging Supplies (Boxes, Covers, Tapes) & Finished Products
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link href="/raw-materials/categories">
@@ -253,7 +330,7 @@ export default function RawMaterialsPage() {
           </Link>
           <Link href="/raw-materials/history">
             <Button variant="outline" size="sm" leftIcon={<History className="h-3.5 w-3.5" />}>
-              Stock History Ledger
+              Stock Ledger
             </Button>
           </Link>
           <Link href="/raw-materials/new">
@@ -265,16 +342,16 @@ export default function RawMaterialsPage() {
       </div>
 
       {/* Classification Tabs */}
-      <div className="flex items-center gap-2 border-b border-border pb-2">
+      <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto">
         <button
           onClick={() => {
             setTypeTab('ALL');
             setCurrentPage(1);
           }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
             typeTab === 'ALL'
               ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
           }`}
         >
           All Inventory
@@ -284,23 +361,37 @@ export default function RawMaterialsPage() {
             setTypeTab('RM');
             setCurrentPage(1);
           }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
             typeTab === 'RM'
               ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
           }`}
         >
           Raw Materials (RM)
         </button>
         <button
           onClick={() => {
+            setTypeTab('PM');
+            setCurrentPage(1);
+          }}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+            typeTab === 'PM'
+              ? 'bg-amber-600 text-white shadow-sm'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+          }`}
+        >
+          <Archive className="h-3.5 w-3.5" />
+          Packaging Materials (Boxes, Covers, Tape)
+        </button>
+        <button
+          onClick={() => {
             setTypeTab('FG');
             setCurrentPage(1);
           }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
             typeTab === 'FG'
               ? 'bg-emerald-600 text-white shadow-sm'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
           }`}
         >
           Finished Goods (FG)
@@ -335,25 +426,25 @@ export default function RawMaterialsPage() {
 
         <div className="bg-secondary/30 border border-border rounded-xl p-4 flex items-center justify-between">
           <div>
-            <span className="text-xs text-muted-foreground block font-medium">Low Stock Alerts</span>
+            <span className="text-xs text-muted-foreground block font-medium">Packaging Inventory Value</span>
             <span className="text-2xl font-bold text-amber-500 font-mono mt-1 block">
-              {stats.lowStockCount}
+              ₹ {(stats.packagingValuation || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
             </span>
           </div>
           <div className="p-3 bg-amber-500/10 text-amber-500 rounded-lg">
-            <AlertTriangle className="h-5 w-5" />
+            <Archive className="h-5 w-5" />
           </div>
         </div>
 
         <div className="bg-secondary/30 border border-border rounded-xl p-4 flex items-center justify-between">
           <div>
-            <span className="text-xs text-muted-foreground block font-medium">Out of Stock SKUs</span>
+            <span className="text-xs text-muted-foreground block font-medium">Low Stock Alerts</span>
             <span className="text-2xl font-bold text-rose-500 font-mono mt-1 block">
-              {stats.outOfStockCount}
+              {stats.lowStockCount}
             </span>
           </div>
           <div className="p-3 bg-rose-500/10 text-rose-500 rounded-lg">
-            <TrendingDown className="h-5 w-5" />
+            <AlertTriangle className="h-5 w-5" />
           </div>
         </div>
       </div>

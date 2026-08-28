@@ -216,15 +216,15 @@ export default function SuppliersPage() {
         <form onSubmit={handleCreateSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <Input label="Supplier Code" placeholder="SUP-001" value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} required />
-            <Input label="Company Name" placeholder="Apex Metal Extrusions" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
+            <Input label="Company Name" placeholder="Lakshmi Cotton Spinning Mills" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Input label="Contact Person" placeholder="Rajesh Kumar" value={formData.contactPerson} onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })} />
             <Input label="Phone Number" placeholder="+91 98765 43210" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Email Address" type="email" placeholder="vendor@apex.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-            <Input label="GSTIN Number" placeholder="27AAACA12341Z5" value={formData.gstin} onChange={(e) => setFormData({ ...formData, gstin: e.target.value })} />
+            <Input label="Email Address" type="email" placeholder="vendor@lakshmicotton.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+            <Input label="GSTIN Number" placeholder="33AAACL12341Z5" value={formData.gstin} onChange={(e) => setFormData({ ...formData, gstin: e.target.value })} />
           </div>
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">Factory Address</label>
@@ -257,15 +257,15 @@ export default function SuppliersPage() {
         <form onSubmit={handleEditSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <Input label="Supplier Code" placeholder="SUP-001" value={editFormData.code} onChange={(e) => setEditFormData({ ...editFormData, code: e.target.value })} required />
-            <Input label="Company Name" placeholder="Apex Metal Extrusions" value={editFormData.name} onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })} required />
+            <Input label="Company Name" placeholder="Lakshmi Cotton Spinning Mills" value={editFormData.name} onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })} required />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Input label="Contact Person" placeholder="Rajesh Kumar" value={editFormData.contactPerson} onChange={(e) => setEditFormData({ ...editFormData, contactPerson: e.target.value })} />
             <Input label="Phone Number" placeholder="+91 98765 43210" value={editFormData.phone} onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })} />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Email Address" type="email" placeholder="vendor@apex.com" value={editFormData.email} onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })} />
-            <Input label="GSTIN Number" placeholder="27AAACA12341Z5" value={editFormData.gstin} onChange={(e) => setEditFormData({ ...editFormData, gstin: e.target.value })} />
+            <Input label="Email Address" type="email" placeholder="vendor@lakshmicotton.com" value={editFormData.email} onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })} />
+            <Input label="GSTIN Number" placeholder="33AAACL12341Z5" value={editFormData.gstin} onChange={(e) => setEditFormData({ ...editFormData, gstin: e.target.value })} />
           </div>
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">Factory Address</label>

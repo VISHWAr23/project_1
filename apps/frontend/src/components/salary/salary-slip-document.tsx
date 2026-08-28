@@ -64,9 +64,9 @@ export function SalarySlipDocument({ item }: SalarySlipDocumentProps) {
                 SurgicalERP
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-900 tracking-tight">Apex Surgical Products Manufacturing Ltd.</h1>
-                <p className="text-xs text-slate-600">Plot 45, Industrial Development Area, Phase II, Tamil Nadu - 641001</p>
-                <p className="text-[11px] text-slate-500 font-mono">GSTIN: 33AAACA1234F1Z9 • Lic No: MFG/MED-2024/092</p>
+                <h1 className="text-xl font-bold text-slate-900 tracking-tight">Shri Lathikka Surgicals</h1>
+                <p className="text-xs text-slate-600">Samsigapuram, Rajapalayam, Tamil Nadu - 626102</p>
+                <p className="text-[11px] text-slate-500 font-mono">Manufacturers of Medical Gauze & Surgical Dressing</p>
               </div>
             </div>
             <div className="text-right sm:border-l sm:pl-4 border-slate-200">
@@ -265,7 +265,7 @@ export function SalarySlipDocument({ item }: SalarySlipDocumentProps) {
           <div className="text-right">
             <div className="h-10 border-b border-slate-300 w-36 mb-1"></div>
             <p className="font-bold text-slate-800">Authorized Signatory</p>
-            <p className="text-[10px] text-slate-500">Apex Surgical Products ERP</p>
+            <p className="text-[10px] text-slate-500">Shri Lathikka Surgicals ERP</p>
           </div>
         </div>
       </div>

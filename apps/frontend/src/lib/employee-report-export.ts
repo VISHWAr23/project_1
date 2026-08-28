@@ -38,7 +38,7 @@ export function exportEmployeeReportToExcel(report: EmployeeReportData) {
 
   // Build structured 2D sheet data
   const data: (string | number)[][] = [
-    ['APEX SURGICAL PRODUCTS MANUFACTURING LTD.'],
+    ['SHRI LATHIKKA SURGICALS'],
     ['EMPLOYEE WORK & ATTENDANCE REPORT'],
     [''],
     ['EMPLOYEE DETAILS', '', 'REPORT PERIOD', ''],
@@ -142,7 +142,7 @@ export function exportEmployeeReportToPDF(report: EmployeeReportData) {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('APEX SURGICAL PRODUCTS MANUFACTURING LTD.', 14, 10);
+  doc.text('SHRI LATHIKKA SURGICALS', 14, 10);
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
@@ -268,7 +268,7 @@ export function exportEmployeeReportToPDF(report: EmployeeReportData) {
     },
     didDrawPage: (data) => {
       // Page Footer
-      const str = `Page ${data.pageNumber} of ${doc.getNumberOfPages()} | Apex IMS`;
+      const str = `Page ${data.pageNumber} of ${doc.getNumberOfPages()} | Shri Lathikka Surgicals ERP`;
       doc.setFontSize(7);
       doc.setTextColor(148, 163, 184);
       doc.text(str, pageWidth - 14, doc.internal.pageSize.getHeight() - 8, { align: 'right' });

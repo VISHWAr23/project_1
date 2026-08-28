@@ -100,9 +100,9 @@ export function DeliveryChallanPDF({ order }: DeliveryChallanPDFProps) {
               IMS
             </div>
             <div>
-              <h1 className="text-xl font-bold uppercase tracking-wide text-gray-900">APEX MANUFACTURING LIMITED</h1>
-              <p className="text-[11px] text-gray-600">Plot 108, Phase II, GIDC Industrial Estate, Vatva, Ahmedabad - 382445</p>
-              <p className="text-[11px] text-gray-600">GSTIN: 24AAACA9988M1Z7 | Tel: +91 79 2583 0000 | Email: dispatch@apexmfgofficial.com</p>
+              <h1 className="text-xl font-bold uppercase tracking-wide text-gray-900">SHRI LATHIKKA SURGICALS</h1>
+              <p className="text-[11px] text-gray-600">Samsigapuram, Rajapalayam, Tamil Nadu - 626102</p>
+              <p className="text-[11px] text-gray-600">GSTIN: 33AAACL1234F1Z9 | Manufacturers of Medical Gauze & Surgical Dressing</p>
             </div>
           </div>
           <div className="text-right">
@@ -231,7 +231,7 @@ export function DeliveryChallanPDF({ order }: DeliveryChallanPDFProps) {
           </div>
           <div>
             <div className="h-12 border-b border-gray-400"></div>
-            <p className="font-bold text-gray-900 mt-1">For APEX MANUFACTURING LTD</p>
+            <p className="font-bold text-gray-900 mt-1">For SHRI LATHIKKA SURGICALS</p>
             <p className="text-[10px] text-gray-500">Authorized Signatory</p>
           </div>
         </div>

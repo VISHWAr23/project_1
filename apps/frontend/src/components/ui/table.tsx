@@ -58,9 +58,9 @@ export function Table<T>({
                       <span className="text-muted-foreground/60">
                         {sortColumn === col.key ? (
                           sortDirection === 'asc' ? (
-                            <ChevronUp className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                            <ChevronUp className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                           ) : (
-                            <ChevronDown className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                            <ChevronDown className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                           )
                         ) : (
                           <ArrowUpDown className="h-3 w-3" />
@@ -126,7 +126,7 @@ export function Table<T>({
       {isLoading && (
         <div className="absolute inset-0 bg-background/20 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card/95 border border-border shadow-lg text-xs font-medium text-foreground">
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600 dark:text-blue-400" />
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-600 dark:text-emerald-400" />
             <span>Loading records...</span>
           </div>
         </div>

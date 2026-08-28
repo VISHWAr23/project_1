@@ -271,9 +271,9 @@ export default function DashboardPage() {
           <Select
             label="Select Raw Material SKU"
             options={[
-              { label: 'RM-ALU-001 - Aluminum Sheet Grade 6061', value: 'RM-ALU-001' },
-              { label: 'RM-STL-045 - Stainless Steel Rod 12mm', value: 'RM-STL-045' },
-              { label: 'RM-COP-012 - Copper Wire Heavy Gauge', value: 'RM-COP-012' },
+              { label: 'RM-YARN-40S - 100% Combed Cotton Grey Yarn 40s', value: 'RM-YARN-40S' },
+              { label: 'PM-BOX-5PLY - 5-Ply Corrugated Outer Box', value: 'PM-BOX-5PLY' },
+              { label: 'PM-TAPE-ROLL - BOPP Packaging Roll Tape 2 Inch', value: 'PM-TAPE-ROLL' },
             ]}
           />
           <Input label="Disbursement Quantity" type="number" placeholder="100" required />

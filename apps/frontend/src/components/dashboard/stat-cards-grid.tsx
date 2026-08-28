@@ -29,7 +29,7 @@ export const StatCardsGrid: React.FC<StatCardsGridProps> = ({ summary, isLoading
         icon={<Users className="h-5 w-5" />}
         description="98.2% Present Today"
         trend={{ value: summary?.totalEmployeesChange || 3.8, isPositive: true }}
-        colorTheme="blue"
+        colorTheme="emerald"
         isLoading={isLoading}
       />
 

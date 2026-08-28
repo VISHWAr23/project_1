@@ -32,10 +32,80 @@ export function useDepartments() {
   });
 }
 
+export function useCreateDepartment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { name: string; code?: string; description?: string }) =>
+      employeeService.createDepartment(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['departments'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+    },
+  });
+}
+
+export function useUpdateDepartment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: { name?: string; code?: string; description?: string } }) =>
+      employeeService.updateDepartment(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['departments'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+    },
+  });
+}
+
+export function useDeleteDepartment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => employeeService.deleteDepartment(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['departments'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+    },
+  });
+}
+
 export function useDesignations() {
   return useQuery({
     queryKey: ['designations'],
     queryFn: () => employeeService.getDesignations(),
+  });
+}
+
+export function useCreateDesignation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { name: string; code?: string; description?: string }) =>
+      employeeService.createDesignation(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['designations'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+    },
+  });
+}
+
+export function useUpdateDesignation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: { name?: string; code?: string; description?: string } }) =>
+      employeeService.updateDesignation(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['designations'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+    },
+  });
+}
+
+export function useDeleteDesignation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => employeeService.deleteDesignation(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['designations'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+    },
   });
 }
 

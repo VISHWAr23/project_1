@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
+import { MasterEntityDropdown } from '@/components/ui/master-entity-dropdown';
 import { Table, Column } from '@/components/ui/table';
 import { Avatar } from '@/components/ui/avatar';
 import { useToast } from '@/components/ui/toast';
@@ -412,36 +413,23 @@ export default function EmployeesPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-muted-foreground block mb-1">Department</label>
-              <select
-                value={formData.departmentId || ''}
-                onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
-                className="w-full bg-secondary/50 border border-border text-xs rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-[#3ECF8E]"
-              >
-                <option value="">Select Department</option>
-                {departments.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-muted-foreground block mb-1">Designation</label>
-              <select
-                value={formData.designationId || ''}
-                onChange={(e) => setFormData({ ...formData, designationId: e.target.value })}
-                className="w-full bg-secondary/50 border border-border text-xs rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-[#3ECF8E]"
-              >
-                <option value="">Select Designation</option>
-                {designations.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <MasterEntityDropdown
+              label="Department"
+              entityType="department"
+              placeholder="Select Department..."
+              options={departments.map((d) => ({ label: d.name, value: d.id, raw: d }))}
+              value={formData.departmentId || ''}
+              onChange={(val) => setFormData({ ...formData, departmentId: val })}
+            />
+
+            <MasterEntityDropdown
+              label="Designation"
+              entityType="designation"
+              placeholder="Select Designation..."
+              options={designations.map((d) => ({ label: d.name, value: d.id, raw: d }))}
+              value={formData.designationId || ''}
+              onChange={(val) => setFormData({ ...formData, designationId: val })}
+            />
           </div>
 
           <div className="grid grid-cols-3 gap-3">

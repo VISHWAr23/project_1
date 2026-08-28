@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { MasterEntityDropdown } from '@/components/ui/master-entity-dropdown';
 import { useToast } from '@/components/ui/toast';
 import { useJobWorkCompanies, useJobWorkMaterials, useCreateJobWorkOrder } from '@/hooks/useJobWork';
 import { RawMaterialItem } from '@/types/job-work.types';
@@ -138,18 +139,16 @@ export default function CreateJobWorkOrderPage() {
 
           {/* Form Fields */}
           <div className="space-y-4">
-            <div>
-              <label className="text-xs font-semibold text-foreground mb-1.5 flex items-center gap-1.5">
-                <Building2 className="h-4 w-4 text-primary" />
-                Select Job Working Company *
-              </label>
-              <Select
-                options={companyOptions}
-                value={jobWorkCompanyId}
-                onChange={(e) => setJobWorkCompanyId(e.target.value)}
-                disabled={isLoadingCompanies}
-              />
-            </div>
+            <MasterEntityDropdown
+              label="Job Working Company / Vendor"
+              entityType="jobWorkCompany"
+              placeholder="Select Job Working Vendor..."
+              options={companies.map((c) => ({ label: c.companyName, value: c.id, raw: c }))}
+              value={jobWorkCompanyId}
+              onChange={(val) => setJobWorkCompanyId(val)}
+              disabled={isLoadingCompanies}
+              required
+            />
 
             <div>
               <label className="text-xs font-semibold text-foreground mb-1.5 flex items-center gap-1.5">

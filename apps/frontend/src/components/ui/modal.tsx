@@ -11,7 +11,8 @@ export interface ModalProps {
   title?: string;
   description?: string;
   children: React.ReactNode;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl';
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
 }
 
 export function Modal({
@@ -20,9 +21,11 @@ export function Modal({
   title,
   description,
   children,
-  maxWidth = 'md',
+  maxWidth,
+  size = 'md',
 }: ModalProps) {
   const [mounted, setMounted] = useState(false);
+  const effectiveWidth = maxWidth || size;
 
   useEffect(() => {
     setMounted(true);
@@ -47,6 +50,9 @@ export function Modal({
     md: 'sm:max-w-md',
     lg: 'sm:max-w-lg',
     xl: 'sm:max-w-xl',
+    '2xl': 'sm:max-w-2xl',
+    '3xl': 'sm:max-w-3xl',
+    '4xl': 'sm:max-w-4xl',
   };
 
   const modalContent = (
@@ -66,7 +72,7 @@ export function Modal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: 8 }}
             transition={{ type: 'spring', duration: 0.2 }}
-            className={`relative w-full max-w-[92vw] ${maxWidthClasses[maxWidth]} bg-popover border border-border rounded-md shadow-2xl overflow-hidden z-10 max-h-[90vh] flex flex-col`}
+            className={`relative w-full max-w-[92vw] ${maxWidthClasses[effectiveWidth]} bg-popover border border-border rounded-md shadow-2xl overflow-hidden z-10 max-h-[90vh] flex flex-col`}
           >
             {(title || description) && (
               <div className="p-3.5 sm:p-4 border-b border-border/80 flex items-start justify-between shrink-0">

@@ -603,6 +603,63 @@ export class JobWorkService {
     });
   }
 
+  async createCompany(data: {
+    companyName: string;
+    contactPerson?: string;
+    phone?: string;
+    email?: string;
+    gstin?: string;
+    address?: string;
+    creditDays?: number;
+  }) {
+    return prisma.jobWorkCompany.create({
+      data: {
+        companyName: data.companyName,
+        contactPerson: data.contactPerson || null,
+        phone: data.phone || null,
+        email: data.email || null,
+        gstin: data.gstin || null,
+        address: data.address || null,
+        creditDays: data.creditDays ? Number(data.creditDays) : 30,
+        isActive: true,
+      },
+    });
+  }
+
+  async updateCompany(
+    id: string,
+    data: {
+      companyName?: string;
+      contactPerson?: string;
+      phone?: string;
+      email?: string;
+      gstin?: string;
+      address?: string;
+      creditDays?: number;
+      isActive?: boolean;
+    },
+  ) {
+    return prisma.jobWorkCompany.update({
+      where: { id },
+      data: {
+        ...(data.companyName ? { companyName: data.companyName } : {}),
+        ...(data.contactPerson !== undefined ? { contactPerson: data.contactPerson } : {}),
+        ...(data.phone !== undefined ? { phone: data.phone } : {}),
+        ...(data.email !== undefined ? { email: data.email } : {}),
+        ...(data.gstin !== undefined ? { gstin: data.gstin } : {}),
+        ...(data.address !== undefined ? { address: data.address } : {}),
+        ...(data.creditDays !== undefined ? { creditDays: Number(data.creditDays) } : {}),
+        ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+      },
+    });
+  }
+
+  async deleteCompany(id: string) {
+    return prisma.jobWorkCompany.delete({
+      where: { id },
+    });
+  }
+
   /**
    * Helper: Get materials for select drop-downs
    */

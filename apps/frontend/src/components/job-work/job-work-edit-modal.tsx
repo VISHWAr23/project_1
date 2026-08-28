@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { MasterEntityDropdown } from '@/components/ui/master-entity-dropdown';
 import { useToast } from '@/components/ui/toast';
 import { useUpdateJobWorkOrder, useJobWorkCompanies, useJobWorkMaterials } from '@/hooks/useJobWork';
 import { JobWorkOrder } from '@/types/job-work.types';
@@ -136,17 +137,16 @@ export function JobWorkEditModal({
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-foreground">
-              Job Working Subcontractor *
-            </label>
-            <Select
-              options={vendorOptions}
-              value={companyId}
-              onChange={(e) => setCompanyId(e.target.value)}
-              disabled={vendorOptions.length === 0}
-            />
-          </div>
+          <MasterEntityDropdown
+            label="Job Working Subcontractor"
+            entityType="jobWorkCompany"
+            placeholder="Select Vendor..."
+            options={companies.map((c) => ({ label: c.companyName, value: c.id, raw: c }))}
+            value={companyId}
+            onChange={(val) => setCompanyId(val)}
+            disabled={vendorOptions.length === 0}
+            required
+          />
 
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-foreground">

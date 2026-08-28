@@ -159,6 +159,20 @@ enum GauzeProductionStatus {
   CANCELLED
 }
 
+enum GamjeeProductionStatus {
+  DRAFT
+  MATERIALS_SELECTED
+  PINNING
+  FOLDING
+  CUTTING
+  COTTON_PREPARATION
+  READY_FOR_ROLLING
+  ROLLING
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
+
 // ==========================================
 // MODELS
 // ==========================================
@@ -200,6 +214,16 @@ model User {
   gauzePackingEntriesCreated    GauzePackingEntry[]
   gauzeMovementsCreated         GauzeMaterialMovement[]
   gauzeStatusChanges            GauzeBatchStatusHistory[]
+
+  gamjeeProductionBatchesCreated GamjeeProductionBatch[]
+  gamjeeMaterialInputsCreated    GamjeeMaterialInput[]
+  gamjeeOperationsCreated        GamjeeProductionOperation[]
+  gamjeeRollingEntriesCreated    GamjeeRollingEntry[]
+  gamjeeMovementsCreated         GamjeeMaterialMovement[]
+  gamjeeStatusChanges            GamjeeBatchStatusHistory[]
+
+  customerOrdersCreated       CustomerOrder[]
+  customerOrderStatusChanges CustomerOrderStatusHistory[]
 
   @@index([email], map: "idx_users_email")
   @@index([role], map: "idx_users_role")
@@ -287,6 +311,8 @@ model Employee {
   advances          EmployeeAdvance[]
   advanceRepayments AdvanceRepayment[]
   gauzeOperations   GauzeProductionOperation[]
+  gamjeeOperations    GamjeeProductionOperation[]
+  gamjeeRollingEntries GamjeeRollingEntry[]
 
   @@index([employeeCode], map: "idx_emp_code")
   @@index([status], map: "idx_emp_status")
@@ -641,11 +667,12 @@ model Category {
 
 model UnitOfMeasure {
   id           String   @id @default(uuid()) @db.Uuid
-  name         String   @unique @db.VarChar(50) // e.g. Kilogram, Meter, Piece
-  abbreviation String   @unique @db.VarChar(10) // e.g. Kg, m, pc
+  name         String   @unique @db.VarChar(50) // e.g. Kilogram, Meter, Piece, Bale, Roll, Cone, Box
+  abbreviation String   @unique @db.VarChar(10) // e.g. Kg, m, pc, ble, rl, cn, bx
   createdAt    DateTime @default(now()) @map("created_at")
 
-  rawMaterials RawMaterial[]
+  rawMaterials          RawMaterial[] @relation("PrimaryUnitRelation")
+  secondaryRawMaterials RawMaterial[] @relation("SecondaryUnitRelation")
 
   @@map("units_of_measure")
 }
@@ -687,6 +714,11 @@ model StorageLocation {
   fromGauzeMovements  GauzeMaterialMovement[] @relation("FromGauzeLocation")
   toGauzeMovements    GauzeMaterialMovement[] @relation("ToGauzeLocation")
 
+  gamjeeMaterialInputs GamjeeMaterialInput[]
+  gamjeeFinishedRolls  GamjeeFinishedRoll[]
+  fromGamjeeMovements  GamjeeMaterialMovement[] @relation("FromGamjeeLocation")
+  toGamjeeMovements    GamjeeMaterialMovement[] @relation("ToGamjeeLocation")
+
   @@index([name], map: "idx_location_name")
   @@map("storage_locations")
 }
@@ -708,6 +740,20 @@ model RawMaterial {
   gstRate             Decimal  @default(0) @map("gst_rate") @db.Decimal(5, 2)
   remarks             String?  @db.Text
   isActive            Boolean  @default(true) @map("is_active")
+  
+  // Product Variant & Packaging Specifications
+  brand               String?  @db.VarChar(100)
+  size                String?  @db.VarChar(100) // e.g. "MEDIUM", "LARGE", "EXTRA LARGE", "10cm x 10m"
+  dimensionInches     String?  @map("dimension_inches") @db.VarChar(100) // e.g. "28\"-44\""
+  dimensionCm         String?  @map("dimension_cm") @db.VarChar(100) // e.g. "70-110 CM"
+  packSize            String?  @map("pack_size") @db.VarChar(100) // e.g. "10 PCS/PACK"
+  innerPackQty        Int?     @map("inner_pack_qty") // e.g. 10
+  packUnit            String?  @map("pack_unit") @db.VarChar(50) // e.g. "Pack", "Pouch", "Box", "Roll"
+  boxSize             String?  @map("box_size") @db.VarChar(100) // e.g. "12 PACKS/BOX (120 PCS)"
+  masterCartonQty     Int?     @map("master_carton_qty") // e.g. 12
+  features            String?  @db.Text // e.g. "Soft Waist Panel, Anti Bacterial, Super Absorbent, Super Leak guard, Wetness indicator"
+  variantType         String?  @map("variant_type") @db.VarChar(100) // e.g. "ADULT PULLUPS - PREMIUM"
+
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
@@ -715,7 +761,12 @@ model RawMaterial {
   category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   unitId String?        @map("unit_id") @db.Uuid
-  unit   UnitOfMeasure? @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  unit   UnitOfMeasure? @relation("PrimaryUnitRelation", fields: [unitId], references: [id], onDelete: SetNull)
+
+  secondaryUnitId   String?        @map("secondary_unit_id") @db.Uuid
+  secondaryUnit     UnitOfMeasure? @relation("SecondaryUnitRelation", fields: [secondaryUnitId], references: [id], onDelete: SetNull)
+  conversionFactor  Decimal?       @map("conversion_factor") @db.Decimal(12, 4) // e.g. 1 Secondary Unit = X Primary Units (e.g. 1 Bale = 170 Kg)
+  secondaryUnitName String?        @map("secondary_unit_name") @db.VarChar(50)
 
   supplierId String?   @map("supplier_id") @db.Uuid
   supplier   Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
@@ -735,6 +786,12 @@ model RawMaterial {
   gauzeBatches        GauzeProductionBatch[]
   gauzeRawMaterials   GauzeRawMaterial[]
   gauzePackingEntries GauzePackingEntry[]
+
+  gamjeeFinishedBatches GamjeeProductionBatch[] @relation("GamjeeFinishedProduct")
+  gamjeeMaterialInputs  GamjeeMaterialInput[]
+  gamjeeFinishedRolls   GamjeeFinishedRoll[]
+
+  customerOrderItems  CustomerOrderItem[]
 
   @@index([sku], map: "idx_rm_sku")
   @@index([currentStockBalance, minimumStockLevel], map: "idx_rm_low_stock")
@@ -757,6 +814,7 @@ model InventoryBatch {
   inventoryTransactions InventoryTransaction[]
   jobWorkIssueItems     JobWorkIssueItem[]
   gauzeBatches          GauzeProductionBatch[]
+  gamjeeMaterialInputs  GamjeeMaterialInput[]
 
   @@index([rawMaterialId], map: "idx_batch_rm")
   @@map("inventory_batches")
@@ -1057,6 +1115,15 @@ model ProductMaster {
   targetGsm      Decimal?  @map("target_gsm") @db.Decimal(6, 2)
   minStockLevel  Decimal   @default(0) @map("min_stock_level") @db.Decimal(12, 3)
   
+  brand          String?   @db.VarChar(100)
+  size           String?   @db.VarChar(100)
+  dimensionInches String?  @map("dimension_inches") @db.VarChar(100)
+  dimensionCm    String?   @map("dimension_cm") @db.VarChar(100)
+  packSize       String?   @map("pack_size") @db.VarChar(100)
+  boxSize        String?   @map("box_size") @db.VarChar(100)
+  features       String?   @db.Text
+  variantType    String?   @map("variant_type") @db.VarChar(100)
+
   cottonRolls    CottonRoll[]
   bomHeader      BillOfMaterial?
 
@@ -1524,4 +1591,373 @@ model GauzeBatchStatusHistory {
   @@index([productionBatchId], map: "idx_gz_sh_batch")
   @@map("gauze_batch_status_history")
 }
+
+// ==========================================
+// CUSTOMER & SALES ORDER MANAGEMENT
+// ==========================================
+
+model Customer {
+  id              String   @id @default(uuid()) @db.Uuid
+  code            String   @unique @db.VarChar(50)
+  name            String   @db.VarChar(255)
+  contactPerson   String?  @map("contact_person") @db.VarChar(100)
+  email           String?  @db.VarChar(255)
+  phone           String?  @db.VarChar(20)
+  alternatePhone  String?  @map("alternate_phone") @db.VarChar(20)
+  gstin           String?  @db.VarChar(20)
+  panNo           String?  @map("pan_no") @db.VarChar(20)
+  address         String?  @db.Text
+  shippingAddress String?  @map("shipping_address") @db.Text
+  city            String?  @db.VarChar(100)
+  state           String?  @db.VarChar(100)
+  pinCode         String?  @map("pin_code") @db.VarChar(20)
+  creditLimit     Decimal? @default(0) @map("credit_limit") @db.Decimal(12, 2)
+  creditDays      Int?     @default(30) @map("credit_days")
+  paymentTerms    String?  @default("Net 30") @map("payment_terms") @db.VarChar(50)
+  customerType    String?  @default("HOSPITAL") @map("customer_type") @db.VarChar(50)
+  isActive        Boolean  @default(true) @map("is_active")
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  orders CustomerOrder[]
+
+  @@index([name], map: "idx_customer_name")
+  @@index([code], map: "idx_customer_code")
+  @@map("customers")
+}
+
+model CustomerOrder {
+  id              String    @id @default(uuid()) @db.Uuid
+  orderNumber     String    @unique @map("order_number") @db.VarChar(50)
+  customerId      String    @map("customer_id") @db.Uuid
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  orderDate       DateTime  @default(now()) @map("order_date") @db.Date
+  deliveryDueDate DateTime? @map("delivery_due_date") @db.Date
+  dispatchDate    DateTime? @map("dispatch_date") @db.Date
+  status          String    @default("CONFIRMED") @db.VarChar(50) // DRAFT, CONFIRMED, IN_PRODUCTION, READY_FOR_DISPATCH, DISPATCHED, DELIVERED, CANCELLED
+  priority        String    @default("NORMAL") @db.VarChar(20) // LOW, NORMAL, HIGH, URGENT
+  paymentStatus   String    @default("PENDING") @map("payment_status") @db.VarChar(50) // PENDING, PARTIALLY_PAID, PAID, OVERDUE
+  paymentMethod   String?   @map("payment_method") @db.VarChar(50)
+  subtotal        Decimal   @default(0) @db.Decimal(12, 2)
+  taxAmount       Decimal   @default(0) @map("tax_amount") @db.Decimal(12, 2)
+  discountAmount  Decimal   @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  shippingCharges Decimal   @default(0) @map("shipping_charges") @db.Decimal(12, 2)
+  totalAmount     Decimal   @default(0) @map("total_amount") @db.Decimal(12, 2)
+  paidAmount      Decimal   @default(0) @map("paid_amount") @db.Decimal(12, 2)
+  shippingAddress String?   @map("shipping_address") @db.Text
+  billingAddress  String?   @map("billing_address") @db.Text
+  transportMode   String?   @map("transport_mode") @db.VarChar(50)
+  trackingNumber  String?   @map("tracking_number") @db.VarChar(100)
+  notes           String?   @db.Text
+
+  createdById String? @map("created_by_id") @db.Uuid
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  items         CustomerOrderItem[]
+  statusHistory CustomerOrderStatusHistory[]
+
+  @@index([orderNumber], map: "idx_order_number")
+  @@index([customerId], map: "idx_order_customer")
+  @@index([status], map: "idx_order_status")
+  @@map("customer_orders")
+}
+
+model CustomerOrderItem {
+  id                String         @id @default(uuid()) @db.Uuid
+  orderId           String         @map("order_id") @db.Uuid
+  order             CustomerOrder  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId         String?        @map("product_id") @db.Uuid
+  product           RawMaterial?   @relation(fields: [productId], references: [id], onDelete: SetNull)
+  itemCode          String?        @map("item_code") @db.VarChar(50)
+  itemName          String         @map("item_name") @db.VarChar(255)
+  specification     String?        @db.Text
+  quantity          Decimal        @default(1) @db.Decimal(12, 3)
+  uom               String         @default("Pcs") @db.VarChar(20)
+  unitPrice         Decimal        @default(0) @map("unit_price") @db.Decimal(12, 2)
+  taxRate           Decimal        @default(18) @map("tax_rate") @db.Decimal(5, 2)
+  taxAmount         Decimal        @default(0) @map("tax_amount") @db.Decimal(12, 2)
+  discount          Decimal        @default(0) @db.Decimal(12, 2)
+  totalPrice        Decimal        @default(0) @map("total_price") @db.Decimal(12, 2)
+  deliveredQuantity Decimal        @default(0) @map("delivered_quantity") @db.Decimal(12, 3)
+  notes             String?        @db.Text
+  createdAt         DateTime       @default(now()) @map("created_at")
+
+  @@index([orderId], map: "idx_order_item_order")
+  @@map("customer_order_items")
+}
+
+model CustomerOrderStatusHistory {
+  id            String        @id @default(uuid()) @db.Uuid
+  orderId       String        @map("order_id") @db.Uuid
+  order         CustomerOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus    String?       @map("from_status") @db.VarChar(50)
+  toStatus      String        @map("to_status") @db.VarChar(50)
+  notes         String?       @db.Text
+  changedById   String?       @map("changed_by_id") @db.Uuid
+  changedByUser User?         @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  changedAt     DateTime      @default(now()) @map("changed_at")
+
+  @@index([orderId], map: "idx_order_hist_order")
+  @@map("customer_order_status_history")
+}
+
+// ==========================================
+// GAMJEE ROLL PRODUCTION MODULE
+// ==========================================
+
+model GamjeeSizeMaster {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(100)
+  width       Decimal  @db.Decimal(10, 2)
+  widthUom    String   @default("cm") @map("width_uom") @db.VarChar(20)
+  length      Decimal  @db.Decimal(10, 2)
+  lengthUom   String   @default("m") @map("length_uom") @db.VarChar(20)
+  description String?  @db.Text
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  batches     GamjeeProductionBatch[]
+
+  @@map("gamjee_size_masters")
+}
+
+model GamjeeOperationMaster {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(100)
+  code        String   @unique @db.VarChar(50)
+  sequence    Int      @default(1)
+  description String?  @db.Text
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  operations  GamjeeProductionOperation[]
+
+  @@map("gamjee_operation_masters")
+}
+
+model GamjeeProductMaster {
+  id                 String   @id @default(uuid()) @db.Uuid
+  productId          String?  @map("product_id") @db.Uuid
+  productName        String   @map("product_name") @db.VarChar(255)
+  gamjeeType         String?  @map("gamjee_type") @db.VarChar(100)
+  width              Decimal? @db.Decimal(10, 2)
+  widthUom           String?  @default("cm") @map("width_uom") @db.VarChar(20)
+  rollLength         Decimal? @map("roll_length") @db.Decimal(10, 2)
+  lengthUom          String?  @default("m") @map("length_uom") @db.VarChar(20)
+  cottonRequirement  Decimal? @map("cotton_requirement") @db.Decimal(10, 3)
+  cottonUom          String?  @default("kg") @map("cotton_uom") @db.VarChar(20)
+  fabricRequirement  Decimal? @map("fabric_requirement") @db.Decimal(10, 3)
+  fabricUom          String?  @default("m") @map("fabric_uom") @db.VarChar(20)
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("gamjee_product_masters")
+}
+
+model GamjeeProductionBatch {
+  id                     String                 @id @default(uuid()) @db.Uuid
+  batchNumber            String                 @unique @map("batch_number") @db.VarChar(100)
+  finishedProductId      String                 @map("finished_product_id") @db.Uuid
+  finishedProduct        RawMaterial            @relation("GamjeeFinishedProduct", fields: [finishedProductId], references: [id])
+  gamjeeSizeId           String?                @map("gamjee_size_id") @db.Uuid
+  gamjeeSize             GamjeeSizeMaster?      @relation(fields: [gamjeeSizeId], references: [id], onDelete: SetNull)
+  productionQuantity     Decimal?               @map("production_quantity") @db.Decimal(12, 3)
+  productionUom          String?                @default("Rolls") @map("production_uom") @db.VarChar(20)
+  currentQuantity        Decimal                @default(0) @map("current_quantity") @db.Decimal(12, 3)
+  currentUom             String?                @default("meter") @map("current_uom") @db.VarChar(20)
+  currentStage           String                 @default("DRAFT") @map("current_stage") @db.VarChar(50)
+  status                 GamjeeProductionStatus @default(DRAFT)
+  productionDate         DateTime               @default(now()) @map("production_date") @db.Date
+  expectedCompletionDate DateTime?              @map("expected_completion_date") @db.Date
+  completionDate         DateTime?              @map("completion_date") @db.Date
+  notes                  String?                @db.Text
+  createdById            String?                @map("created_by") @db.Uuid
+  createdBy              User?                  @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt              DateTime               @default(now()) @map("created_at")
+  updatedAt              DateTime               @updatedAt @map("updated_at")
+
+  materialInputs    GamjeeMaterialInput[]
+  operations        GamjeeProductionOperation[]
+  rollingEntries    GamjeeRollingEntry[]
+  finishedRolls     GamjeeFinishedRoll[]
+  materialMovements GamjeeMaterialMovement[]
+  statusHistory     GamjeeBatchStatusHistory[]
+
+  @@index([batchNumber], map: "idx_gmj_batch_num")
+  @@index([status], map: "idx_gmj_batch_status")
+  @@index([finishedProductId], map: "idx_gmj_batch_prod")
+  @@map("gamjee_production_batches")
+}
+
+model GamjeeMaterialInput {
+  id                 String                @id @default(uuid()) @db.Uuid
+  productionBatchId  String                @map("production_batch_id") @db.Uuid
+  productionBatch    GamjeeProductionBatch @relation(fields: [productionBatchId], references: [id], onDelete: Cascade)
+  materialType       String                @map("material_type") @db.VarChar(50) // BLEACHED_FABRIC, COTTON_ROLL
+  productId          String                @map("product_id") @db.Uuid
+  product            RawMaterial           @relation(fields: [productId], references: [id])
+  inventoryBatchId   String?               @map("inventory_batch_id") @db.Uuid
+  inventoryBatch     InventoryBatch?       @relation(fields: [inventoryBatchId], references: [id], onDelete: SetNull)
+  rollOrBatchNumber  String?               @map("roll_or_batch_number") @db.VarChar(100)
+  quantityIssued     Decimal               @map("quantity_issued") @db.Decimal(12, 3)
+  quantityConsumed   Decimal?              @default(0) @map("quantity_consumed") @db.Decimal(12, 3)
+  quantityRemaining  Decimal?              @default(0) @map("quantity_remaining") @db.Decimal(12, 3)
+  uom                String                @db.VarChar(20)
+  warehouseId        String?               @map("warehouse_id") @db.Uuid
+  warehouse          StorageLocation?      @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  issuedDate         DateTime              @default(now()) @map("issued_date") @db.Date
+  notes              String?               @db.Text
+  createdById        String?               @map("created_by") @db.Uuid
+  createdBy          User?                 @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt          DateTime              @default(now()) @map("created_at")
+  updatedAt          DateTime              @updatedAt @map("updated_at")
+
+  @@index([productionBatchId], map: "idx_gmj_rm_batch")
+  @@index([materialType], map: "idx_gmj_rm_type")
+  @@map("gamjee_material_inputs")
+}
+
+model GamjeeProductionOperation {
+  id                String                 @id @default(uuid()) @db.Uuid
+  operationNumber   String                 @unique @map("operation_number") @db.VarChar(100)
+  productionBatchId String                 @map("production_batch_id") @db.Uuid
+  productionBatch   GamjeeProductionBatch  @relation(fields: [productionBatchId], references: [id], onDelete: Cascade)
+  operationTypeId   String                 @map("operation_type_id") @db.Uuid
+  operationType     GamjeeOperationMaster  @relation(fields: [operationTypeId], references: [id])
+  sequenceNumber    Int                    @map("sequence_number")
+  inputQuantity     Decimal?               @map("input_quantity") @db.Decimal(12, 3)
+  inputUom          String?                @map("input_uom") @db.VarChar(20)
+  outputQuantity    Decimal?               @map("output_quantity") @db.Decimal(12, 3)
+  outputUom         String?                @map("output_uom") @db.VarChar(20)
+  wastageQuantity   Decimal                @default(0) @map("wastage_quantity") @db.Decimal(12, 3)
+  rejectedQuantity  Decimal                @default(0) @map("rejected_quantity") @db.Decimal(12, 3)
+  employeeId        String?                @map("employee_id") @db.Uuid
+  employee          Employee?              @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  machineId         String?                @map("machine_id") @db.VarChar(100)
+  operationDate     DateTime               @default(now()) @map("operation_date") @db.Date
+  status            String                 @default("COMPLETED") @db.VarChar(50)
+  notes             String?                @db.Text
+  createdById       String?                @map("created_by") @db.Uuid
+  createdBy         User?                  @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt         DateTime               @default(now()) @map("created_at")
+  updatedAt         DateTime               @updatedAt @map("updated_at")
+
+  @@index([operationNumber], map: "idx_gmj_op_num")
+  @@index([productionBatchId], map: "idx_gmj_op_batch")
+  @@map("gamjee_production_operations")
+}
+
+model GamjeeRollingEntry {
+  id                   String                 @id @default(uuid()) @db.Uuid
+  rollingNumber        String                 @unique @map("rolling_number") @db.VarChar(100)
+  productionBatchId    String                 @map("production_batch_id") @db.Uuid
+  productionBatch      GamjeeProductionBatch  @relation(fields: [productionBatchId], references: [id], onDelete: Cascade)
+  fabricInputQuantity  Decimal                @map("fabric_input_quantity") @db.Decimal(12, 3)
+  fabricInputUom       String                 @default("meter") @map("fabric_input_uom") @db.VarChar(20)
+  cottonInputQuantity  Decimal                @map("cotton_input_quantity") @db.Decimal(12, 3)
+  cottonInputUom       String                 @default("kg") @map("cotton_input_uom") @db.VarChar(20)
+  finishedRollQuantity Int                    @map("finished_roll_quantity")
+  finishedRollUom      String                 @default("Rolls") @map("finished_roll_uom") @db.VarChar(20)
+  finishedRollLength   Decimal?               @map("finished_roll_length") @db.Decimal(10, 2)
+  finishedRollLengthUom String?               @default("m") @map("finished_roll_length_uom") @db.VarChar(20)
+  finishedRollWidth    Decimal?               @map("finished_roll_width") @db.Decimal(10, 2)
+  finishedRollWidthUom String?                @default("cm") @map("finished_roll_width_uom") @db.VarChar(20)
+  wastageQuantity      Decimal                @default(0) @map("wastage_quantity") @db.Decimal(12, 3)
+  rejectedRollQuantity Int                    @default(0) @map("rejected_roll_quantity")
+  employeeId           String?                @map("employee_id") @db.Uuid
+  employee             Employee?              @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  machineId            String?                @map("machine_id") @db.VarChar(100)
+  rollingDate          DateTime               @default(now()) @map("rolling_date") @db.Date
+  status               String                 @default("COMPLETED") @db.VarChar(50)
+  notes                String?                @db.Text
+  createdById          String?                @map("created_by") @db.Uuid
+  createdBy            User?                  @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt            DateTime               @default(now()) @map("created_at")
+  updatedAt            DateTime               @updatedAt @map("updated_at")
+
+  finishedRolls        GamjeeFinishedRoll[]
+
+  @@index([rollingNumber], map: "idx_gmj_rl_num")
+  @@index([productionBatchId], map: "idx_gmj_rl_batch")
+  @@map("gamjee_rolling_entries")
+}
+
+model GamjeeFinishedRoll {
+  id                String                @id @default(uuid()) @db.Uuid
+  productionBatchId String                @map("production_batch_id") @db.Uuid
+  productionBatch   GamjeeProductionBatch @relation(fields: [productionBatchId], references: [id], onDelete: Cascade)
+  rollingEntryId    String                @map("rolling_entry_id") @db.Uuid
+  rollingEntry      GamjeeRollingEntry    @relation(fields: [rollingEntryId], references: [id], onDelete: Cascade)
+  finishedProductId String                @map("finished_product_id") @db.Uuid
+  finishedProduct   RawMaterial           @relation(fields: [finishedProductId], references: [id])
+  rollBatchNumber   String                @map("roll_batch_number") @db.VarChar(100)
+  rollCount         Int                   @map("roll_count")
+  rollLength        Decimal?              @map("roll_length") @db.Decimal(10, 2)
+  rollLengthUom     String?               @default("m") @map("roll_length_uom") @db.VarChar(20)
+  rollWidth         Decimal?              @map("roll_width") @db.Decimal(10, 2)
+  rollWidthUom      String?               @default("cm") @map("roll_width_uom") @db.VarChar(20)
+  totalLength       Decimal?              @map("total_length") @db.Decimal(12, 2)
+  totalLengthUom    String?               @default("m") @map("total_length_uom") @db.VarChar(20)
+  qualityStatus     String?               @default("PASSED") @map("quality_status") @db.VarChar(50)
+  warehouseId       String?               @map("warehouse_id") @db.Uuid
+  warehouse         StorageLocation?      @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  stockStatus       String                @default("IN_STOCK") @map("stock_status") @db.VarChar(50)
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+
+  @@index([rollBatchNumber], map: "idx_gmj_fr_batch")
+  @@index([productionBatchId], map: "idx_gmj_fr_pbatch")
+  @@map("gamjee_finished_rolls")
+}
+
+model GamjeeMaterialMovement {
+  id                String                @id @default(uuid()) @db.Uuid
+  productionBatchId String                @map("production_batch_id") @db.Uuid
+  productionBatch   GamjeeProductionBatch @relation(fields: [productionBatchId], references: [id], onDelete: Cascade)
+  referenceType     String                @map("reference_type") @db.VarChar(50)
+  referenceId       String                @map("reference_id") @db.Uuid
+  movementType      String                @map("movement_type") @db.VarChar(50)
+  productId         String?               @map("product_id") @db.Uuid
+  fromLocationId    String?               @map("from_location_id") @db.Uuid
+  fromLocation      StorageLocation?      @relation("FromGamjeeLocation", fields: [fromLocationId], references: [id], onDelete: SetNull)
+  toLocationId      String?               @map("to_location_id") @db.Uuid
+  toLocation        StorageLocation?      @relation("ToGamjeeLocation", fields: [toLocationId], references: [id], onDelete: SetNull)
+  fromLocationName  String?               @map("from_location_name") @db.VarChar(150)
+  toLocationName    String?               @map("to_location_name") @db.VarChar(150)
+  quantity          Decimal               @db.Decimal(12, 3)
+  uom               String                @db.VarChar(20)
+  movementDate      DateTime              @default(now()) @map("movement_date") @db.Date
+  notes             String?               @db.Text
+  createdById       String?               @map("created_by") @db.Uuid
+  createdBy         User?                 @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt         DateTime              @default(now()) @map("created_at")
+
+  @@index([productionBatchId], map: "idx_gmj_mov_batch")
+  @@index([movementType], map: "idx_gmj_mov_type")
+  @@map("gamjee_material_movements")
+}
+
+model GamjeeBatchStatusHistory {
+  id                String                @id @default(uuid()) @db.Uuid
+  productionBatchId String                @map("production_batch_id") @db.Uuid
+  productionBatch   GamjeeProductionBatch @relation(fields: [productionBatchId], references: [id], onDelete: Cascade)
+  oldStatus         String?               @map("old_status") @db.VarChar(50)
+  newStatus         String                @map("new_status") @db.VarChar(50)
+  changedById       String?               @map("changed_by") @db.Uuid
+  changedByUser     User?                 @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  changedAt         DateTime              @default(now()) @map("changed_at")
+  remarks           String?               @db.Text
+
+  @@index([productionBatchId], map: "idx_gmj_sh_batch")
+  @@map("gamjee_batch_status_history")
+}
+
+
 

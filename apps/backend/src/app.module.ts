@@ -10,6 +10,9 @@ import { EmployeeModule } from './modules/employee/employee.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { SalaryModule } from './modules/salary/salary.module';
 import { GauzeProductionModule } from './modules/gauze-production/gauze-production.module';
+import { GamjeeProductionModule } from './modules/gamjee-production/gamjee-production.module';
+import { CustomersModule } from './modules/customers/customers.module';
+import { CustomerOrdersModule } from './modules/customer-orders/customer-orders.module';
 
 @Module({
   imports: [
@@ -27,6 +30,9 @@ import { GauzeProductionModule } from './modules/gauze-production/gauze-producti
     AttendanceModule,
     SalaryModule,
     GauzeProductionModule,
+    GamjeeProductionModule,
+    CustomersModule,
+    CustomerOrdersModule,
   ],
 })
 export class AppModule {}

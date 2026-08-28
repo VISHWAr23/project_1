@@ -25,10 +25,37 @@ const defaultToastContext: ToastContextType = {
 
 const ToastContext = createContext<ToastContextType>(defaultToastContext);
 
+let globalToastFn: ((title: string, description?: string, type?: ToastType) => void) | null = null;
+
+export const toast = Object.assign(
+  (title: string, description?: string, type: ToastType = 'info') => {
+    if (globalToastFn) globalToastFn(title, description, type);
+    else console.log(`[Toast ${type}]`, title, description);
+  },
+  {
+    success: (title: string, description?: string) => {
+      if (globalToastFn) globalToastFn(title, description, 'success');
+      else console.log('[Toast success]', title, description);
+    },
+    error: (title: string, description?: string) => {
+      if (globalToastFn) globalToastFn(title, description, 'error');
+      else console.error('[Toast error]', title, description);
+    },
+    warning: (title: string, description?: string) => {
+      if (globalToastFn) globalToastFn(title, description, 'warning');
+      else console.warn('[Toast warning]', title, description);
+    },
+    info: (title: string, description?: string) => {
+      if (globalToastFn) globalToastFn(title, description, 'info');
+      else console.info('[Toast info]', title, description);
+    },
+  }
+);
+
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  const toast = (title: string, description?: string, type: ToastType = 'info') => {
+  const showToast = (title: string, description?: string, type: ToastType = 'info') => {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts((prev) => [...prev, { id, title, description, type }]);
     setTimeout(() => {
@@ -36,19 +63,21 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     }, 4000);
   };
 
+  globalToastFn = showToast;
+
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
   const icons = {
-    success: <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />,
+    success: <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
     warning: <AlertTriangle className="h-4 w-4 text-amber-500" />,
     error: <AlertCircle className="h-4 w-4 text-rose-500" />,
     info: <Info className="h-4 w-4 text-blue-500" />,
   };
 
   return (
-    <ToastContext.Provider value={{ toast, removeToast }}>
+    <ToastContext.Provider value={{ toast: showToast, removeToast }}>
       {children}
       <div className="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 max-w-sm w-full pointer-events-none">
         <AnimatePresence>

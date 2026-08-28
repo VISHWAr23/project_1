@@ -46,7 +46,7 @@ export function BatchStatusBadge({ status, size = 'sm', showIcon = true }: Batch
         return {
           label: '1. Raw Material Inwarded',
           icon: PackageCheck,
-          className: 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/40 font-medium',
+          className: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 font-medium',
         };
       case 'READY_FOR_BLEACHING':
         return {

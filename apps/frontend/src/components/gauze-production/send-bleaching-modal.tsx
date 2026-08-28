@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { MasterDropdown } from './master-dropdown';
+import { MasterEntityDropdown } from '@/components/ui/master-entity-dropdown';
 import { useSendToBleaching, useGauzeMasters } from '@/hooks/useGauzeProduction';
 import { useJobWorkCompanies } from '@/hooks/useJobWork';
 import { GauzeProductionBatch } from '@/types/gauze-production.types';
@@ -100,17 +101,17 @@ export function SendBleachingModal({ batch, isOpen, onClose, onSuccess }: SendBl
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Select
+          <MasterEntityDropdown
             label="Bleaching Vendor (Subcontractor)"
+            entityType="jobWorkCompany"
+            placeholder="-- Select Bleaching Company --"
+            options={companies.map((c: any) => ({
+              value: c.id,
+              label: `${c.companyName} (${c.contactPerson || 'Vendor'})`,
+              raw: c,
+            }))}
             value={vendorId}
-            onChange={(e) => setVendorId(e.target.value)}
-            options={[
-              { value: '', label: '-- Select Bleaching Company --' },
-              ...companies.map((c: any) => ({
-                value: c.id,
-                label: `${c.companyName} (${c.contactPerson || 'Vendor'})`,
-              })),
-            ]}
+            onChange={(val) => setVendorId(val)}
             required
           />
 

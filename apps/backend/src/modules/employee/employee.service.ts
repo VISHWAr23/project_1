@@ -820,6 +820,34 @@ export class EmployeeService {
     return depts;
   }
 
+  async createDepartment(data: { name: string; code?: string; description?: string }) {
+    const code = data.code || data.name.substring(0, 6).toUpperCase().replace(/\s+/g, '');
+    return prisma.department.create({
+      data: {
+        name: data.name,
+        code,
+        description: data.description || null,
+      },
+    });
+  }
+
+  async updateDepartment(id: string, data: { name?: string; code?: string; description?: string }) {
+    return prisma.department.update({
+      where: { id },
+      data: {
+        ...(data.name ? { name: data.name } : {}),
+        ...(data.code ? { code: data.code } : {}),
+        ...(data.description !== undefined ? { description: data.description } : {}),
+      },
+    });
+  }
+
+  async deleteDepartment(id: string) {
+    return prisma.department.delete({
+      where: { id },
+    });
+  }
+
   /**
    * List or seed Designations
    */
@@ -849,6 +877,34 @@ export class EmployeeService {
     }
 
     return desigs;
+  }
+
+  async createDesignation(data: { name: string; code?: string; description?: string }) {
+    const code = data.code || data.name.substring(0, 6).toUpperCase().replace(/\s+/g, '');
+    return prisma.designation.create({
+      data: {
+        name: data.name,
+        code,
+        description: data.description || null,
+      },
+    });
+  }
+
+  async updateDesignation(id: string, data: { name?: string; code?: string; description?: string }) {
+    return prisma.designation.update({
+      where: { id },
+      data: {
+        ...(data.name ? { name: data.name } : {}),
+        ...(data.code ? { code: data.code } : {}),
+        ...(data.description !== undefined ? { description: data.description } : {}),
+      },
+    });
+  }
+
+  async deleteDesignation(id: string) {
+    return prisma.designation.delete({
+      where: { id },
+    });
   }
 
   /**

@@ -4,10 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Package, ArrowLeft, Save, RefreshCw } from 'lucide-react';
+import { Package, ArrowLeft, Save, RefreshCw, Scale, Boxes } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { MasterEntityDropdown } from '@/components/ui/master-entity-dropdown';
 import { useToast } from '@/components/ui/toast';
 import {
   useRawMaterialDetail,
@@ -32,12 +33,17 @@ export default function EditRawMaterialPage() {
   const { data: suppliers } = useSuppliers();
   const { data: locations } = useStorageLocations();
 
+  const [hasDualUnit, setHasDualUnit] = useState(false);
+
   const [formData, setFormData] = useState({
     sku: '',
     name: '',
     description: '',
     categoryId: '',
     unitId: '',
+    secondaryUnitId: '',
+    conversionFactor: '',
+    secondaryUnitName: '',
     supplierId: '',
     storageLocationId: '',
     hsnCode: '',
@@ -47,16 +53,32 @@ export default function EditRawMaterialPage() {
     reorderQuantity: '200',
     unitCost: '0',
     remarks: '',
+    brand: '',
+    variantType: '',
+    size: '',
+    dimensionInches: '',
+    dimensionCm: '',
+    innerPackQty: '10',
+    packUnit: 'Pcs',
+    masterCartonQty: '12',
+    features: '',
   });
+
+  const selectedPrimaryUnit = units?.find((u) => u.id === formData.unitId);
+  const selectedSecondaryUnit = units?.find((u) => u.id === formData.secondaryUnitId);
 
   useEffect(() => {
     if (material) {
+      setHasDualUnit(Boolean(material.secondaryUnitId || material.conversionFactor));
       setFormData({
         sku: material.sku || '',
         name: material.name || '',
         description: material.description || '',
         categoryId: material.categoryId || '',
         unitId: material.unitId || '',
+        secondaryUnitId: material.secondaryUnitId || '',
+        conversionFactor: material.conversionFactor ? String(material.conversionFactor) : '',
+        secondaryUnitName: material.secondaryUnitName || material.secondaryUnit?.name || '',
         supplierId: material.supplierId || '',
         storageLocationId: material.storageLocationId || '',
         hsnCode: material.hsnCode || '',
@@ -66,9 +88,29 @@ export default function EditRawMaterialPage() {
         reorderQuantity: String(material.reorderQuantity ?? 200),
         unitCost: String(material.unitCost ?? 0),
         remarks: material.remarks || '',
+        brand: material.brand || '',
+        variantType: material.variantType || '',
+        size: material.size || '',
+        dimensionInches: material.dimensionInches || '',
+        dimensionCm: material.dimensionCm || '',
+        innerPackQty: material.innerPackQty ? String(material.innerPackQty) : '10',
+        packUnit: material.packUnit || 'Pcs',
+        masterCartonQty: material.masterCartonQty ? String(material.masterCartonQty) : '12',
+        features: material.features || '',
       });
     }
   }, [material]);
+
+  // Compute automatic packaging labels
+  const innerQtyNum = Number(formData.innerPackQty) || 0;
+  const masterQtyNum = Number(formData.masterCartonQty) || 0;
+  const unitLabel = formData.packUnit || 'Pcs';
+
+  const computedPackSizeLabel = innerQtyNum > 0 ? `${innerQtyNum} ${unitLabel.toUpperCase()}/PACK` : '';
+  const computedBoxSizeLabel =
+    masterQtyNum > 0
+      ? `${masterQtyNum} PACKS/BOX${innerQtyNum > 0 ? ` (${innerQtyNum * masterQtyNum} ${unitLabel.toUpperCase()})` : ''}`
+      : '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +132,9 @@ export default function EditRawMaterialPage() {
           description: formData.description || undefined,
           categoryId: formData.categoryId || undefined,
           unitId: formData.unitId || undefined,
+          secondaryUnitId: hasDualUnit && formData.secondaryUnitId ? formData.secondaryUnitId : undefined,
+          conversionFactor: hasDualUnit && formData.conversionFactor ? Number(formData.conversionFactor) : undefined,
+          secondaryUnitName: hasDualUnit && formData.secondaryUnitName ? formData.secondaryUnitName : undefined,
           supplierId: formData.supplierId || undefined,
           storageLocationId: formData.storageLocationId || undefined,
           hsnCode: formData.hsnCode || undefined,
@@ -99,6 +144,17 @@ export default function EditRawMaterialPage() {
           reorderQuantity: Number(formData.reorderQuantity) || 0,
           unitCost: Number(formData.unitCost) || 0,
           remarks: formData.remarks || undefined,
+          brand: formData.brand || undefined,
+          variantType: formData.variantType || undefined,
+          size: formData.size || undefined,
+          dimensionInches: formData.dimensionInches || undefined,
+          dimensionCm: formData.dimensionCm || undefined,
+          packSize: computedPackSizeLabel || undefined,
+          innerPackQty: innerQtyNum > 0 ? innerQtyNum : undefined,
+          packUnit: formData.packUnit || undefined,
+          boxSize: computedBoxSizeLabel || undefined,
+          masterCartonQty: masterQtyNum > 0 ? masterQtyNum : undefined,
+          features: formData.features || undefined,
         },
       });
 
@@ -163,28 +219,87 @@ export default function EditRawMaterialPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <MasterEntityDropdown
+              label="Category"
+              entityType="category"
+              placeholder="Select Category..."
+              options={categories?.map((c) => ({ label: c.name, value: c.id, raw: c })) || []}
+              value={formData.categoryId}
+              onChange={(val) => setFormData({ ...formData, categoryId: val })}
+            />
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Category</label>
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
+                Primary Unit of Measure (Base UOM)
+              </label>
               <Select
                 options={[
-                  { label: 'Select Category...', value: '' },
-                  ...(categories?.map((c) => ({ label: c.name, value: c.id })) || []),
-                ]}
-                value={formData.categoryId}
-                onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Unit of Measure</label>
-              <Select
-                options={[
-                  { label: 'Select Unit...', value: '' },
+                  { label: 'Select Primary Unit...', value: '' },
                   ...(units?.map((u) => ({ label: `${u.name} (${u.abbreviation})`, value: u.id })) || []),
                 ]}
                 value={formData.unitId}
                 onChange={(e) => setFormData({ ...formData, unitId: e.target.value })}
               />
             </div>
+          </div>
+
+          {/* Dual Unit / Multi-Unit Measurement Option */}
+          <div className="p-3.5 bg-blue-500/5 border border-blue-500/20 rounded-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <Scale className="h-3.5 w-3.5 text-blue-500" />
+                  Secondary / Alternate Unit Measurement (Dual UOM)
+                </span>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Enable when the same item is measured in multiple units (e.g. Bales & Kg, Rolls & Meters, Cones & Kg).
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hasDualUnit}
+                  onChange={(e) => setHasDualUnit(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-secondary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+
+            {hasDualUnit && (
+              <div className="pt-2 border-t border-blue-500/10 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-foreground mb-1">
+                    Secondary / Alternate Unit
+                  </label>
+                  <Select
+                    options={[
+                      { label: 'Select Secondary Unit...', value: '' },
+                      ...(units?.map((u) => ({ label: `${u.name} (${u.abbreviation})`, value: u.id })) || []),
+                    ]}
+                    value={formData.secondaryUnitId}
+                    onChange={(e) => {
+                      const selected = units?.find((u) => u.id === e.target.value);
+                      setFormData({
+                        ...formData,
+                        secondaryUnitId: e.target.value,
+                        secondaryUnitName: selected?.name || '',
+                      });
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <Input
+                    label={`Conversion Ratio (1 ${formData.secondaryUnitName || 'Secondary Unit'} = X ${selectedPrimaryUnit?.abbreviation || 'Primary Units'})`}
+                    type="number"
+                    step="0.0001"
+                    placeholder="e.g. 170 (for 1 Bale = 170 Kg) or 500 (for 1 Roll = 500 m)"
+                    value={formData.conversionFactor}
+                    onChange={(e) => setFormData({ ...formData, conversionFactor: e.target.value })}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -194,6 +309,131 @@ export default function EditRawMaterialPage() {
               rows={2}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            />
+          </div>
+        </div>
+
+        {/* Section 1.5: Product Variant, Size & Packaging Specifications */}
+        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-5 space-y-4">
+          <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2">
+            <h2 className="text-sm font-bold text-emerald-400 tracking-tight">
+              Product Variant, Size & Packaging Configuration
+            </h2>
+            <span className="text-[11px] text-muted-foreground font-mono">
+              Auto-Formatted Packaging Labels
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Input
+              label="Brand / Label"
+              placeholder="e.g. Dr. C Premium"
+              value={formData.brand}
+              onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+            />
+
+            <Input
+              label="Product Type / Family"
+              placeholder="e.g. Adult Pullups - Premium"
+              value={formData.variantType}
+              onChange={(e) => setFormData({ ...formData, variantType: e.target.value })}
+            />
+
+            <Input
+              label="Size (e.g. M / L / XL / 10x10cm)"
+              placeholder="e.g. MEDIUM (M)"
+              value={formData.size}
+              onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Waist / Dimension (Inches)"
+              placeholder='e.g. 28"-44" (or 4"x4")'
+              value={formData.dimensionInches}
+              onChange={(e) => setFormData({ ...formData, dimensionInches: e.target.value })}
+            />
+
+            <Input
+              label="Dimension (CM / Metric)"
+              placeholder="e.g. 70-110 CM (or 10x10 cm)"
+              value={formData.dimensionCm}
+              onChange={(e) => setFormData({ ...formData, dimensionCm: e.target.value })}
+            />
+          </div>
+
+          {/* Packaging Quantities with Auto-Generated Labels */}
+          <div className="p-3 bg-secondary/30 border border-border rounded-xl space-y-3">
+            <span className="text-xs font-semibold text-foreground block">
+              Packaging Configuration (Quantities Only — Labels Auto-Generated)
+            </span>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Input
+                label="Pieces per Inner Pack (Qty)"
+                type="number"
+                placeholder="e.g. 10"
+                value={formData.innerPackQty}
+                onChange={(e) => setFormData({ ...formData, innerPackQty: e.target.value })}
+              />
+
+              <div>
+                <label className="block text-xs font-semibold text-foreground mb-1.5">Pack Item Unit</label>
+                <Select
+                  options={[
+                    { label: 'Pcs (Pieces)', value: 'Pcs' },
+                    { label: 'Wipes', value: 'Wipes' },
+                    { label: 'Pads', value: 'Pads' },
+                    { label: 'Rolls', value: 'Rolls' },
+                    { label: 'Swabs', value: 'Swabs' },
+                    { label: 'Gowns', value: 'Gowns' },
+                  ]}
+                  value={formData.packUnit}
+                  onChange={(e) => setFormData({ ...formData, packUnit: e.target.value })}
+                />
+              </div>
+
+              <Input
+                label="Packs per Master Box / Carton (Qty)"
+                type="number"
+                placeholder="e.g. 12"
+                value={formData.masterCartonQty}
+                onChange={(e) => setFormData({ ...formData, masterCartonQty: e.target.value })}
+              />
+            </div>
+
+            {/* Dynamic Auto-Label Preview */}
+            {(computedPackSizeLabel || computedBoxSizeLabel) && (
+              <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground font-mono text-[10px] uppercase">Auto Labels:</span>
+                  {computedPackSizeLabel && (
+                    <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 font-bold font-mono rounded">
+                      {computedPackSizeLabel}
+                    </span>
+                  )}
+                  {computedBoxSizeLabel && (
+                    <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 font-bold font-mono rounded">
+                      {computedBoxSizeLabel}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] text-muted-foreground">
+                  Total Items per Master Box: <strong>{innerQtyNum * masterQtyNum} {unitLabel}</strong>
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">
+              Key Features & Functional Specs
+            </label>
+            <Input
+              placeholder="e.g. Soft Waist Panel, Anti Bacterial, Super Absorbent, Super Leak guard, Wetness indicator"
+              value={formData.features}
+              onChange={(e) => setFormData({ ...formData, features: e.target.value })}
             />
           </div>
         </div>

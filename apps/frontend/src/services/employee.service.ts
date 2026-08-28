@@ -60,8 +60,48 @@ export const employeeService = {
     return await apiClient<Department[]>('/employees/departments');
   },
 
+  async createDepartment(payload: { name: string; code?: string; description?: string }): Promise<Department> {
+    return await apiClient<Department>('/employees/departments', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async updateDepartment(id: string, payload: { name?: string; code?: string; description?: string }): Promise<Department> {
+    return await apiClient<Department>(`/employees/departments/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async deleteDepartment(id: string): Promise<{ success: boolean; message: string }> {
+    return await apiClient<{ success: boolean; message: string }>(`/employees/departments/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
   async getDesignations(): Promise<Designation[]> {
     return await apiClient<Designation[]>('/employees/designations');
+  },
+
+  async createDesignation(payload: { name: string; code?: string; description?: string }): Promise<Designation> {
+    return await apiClient<Designation>('/employees/designations', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async updateDesignation(id: string, payload: { name?: string; code?: string; description?: string }): Promise<Designation> {
+    return await apiClient<Designation>(`/employees/designations/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async deleteDesignation(id: string): Promise<{ success: boolean; message: string }> {
+    return await apiClient<{ success: boolean; message: string }>(`/employees/designations/${id}`, {
+      method: 'DELETE',
+    });
   },
 
   async uploadDocument(employeeId: string, payload: UploadDocumentPayload): Promise<EmployeeDocument> {

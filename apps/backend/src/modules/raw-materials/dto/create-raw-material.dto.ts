@@ -69,4 +69,60 @@ export class CreateRawMaterialDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @IsString()
+  @IsOptional()
+  brand?: string;
+
+  @IsString()
+  @IsOptional()
+  size?: string;
+
+  @IsString()
+  @IsOptional()
+  dimensionInches?: string;
+
+  @IsString()
+  @IsOptional()
+  dimensionCm?: string;
+
+  @IsString()
+  @IsOptional()
+  packSize?: string;
+
+  @IsNumber()
+  @IsOptional()
+  innerPackQty?: number;
+
+  @IsString()
+  @IsOptional()
+  packUnit?: string;
+
+  @IsString()
+  @IsOptional()
+  boxSize?: string;
+
+  @IsNumber()
+  @IsOptional()
+  masterCartonQty?: number;
+
+  @IsString()
+  @IsOptional()
+  features?: string;
+
+  @IsString()
+  @IsOptional()
+  variantType?: string;
+
+  @IsUUID()
+  @IsOptional()
+  secondaryUnitId?: string;
+
+  @IsNumber()
+  @IsOptional()
+  conversionFactor?: number;
+
+  @IsString()
+  @IsOptional()
+  secondaryUnitName?: string;
 }

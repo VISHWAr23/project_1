@@ -35,6 +35,40 @@ export function useJobWorkCompanies() {
   });
 }
 
+export function useCreateJobWorkCompany() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: any) => jobWorkService.createCompany(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobWorkCompanies'] });
+      queryClient.invalidateQueries({ queryKey: ['jobWorkOrders'] });
+    },
+  });
+}
+
+export function useUpdateJobWorkCompany() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: any }) =>
+      jobWorkService.updateCompany(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobWorkCompanies'] });
+      queryClient.invalidateQueries({ queryKey: ['jobWorkOrders'] });
+    },
+  });
+}
+
+export function useDeleteJobWorkCompany() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => jobWorkService.deleteCompany(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobWorkCompanies'] });
+      queryClient.invalidateQueries({ queryKey: ['jobWorkOrders'] });
+    },
+  });
+}
+
 export function useJobWorkMaterials() {
   return useQuery({
     queryKey: ['jobWorkMaterials'],

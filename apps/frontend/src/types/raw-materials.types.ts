@@ -108,6 +108,11 @@ export interface RawMaterial {
   unitId?: string | null;
   unit?: UnitOfMeasure | null;
 
+  secondaryUnitId?: string | null;
+  secondaryUnit?: UnitOfMeasure | null;
+  conversionFactor?: number | null;
+  secondaryUnitName?: string | null;
+
   supplierId?: string | null;
   supplier?: Supplier | null;
 
@@ -115,6 +120,24 @@ export interface RawMaterial {
   storageLocation?: StorageLocation | null;
 
   computedStatus: StockStatus;
+  isPackagingMaterial?: boolean;
+  isFinishedGood?: boolean;
+  isRawMaterial?: boolean;
+  classification?: 'RM' | 'PM' | 'FG';
+  
+  // Product Variant & Packaging Specs
+  brand?: string | null;
+  size?: string | null;
+  dimensionInches?: string | null;
+  dimensionCm?: string | null;
+  packSize?: string | null;
+  innerPackQty?: number | null;
+  packUnit?: string | null;
+  boxSize?: string | null;
+  masterCartonQty?: number | null;
+  features?: string | null;
+  variantType?: string | null;
+
   inventoryTransactions?: InventoryTransactionItem[];
   issuedJobWorkOrders?: any[];
   _count?: {
@@ -128,6 +151,8 @@ export interface RawMaterialStats {
   totalValuation: number;
   lowStockCount: number;
   outOfStockCount: number;
+  packagingSkusCount?: number;
+  packagingValuation?: number;
 }
 
 export interface RawMaterialListResponse {
@@ -165,6 +190,9 @@ export interface CreateRawMaterialPayload {
   description?: string;
   categoryId?: string;
   unitId?: string;
+  secondaryUnitId?: string;
+  conversionFactor?: number;
+  secondaryUnitName?: string;
   supplierId?: string;
   storageLocationId?: string;
   hsnCode?: string;
@@ -176,4 +204,15 @@ export interface CreateRawMaterialPayload {
   unitCost?: number;
   remarks?: string;
   isActive?: boolean;
+  brand?: string;
+  size?: string;
+  dimensionInches?: string;
+  dimensionCm?: string;
+  packSize?: string;
+  innerPackQty?: number;
+  packUnit?: string;
+  boxSize?: string;
+  masterCartonQty?: number;
+  features?: string;
+  variantType?: string;
 }

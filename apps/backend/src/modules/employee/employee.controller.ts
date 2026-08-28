@@ -39,10 +39,46 @@ export class EmployeeController {
     return this.employeeService.getDepartments();
   }
 
+  @Post('departments')
+  @ApiOperation({ summary: 'Create department' })
+  async createDepartment(@Body() body: { name: string; code?: string; description?: string }) {
+    return this.employeeService.createDepartment(body);
+  }
+
+  @Patch('departments/:id')
+  @ApiOperation({ summary: 'Update department' })
+  async updateDepartment(@Param('id') id: string, @Body() body: { name?: string; code?: string; description?: string }) {
+    return this.employeeService.updateDepartment(id, body);
+  }
+
+  @Delete('departments/:id')
+  @ApiOperation({ summary: 'Delete department' })
+  async deleteDepartment(@Param('id') id: string) {
+    return this.employeeService.deleteDepartment(id);
+  }
+
   @Get('designations')
   @ApiOperation({ summary: 'Get all designations' })
   async getDesignations() {
     return this.employeeService.getDesignations();
+  }
+
+  @Post('designations')
+  @ApiOperation({ summary: 'Create designation' })
+  async createDesignation(@Body() body: { name: string; code?: string; description?: string }) {
+    return this.employeeService.createDesignation(body);
+  }
+
+  @Patch('designations/:id')
+  @ApiOperation({ summary: 'Update designation' })
+  async updateDesignation(@Param('id') id: string, @Body() body: { name?: string; code?: string; description?: string }) {
+    return this.employeeService.updateDesignation(id, body);
+  }
+
+  @Delete('designations/:id')
+  @ApiOperation({ summary: 'Delete designation' })
+  async deleteDesignation(@Param('id') id: string) {
+    return this.employeeService.deleteDesignation(id);
   }
 
   @Get(':id/financial-summary')

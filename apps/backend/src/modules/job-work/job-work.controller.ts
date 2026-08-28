@@ -38,6 +38,24 @@ export class JobWorkController {
     return this.jobWorkService.getCompanies();
   }
 
+  @Post('companies')
+  @ApiOperation({ summary: 'Create a new Job Work company/vendor' })
+  async createCompany(@Body() body: any) {
+    return this.jobWorkService.createCompany(body);
+  }
+
+  @Patch('companies/:id')
+  @ApiOperation({ summary: 'Update a Job Work company/vendor' })
+  async updateCompany(@Param('id') id: string, @Body() body: any) {
+    return this.jobWorkService.updateCompany(id, body);
+  }
+
+  @Delete('companies/:id')
+  @ApiOperation({ summary: 'Delete a Job Work company/vendor' })
+  async deleteCompany(@Param('id') id: string) {
+    return this.jobWorkService.deleteCompany(id);
+  }
+
   @Get('materials')
   @ApiOperation({ summary: 'Get active raw materials and finished goods for dropdowns' })
   async getMaterials() {

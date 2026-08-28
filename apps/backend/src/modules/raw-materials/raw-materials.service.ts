@@ -9,9 +9,9 @@ export class RawMaterialsService {
   /**
    * Helper to generate unique material code if not provided
    */
-  async generateMaterialCode(): Promise<string> {
+  async generateMaterialCode(prefixType: 'RM' | 'PM' | 'FG' = 'RM'): Promise<string> {
     const year = new Date().getFullYear();
-    const prefix = `RM-${year}-`;
+    const prefix = `${prefixType}-${year}-`;
     const count = await prisma.rawMaterial.count();
     const seq = String(count + 1).padStart(4, '0');
     let code = `${prefix}${seq}`;
@@ -34,7 +34,7 @@ export class RawMaterialsService {
     supplierId?: string;
     storageLocationId?: string;
     stockStatus?: 'OPTIMAL' | 'LOW_STOCK' | 'OVERSTOCK' | 'OUT_OF_STOCK';
-    type?: 'ALL' | 'RM' | 'FG';
+    type?: 'ALL' | 'RM' | 'PM' | 'FG';
     page?: number;
     limit?: number;
   }) {
@@ -63,15 +63,57 @@ export class RawMaterialsService {
       ];
     }
 
+    // Helper to identify Packaging Materials
+    const isItemPM = (item: any) => {
+      const sku = item.sku || '';
+      if (
+        sku.startsWith('PM-') ||
+        sku.startsWith('PKG-') ||
+        sku.startsWith('BX-') ||
+        sku.startsWith('TP-') ||
+        sku.startsWith('CV-')
+      ) {
+        return true;
+      }
+      const catName = item.category?.name?.toLowerCase() || '';
+      const name = item.name?.toLowerCase() || '';
+      if (
+        catName.includes('packaging') ||
+        catName.includes('box') ||
+        catName.includes('cover') ||
+        catName.includes('tape') ||
+        catName.includes('carton') ||
+        catName.includes('pouch') ||
+        catName.includes('bag') ||
+        catName.includes('wrapper') ||
+        name.includes('box') ||
+        name.includes('tape') ||
+        name.includes('cover') ||
+        name.includes('carton') ||
+        name.includes('pouch') ||
+        name.includes('polybag') ||
+        name.includes('poly bag') ||
+        name.includes('roll tape') ||
+        name.includes('corrugated')
+      ) {
+        return true;
+      }
+      return false;
+    };
+
     // Helper to identify Finished Goods
     const isItemFG = (item: any) => {
-      if (item.sku?.startsWith('FP-') || item.sku?.startsWith('FG-')) return true;
-      if (item.sku?.startsWith('RM-')) return false;
+      const sku = item.sku || '';
+      if (sku.startsWith('FP-') || sku.startsWith('FG-') || sku.startsWith('PROD-')) return true;
+      if (isItemPM(item)) return false;
+      if (sku.startsWith('RM-')) return false;
       const catName = item.category?.name?.toLowerCase() || '';
       if (
         catName.includes('raw') ||
-        catName.includes('packaging') ||
+        catName.includes('yarn') ||
+        catName.includes('cotton') ||
         catName.includes('liquid') ||
+        catName.includes('chemical') ||
         catName.includes('botanical') ||
         catName.includes('component') ||
         catName.includes('metals')
@@ -88,6 +130,7 @@ export class RawMaterialsService {
         include: {
           category: true,
           unit: true,
+          secondaryUnit: true,
           supplier: true,
           storageLocation: true,
           _count: {
@@ -120,6 +163,10 @@ export class RawMaterialsService {
           status = 'OVERSTOCK';
         }
 
+        const isPM = isItemPM(item);
+        const isFG = !isPM && isItemFG(item);
+        const isRM = !isPM && !isFG;
+
         return {
           ...item,
           currentStockBalance: current,
@@ -133,7 +180,10 @@ export class RawMaterialsService {
           avgCost: Number(item.avgCost),
           gstRate: Number(item.gstRate),
           computedStatus: status,
-          isFinishedGood: isItemFG(item),
+          isPackagingMaterial: isPM,
+          isFinishedGood: isFG,
+          isRawMaterial: isRM,
+          classification: isPM ? 'PM' : isFG ? 'FG' : 'RM',
         };
       })
       .filter((item) => {
@@ -142,8 +192,9 @@ export class RawMaterialsService {
       })
       .filter((item) => {
         if (!query.type || query.type === 'ALL') return true;
+        if (query.type === 'PM') return item.isPackagingMaterial;
         if (query.type === 'FG') return item.isFinishedGood;
-        if (query.type === 'RM') return !item.isFinishedGood;
+        if (query.type === 'RM') return item.isRawMaterial;
         return true;
       });
 
@@ -154,11 +205,20 @@ export class RawMaterialsService {
     let totalValuation = 0;
     let lowStockCount = 0;
     let outOfStockCount = 0;
+    let packagingSkusCount = 0;
+    let packagingValuation = 0;
 
     rawItems.forEach((m) => {
       const current = Number(m.currentStockBalance);
       const cost = Number(m.avgCost) || Number(m.unitCost) || 0;
-      totalValuation += current * cost;
+      const val = current * cost;
+      totalValuation += val;
+
+      if (isItemPM(m)) {
+        packagingSkusCount++;
+        packagingValuation += val;
+      }
+
       if (current <= 0) outOfStockCount++;
       else if (current <= Number(m.minimumStockLevel)) lowStockCount++;
     });
@@ -176,6 +236,8 @@ export class RawMaterialsService {
         totalValuation,
         lowStockCount,
         outOfStockCount,
+        packagingSkusCount,
+        packagingValuation,
       },
     };
   }
@@ -189,6 +251,7 @@ export class RawMaterialsService {
       include: {
         category: true,
         unit: true,
+        secondaryUnit: true,
         supplier: true,
         storageLocation: true,
         inventoryTransactions: {
@@ -285,6 +348,20 @@ export class RawMaterialsService {
           gstRate: dto.gstRate || 0,
           remarks: dto.remarks,
           isActive: dto.isActive ?? true,
+          brand: dto.brand,
+          size: dto.size,
+          dimensionInches: dto.dimensionInches,
+          dimensionCm: dto.dimensionCm,
+          packSize: dto.packSize,
+          innerPackQty: dto.innerPackQty,
+          packUnit: dto.packUnit,
+          boxSize: dto.boxSize,
+          masterCartonQty: dto.masterCartonQty,
+          features: dto.features,
+          variantType: dto.variantType,
+          secondaryUnitId: dto.secondaryUnitId || null,
+          conversionFactor: dto.conversionFactor || null,
+          secondaryUnitName: dto.secondaryUnitName || null,
           categoryId: dto.categoryId || null,
           unitId: dto.unitId || null,
           supplierId: dto.supplierId || null,
@@ -293,6 +370,7 @@ export class RawMaterialsService {
         include: {
           category: true,
           unit: true,
+          secondaryUnit: true,
           supplier: true,
           storageLocation: true,
         },
@@ -375,6 +453,20 @@ export class RawMaterialsService {
           gstRate: dto.gstRate,
           remarks: dto.remarks,
           isActive: dto.isActive,
+          brand: dto.brand,
+          size: dto.size,
+          dimensionInches: dto.dimensionInches,
+          dimensionCm: dto.dimensionCm,
+          packSize: dto.packSize,
+          innerPackQty: dto.innerPackQty,
+          packUnit: dto.packUnit,
+          boxSize: dto.boxSize,
+          masterCartonQty: dto.masterCartonQty,
+          features: dto.features,
+          variantType: dto.variantType,
+          secondaryUnitId: dto.secondaryUnitId !== undefined ? dto.secondaryUnitId : undefined,
+          conversionFactor: dto.conversionFactor !== undefined ? dto.conversionFactor : undefined,
+          secondaryUnitName: dto.secondaryUnitName !== undefined ? dto.secondaryUnitName : undefined,
           categoryId: dto.categoryId !== undefined ? dto.categoryId : undefined,
           unitId: dto.unitId !== undefined ? dto.unitId : undefined,
           supplierId: dto.supplierId !== undefined ? dto.supplierId : undefined,
@@ -383,6 +475,7 @@ export class RawMaterialsService {
         include: {
           category: true,
           unit: true,
+          secondaryUnit: true,
           supplier: true,
           storageLocation: true,
         },

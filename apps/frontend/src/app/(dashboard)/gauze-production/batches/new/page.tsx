@@ -18,6 +18,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { MasterDropdown } from '@/components/gauze-production/master-dropdown';
+import { MasterEntityDropdown } from '@/components/ui/master-entity-dropdown';
 import { useCreateGauzeBatch, useGauzeMasters } from '@/hooks/useGauzeProduction';
 import { useRawMaterials, useSuppliers, useStorageLocations } from '@/hooks/useRawMaterials';
 import { useToast } from '@/components/ui/toast';
@@ -165,17 +166,13 @@ export default function CreateGauzeBatchPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Select
+            <MasterEntityDropdown
               label="Supplier / Fabric Mill"
+              entityType="supplier"
+              placeholder="-- Select Supplier --"
+              options={suppliers.map((s: any) => ({ label: `${s.name} (${s.code})`, value: s.id, raw: s }))}
               value={supplierId}
-              onChange={(e) => setSupplierId(e.target.value)}
-              options={[
-                { value: '', label: '-- Select Supplier --' },
-                ...suppliers.map((s: any) => ({
-                  value: s.id,
-                  label: `${s.name} (${s.code})`,
-                })),
-              ]}
+              onChange={(val) => setSupplierId(val)}
             />
 
             <Input
@@ -192,17 +189,13 @@ export default function CreateGauzeBatchPage() {
               placeholder="e.g. ROLL-01 to 05 / Lot-92A"
             />
 
-            <Select
+            <MasterEntityDropdown
               label="Raw Material Receiving Warehouse"
+              entityType="location"
+              placeholder="-- Select Warehouse Location --"
+              options={locations.map((loc: any) => ({ label: `${loc.name} (${loc.code})`, value: loc.id, raw: loc }))}
               value={warehouseId}
-              onChange={(e) => setWarehouseId(e.target.value)}
-              options={[
-                { value: '', label: '-- Select Warehouse Location --' },
-                ...locations.map((loc: any) => ({
-                  value: loc.id,
-                  label: `${loc.name} (${loc.code})`,
-                })),
-              ]}
+              onChange={(val) => setWarehouseId(val)}
             />
 
             <Input

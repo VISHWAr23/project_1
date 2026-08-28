@@ -327,7 +327,7 @@ export function EmployeeReportTab({ employeeId, employee }: EmployeeReportTabPro
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-base font-bold text-foreground print:text-black">
-                    Apex Surgical Products Manufacturing Ltd.
+                    Shri Lathikka Surgicals
                   </h2>
                   <span className="font-bold text-[10px] uppercase px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20 print:border-black print:text-black">
                     Work Statement

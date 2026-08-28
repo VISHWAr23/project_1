@@ -6,14 +6,14 @@
 
 @layer base {
   :root {
-    /* Bright Clean Light Palette (Clinical Slate White) */
+    /* Bright Clean Light Palette (Clinical Green Slate) */
     --background: 210 20% 98%; /* Clean crisp background #F8FAFC */
     --foreground: 222.2 47% 11.2%; /* Deep legible text #0F172A */
     --card: 0 0% 100%; /* Pure white card #FFFFFF */
     --card-foreground: 222.2 47% 11.2%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 47% 11.2%;
-    --primary: 217 91% 53%; /* Professional Medical Blue #2563EB for high contrast on light theme */
+    --primary: 153 60% 42%; /* Professional Clean Emerald Green #16A34A / #059669 */
     --primary-foreground: 0 0% 100%;
     --secondary: 214.3 32% 91%; /* Crisp light surface #E2E8F0 */
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -25,7 +25,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 20% 88%; /* Subtle border #E2E8F0 */
     --input: 214.3 20% 88%;
-    --ring: 217 91% 53%;
+    --ring: 153 60% 42%;
     --radius: 0.375rem;
 
     --sidebar: 214.3 32% 93%;
@@ -34,15 +34,15 @@
   }
 
   .dark {
-    /* Modern Medical Dark Palette */
+    /* Modern Medical Dark Palette (Clean Emerald Green) */
     --background: 224 22% 8%; /* #0F1117 */
     --foreground: 0 0% 93%; /* #EDEDED */
     --card: 218 18% 13%; /* #1B1F26 */
     --card-foreground: 0 0% 98%;
     --popover: 218 18% 13%;
     --popover-foreground: 0 0% 98%;
-    --primary: 217 91% 60%; /* Medical Electric Blue #3B82F6 */
-    --primary-foreground: 0 0% 100%;
+    --primary: 153 60% 53%; /* Modern Clean Emerald Green #3ECF8E / #10B981 */
+    --primary-foreground: 144 80% 10%;
     --secondary: 220 14% 11%;
     --secondary-foreground: 0 0% 98%;
     --muted: 220 14% 16%;
@@ -53,7 +53,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 220 16% 20%;
     --input: 220 16% 20%;
-    --ring: 217 91% 60%;
+    --ring: 153 60% 53%;
 
     --sidebar: 225 17% 8%;
     --sidebar-foreground: 0 0% 90%;
@@ -66,7 +66,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-blue-500/20 selection:text-blue-600;
+    @apply bg-background text-foreground antialiased selection:bg-emerald-500/20 selection:text-emerald-600;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }

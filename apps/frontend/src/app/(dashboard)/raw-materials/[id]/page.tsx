@@ -217,7 +217,74 @@ export default function MaterialDetailPage() {
       {activeTab === 'overview' && (
         <div className="space-y-6">
           {/* Recharts Analytics Chart */}
-          <MaterialStockChart material={material} />
+          {/* Variant & Packaging Specifications (if Available) */}
+          {(material.brand || material.size || material.dimensionInches || material.packSize || material.features) && (
+            <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-500/20 pb-2">
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-500 font-bold block">
+                    {material.brand || 'Dr. C Premium'} • {material.variantType || 'Finished Goods Variant'}
+                  </span>
+                  <h3 className="text-base font-bold text-foreground flex items-center gap-2 mt-0.5">
+                    <Boxes className="h-4 w-4 text-emerald-400" /> Sizing, Dimensions & Pack Configuration
+                  </h3>
+                </div>
+                {material.size && (
+                  <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full font-bold text-xs border border-emerald-500/30">
+                    SIZE: {material.size}
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div className="p-3 bg-secondary/30 rounded-lg border border-border">
+                  <span className="text-[10px] text-muted-foreground block font-medium">Waist / Size (Inches)</span>
+                  <span className="font-mono font-bold text-sm text-foreground mt-0.5 block">
+                    {material.dimensionInches || '—'}
+                  </span>
+                </div>
+
+                <div className="p-3 bg-secondary/30 rounded-lg border border-border">
+                  <span className="text-[10px] text-muted-foreground block font-medium">Dimension (CM)</span>
+                  <span className="font-mono font-bold text-sm text-emerald-400 mt-0.5 block">
+                    {material.dimensionCm || '—'}
+                  </span>
+                </div>
+
+                <div className="p-3 bg-secondary/30 rounded-lg border border-border">
+                  <span className="text-[10px] text-muted-foreground block font-medium">Primary Pack Size</span>
+                  <span className="font-semibold text-foreground mt-0.5 block">
+                    {material.packSize || `${material.innerPackQty || 10} Pcs/Pack`}
+                  </span>
+                </div>
+
+                <div className="p-3 bg-secondary/30 rounded-lg border border-border">
+                  <span className="text-[10px] text-muted-foreground block font-medium">Outer Carton / Box</span>
+                  <span className="font-semibold text-blue-600 dark:text-blue-400 mt-0.5 block">
+                    {material.boxSize || `${material.masterCartonQty || 12} Packs/Box`}
+                  </span>
+                </div>
+              </div>
+
+              {material.features && (
+                <div className="p-3 bg-secondary/20 rounded-lg border border-border space-y-1.5">
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground block font-semibold">
+                    Product Features & Technical Highlights
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {material.features.split(',').map((feat, i) => (
+                      <span
+                        key={i}
+                        className="px-2 py-0.5 bg-secondary/70 border border-border text-foreground rounded text-[11px] font-medium"
+                      >
+                        ✓ {feat.trim()}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Details Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -232,9 +299,31 @@ export default function MaterialDetailPage() {
                   <span className="font-semibold text-foreground">{material.category?.name || 'Uncategorized'}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-border/50">
-                  <span className="text-muted-foreground">Unit of Measure:</span>
+                  <span className="text-muted-foreground">Primary Unit (Base):</span>
                   <span className="font-semibold text-foreground">{material.unit?.name} ({material.unit?.abbreviation})</span>
                 </div>
+                {Boolean(material.secondaryUnitId || material.conversionFactor) && (
+                  <>
+                    <div className="flex justify-between py-1 border-b border-border/50">
+                      <span className="text-muted-foreground">Secondary Unit (Dual UOM):</span>
+                      <span className="font-semibold text-blue-500">
+                        {material.secondaryUnit?.name || material.secondaryUnitName || 'Alternative Unit'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-border/50">
+                      <span className="text-muted-foreground">Unit Conversion Ratio:</span>
+                      <span className="font-mono font-medium text-foreground">
+                        1 {material.secondaryUnit?.name || material.secondaryUnitName || 'Unit'} = {Number(material.conversionFactor)} {material.unit?.abbreviation}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-border/50">
+                      <span className="text-muted-foreground">Stock in Secondary Unit:</span>
+                      <span className="font-mono font-bold text-blue-500">
+                        {(material.currentStockBalance / (Number(material.conversionFactor) || 1)).toFixed(2)} {material.secondaryUnit?.name || material.secondaryUnitName}
+                      </span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between py-1 border-b border-border/50">
                   <span className="text-muted-foreground">HSN Code:</span>
                   <span className="font-mono text-foreground">{material.hsnCode || 'N/A'}</span>

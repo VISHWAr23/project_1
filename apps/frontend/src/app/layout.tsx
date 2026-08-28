@@ -39,7 +39,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark h-full">
-      <body className="h-full font-sans antialiased bg-background text-foreground selection:bg-blue-500/20 selection:text-blue-600">
+      <body className="h-full font-sans antialiased bg-background text-foreground selection:bg-emerald-500/20 selection:text-emerald-600">
         <ThemeProvider>
           <ToastProvider>
             <ReactQueryProvider>{children}</ReactQueryProvider>

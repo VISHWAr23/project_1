@@ -10,6 +10,8 @@ import {
   Package,
   Truck,
   Users,
+  UserCheck,
+  ShoppingCart,
   CalendarCheck,
   CircleDollarSign,
   FileBarChart,
@@ -18,6 +20,7 @@ import {
   ChevronRight,
   LogOut,
   X,
+  Scroll,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Avatar } from '@/components/ui/avatar';
@@ -32,8 +35,9 @@ interface NavItem {
 
 export const navItems: NavItem[] = [
   { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { title: 'Gauze Production', href: '/gauze-production', icon: Factory, badge: 'Workflow' },
-  { title: 'Materials & Products', href: '/raw-materials', icon: Package },
+  { title: 'Gauze Production', href: '/gauze-production', icon: Factory },
+  { title: 'Gamjee Production', href: '/gamjee-production', icon: Scroll },
+  { title: 'Customer Orders', href: '/customer-orders', icon: ShoppingCart },
   { title: 'Job Work', href: '/job-work', icon: Truck },
   { title: 'Employees', href: '/employees', icon: Users },
   { title: 'Attendance', href: '/attendance', icon: CalendarCheck },
@@ -132,21 +136,21 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
                     : 'gap-3 px-2.5 py-2.5'
                 } rounded-md text-xs font-medium transition-colors ${
                   isActive
-                    ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold'
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold'
                     : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
                 }`}
               >
                 {isActive && (
                   <motion.div
                     layoutId="sidebarActiveIndicator"
-                    className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-blue-600 dark:bg-blue-400 rounded-r-sm"
+                    className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-emerald-600 dark:bg-emerald-400 rounded-r-sm"
                     transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                   />
                 )}
-                <Icon className={`h-5 w-5 shrink-0 ${isActive ? 'text-blue-600 dark:text-blue-400' : ''}`} />
+                <Icon className={`h-5 w-5 shrink-0 ${isActive ? 'text-emerald-600 dark:text-emerald-400' : ''}`} />
                 {(!collapsed || isMobile) && <span className="truncate flex-1">{item.title}</span>}
                 {(!collapsed || isMobile) && item.badge && (
-                  <span className="text-[9px] bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-sm font-mono font-bold">
+                  <span className="text-[9px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-sm font-mono font-bold">
                     {item.badge}
                   </span>
                 )}
@@ -167,7 +171,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
                   <p className="text-xs font-medium text-foreground truncate">
                     {user?.email || 'admin@manufacturing.com'}
                   </p>
-                  <p className="text-[10px] font-mono text-blue-600 dark:text-blue-400 font-semibold">
+                  <p className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
                     {user?.role || 'ADMIN'}
                   </p>
                 </div>

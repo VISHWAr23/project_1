@@ -34,3 +34,6 @@ export function SkeletonCard() {
     </div>
   );
 }
+
+export const SkeletonLoader = Skeleton;
+
