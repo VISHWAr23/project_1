@@ -225,6 +225,13 @@ export interface GamjeeProductionBatch {
   productionDate: string;
   expectedCompletionDate?: string | null;
   completionDate?: string | null;
+  calculationMode?: 'FROM_FABRIC' | 'FROM_PIECES' | null;
+  pinningSizeMeters?: number | null;
+  foldingCutsCount?: number | null;
+  cottonSpecId?: string | null;
+  cottonTypeName?: string | null;
+  plannedFabricMeters?: number | null;
+  plannedCottonKg?: number | null;
   notes?: string | null;
   createdById?: string | null;
   createdAt: string;
@@ -241,6 +248,7 @@ export interface GamjeeProductionBatch {
     storageLocation?: { id: string; name: string; code: string };
   };
   gamjeeSize?: GamjeeSize | null;
+  cottonSpec?: GamjeeCottonSpecification | null;
   createdBy?: {
     id: string;
     email: string;
@@ -287,10 +295,34 @@ export interface GamjeeDashboardStats {
   }>;
 }
 
+export interface GamjeeCottonSpecification {
+  id: string;
+  cottonType: string;
+  weightKg: number;
+  web: number;
+  gamjeeWidthCm: number;
+  piecesPerRoll: number;
+  description?: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateGamjeeCottonSpecInput {
+  cottonType: string;
+  weightKg: number;
+  web: number;
+  gamjeeWidthCm: number;
+  piecesPerRoll: number;
+  description?: string;
+  active?: boolean;
+}
+
 export interface GamjeeMastersResponse {
   sizes: GamjeeSize[];
   operations: GamjeeOperationType[];
   products: GamjeeProductMaster[];
+  cottonSpecs?: GamjeeCottonSpecification[];
 }
 
 export interface GamjeeTraceabilityData {

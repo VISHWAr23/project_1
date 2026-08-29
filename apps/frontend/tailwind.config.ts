@@ -48,12 +48,25 @@ const config: Config = {
           foreground: 'hsl(var(--sidebar-foreground))',
           border: 'hsl(var(--sidebar-border))',
         },
+        emerald: {
+          50: '#F5F9EE',
+          100: '#E8F4DB',
+          200: '#D3E9BC',
+          300: '#B6DC93',
+          400: '#96CB65',
+          500: '#77B33E', /* Official Brand Green from Logo */
+          600: '#629630',
+          700: '#4D7726',
+          800: '#3F6022',
+          900: '#35501F',
+          950: '#1A2C0D',
+        },
         sb: {
           green: {
-            DEFAULT: '#3ECF8E',
-            hover: '#34B27B',
-            dark: '#1C6B46',
-            light: 'rgba(62, 207, 142, 0.1)',
+            DEFAULT: '#77B33E',
+            hover: '#629630',
+            dark: '#4D7726',
+            light: 'rgba(119, 179, 62, 0.12)',
           },
           bg: {
             dark: '#0F1117',
@@ -79,8 +92,8 @@ const config: Config = {
           },
         },
         success: {
-          DEFAULT: '#3ECF8E',
-          foreground: '#0F1117',
+          DEFAULT: '#77B33E',
+          foreground: '#FFFFFF',
         },
         warning: {
           DEFAULT: '#F59E0B',

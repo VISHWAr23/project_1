@@ -35,6 +35,7 @@ interface NavItem {
 
 export const navItems: NavItem[] = [
   { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { title: 'Materials', href: '/raw-materials', icon: Package },
   { title: 'Gauze Production', href: '/gauze-production', icon: Factory },
   { title: 'Gamjee Production', href: '/gamjee-production', icon: Scroll },
   { title: 'Customer Orders', href: '/customer-orders', icon: ShoppingCart },

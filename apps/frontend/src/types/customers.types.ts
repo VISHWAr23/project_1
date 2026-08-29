@@ -8,6 +8,9 @@ export interface Customer {
   alternatePhone?: string | null;
   gstin?: string | null;
   panNo?: string | null;
+  dlNo?: string | null;
+  regdNo?: string | null;
+  transportName?: string | null;
   address?: string | null;
   shippingAddress?: string | null;
   city?: string | null;
@@ -56,6 +59,9 @@ export interface CreateCustomerPayload {
   alternatePhone?: string;
   gstin?: string;
   panNo?: string;
+  dlNo?: string;
+  regdNo?: string;
+  transportName?: string;
   address?: string;
   shippingAddress?: string;
   city?: string;

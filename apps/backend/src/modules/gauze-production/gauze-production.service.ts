@@ -1247,12 +1247,20 @@ export class GauzeProductionService implements OnModuleInit {
     return prisma.gauzeType.update({ where: { id }, data: dto });
   }
 
+  async deleteGauzeType(id: string) {
+    return prisma.gauzeType.delete({ where: { id } });
+  }
+
   async createGauzeSize(dto: CreateGauzeSizeDto) {
     return prisma.gauzeSize.create({ data: dto });
   }
 
   async updateGauzeSize(id: string, dto: Partial<CreateGauzeSizeDto>) {
     return prisma.gauzeSize.update({ where: { id }, data: dto });
+  }
+
+  async deleteGauzeSize(id: string) {
+    return prisma.gauzeSize.delete({ where: { id } });
   }
 
   async createBleachingType(dto: CreateBleachingTypeDto) {
@@ -1263,11 +1271,19 @@ export class GauzeProductionService implements OnModuleInit {
     return prisma.bleachingType.update({ where: { id }, data: dto });
   }
 
+  async deleteBleachingType(id: string) {
+    return prisma.bleachingType.delete({ where: { id } });
+  }
+
   async createOperationType(dto: CreateGauzeOperationTypeDto) {
     return prisma.gauzeOperationType.create({ data: dto });
   }
 
   async updateOperationType(id: string, dto: Partial<CreateGauzeOperationTypeDto>) {
     return prisma.gauzeOperationType.update({ where: { id }, data: dto });
+  }
+
+  async deleteOperationType(id: string) {
+    return prisma.gauzeOperationType.delete({ where: { id } });
   }
 }

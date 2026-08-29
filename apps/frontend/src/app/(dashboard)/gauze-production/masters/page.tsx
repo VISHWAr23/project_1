@@ -6,6 +6,7 @@ import {
   Settings,
   Plus,
   Edit2,
+  Trash2,
   CheckCircle2,
   XCircle,
   Layers,
@@ -17,16 +18,34 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Table, Column } from '@/components/ui/table';
 import { MasterModal } from '@/components/gauze-production/master-modal';
-import { useGauzeMasters } from '@/hooks/useGauzeProduction';
+import { useGauzeMasters, useManageGauzeMasters } from '@/hooks/useGauzeProduction';
+import { useToast } from '@/components/ui/toast';
 
 export default function GauzeMastersPage() {
   const { data: masters, isLoading } = useGauzeMasters();
+  const { deleteType, deleteSize, deleteBleaching, deleteOperation } = useManageGauzeMasters();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'types' | 'sizes' | 'bleaching' | 'operations'>('types');
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'gauzeType' | 'gauzeSize' | 'bleachingType' | 'operationType'>('gauzeType');
   const [selectedItem, setSelectedItem] = useState<any>(null);
+
+  const handleDelete = async (type: 'gauzeType' | 'gauzeSize' | 'bleachingType' | 'operationType', item: any) => {
+    const confirmDelete = window.confirm(`Are you sure you want to delete "${item.name || 'this item'}"?`);
+    if (!confirmDelete) return;
+
+    try {
+      if (type === 'gauzeType') await deleteType.mutateAsync(item.id);
+      else if (type === 'gauzeSize') await deleteSize.mutateAsync(item.id);
+      else if (type === 'bleachingType') await deleteBleaching.mutateAsync(item.id);
+      else if (type === 'operationType') await deleteOperation.mutateAsync(item.id);
+      toast('Deleted', 'Master record deleted successfully', 'success');
+    } catch (err: any) {
+      toast('Error', err?.message || 'Failed to delete record', 'error');
+    }
+  };
 
   const openAddModal = (type: 'gauzeType' | 'gauzeSize' | 'bleachingType' | 'operationType') => {
     setModalType(type);
@@ -135,15 +154,26 @@ export default function GauzeMastersPage() {
                       </span>
                     </td>
                     <td className="py-2.5 px-3 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditModal('gauzeType', t)}
-                        className="h-7 text-xs gap-1"
-                      >
-                        <Edit2 className="h-3 w-3" />
-                        Edit
-                      </Button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditModal('gauzeType', t)}
+                          className="h-7 text-xs gap-1"
+                        >
+                          <Edit2 className="h-3 w-3" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete('gauzeType', t)}
+                          className="h-7 text-xs gap-1 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 border-rose-500/30"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          Delete
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -185,15 +215,26 @@ export default function GauzeMastersPage() {
                       </span>
                     </td>
                     <td className="py-2.5 px-3 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditModal('gauzeSize', s)}
-                        className="h-7 text-xs gap-1"
-                      >
-                        <Edit2 className="h-3 w-3" />
-                        Edit
-                      </Button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditModal('gauzeSize', s)}
+                          className="h-7 text-xs gap-1"
+                        >
+                          <Edit2 className="h-3 w-3" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete('gauzeSize', s)}
+                          className="h-7 text-xs gap-1 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 border-rose-500/30"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          Delete
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -229,15 +270,26 @@ export default function GauzeMastersPage() {
                       </span>
                     </td>
                     <td className="py-2.5 px-3 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditModal('bleachingType', b)}
-                        className="h-7 text-xs gap-1"
-                      >
-                        <Edit2 className="h-3 w-3" />
-                        Edit
-                      </Button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditModal('bleachingType', b)}
+                          className="h-7 text-xs gap-1"
+                        >
+                          <Edit2 className="h-3 w-3" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete('bleachingType', b)}
+                          className="h-7 text-xs gap-1 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 border-rose-500/30"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          Delete
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -275,15 +327,26 @@ export default function GauzeMastersPage() {
                       </span>
                     </td>
                     <td className="py-2.5 px-3 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditModal('operationType', op)}
-                        className="h-7 text-xs gap-1"
-                      >
-                        <Edit2 className="h-3 w-3" />
-                        Edit
-                      </Button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditModal('operationType', op)}
+                          className="h-7 text-xs gap-1"
+                        >
+                          <Edit2 className="h-3 w-3" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete('operationType', op)}
+                          className="h-7 text-xs gap-1 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 border-rose-500/30"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          Delete
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}

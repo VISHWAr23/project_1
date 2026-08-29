@@ -200,16 +200,6 @@ export default function StorageLocationsPage() {
             <Input label="Location Name" placeholder="Rack A1 - Heavy Metals" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
           </div>
           <Input label="Warehouse Zone" placeholder="Zone A (Ground Floor)" value={formData.warehouseZone} onChange={(e) => setFormData({ ...formData, warehouseZone: e.target.value })} />
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Description</label>
-            <textarea
-              className="w-full bg-secondary/50 border border-border rounded-md text-xs p-2 text-foreground focus:outline-none focus:border-[#3ECF8E]"
-              rows={2}
-              placeholder="Capacity, dimension specs, shelf details..."
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            />
-          </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="ghost" type="button" onClick={() => setIsCreateOpen(false)}>
               Cancel
@@ -234,16 +224,6 @@ export default function StorageLocationsPage() {
             <Input label="Location Name" placeholder="Rack A1 - Heavy Metals" value={editFormData.name} onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })} required />
           </div>
           <Input label="Warehouse Zone" placeholder="Zone A (Ground Floor)" value={editFormData.warehouseZone} onChange={(e) => setEditFormData({ ...editFormData, warehouseZone: e.target.value })} />
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Description</label>
-            <textarea
-              className="w-full bg-secondary/50 border border-border rounded-md text-xs p-2 text-foreground focus:outline-none focus:border-[#3ECF8E]"
-              rows={2}
-              placeholder="Capacity, dimension specs, shelf details..."
-              value={editFormData.description}
-              onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
-            />
-          </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="ghost" type="button" onClick={() => setEditingLocation(null)}>
               Cancel

@@ -159,20 +159,13 @@ export function PackingModal({ batch, isOpen, onClose, onSuccess }: PackingModal
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
           <Input
             label="Packing Date"
             type="date"
             value={packingDate}
             onChange={(e) => setPackingDate(e.target.value)}
             required
-          />
-
-          <Input
-            label="Packaging Lot / Marks (Optional)"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="e.g. Sealed in Sterile Pouch with Class 1 Indicator"
           />
         </div>
 

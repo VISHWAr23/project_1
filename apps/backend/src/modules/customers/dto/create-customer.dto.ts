@@ -42,6 +42,21 @@ export class CreateCustomerDto {
   @IsOptional()
   panNo?: string;
 
+  @ApiPropertyOptional({ example: 'DL-20B/21B-4492' })
+  @IsString()
+  @IsOptional()
+  dlNo?: string;
+
+  @ApiPropertyOptional({ example: 'REG-TN-2024-889' })
+  @IsString()
+  @IsOptional()
+  regdNo?: string;
+
+  @ApiPropertyOptional({ example: 'VRL Logistics' })
+  @IsString()
+  @IsOptional()
+  transportName?: string;
+
   @ApiPropertyOptional({ example: '21 Greams Lane, Off Greams Road, Thousand Lights' })
   @IsString()
   @IsOptional()

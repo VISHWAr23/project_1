@@ -301,16 +301,6 @@ export default function EditRawMaterialPage() {
               </div>
             )}
           </div>
-
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Description</label>
-            <textarea
-              className="w-full bg-secondary/50 border border-border rounded-md text-xs p-2 text-foreground focus:outline-none focus:border-[#3ECF8E]"
-              rows={2}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            />
-          </div>
         </div>
 
         {/* Section 1.5: Product Variant, Size & Packaging Specifications */}
@@ -483,6 +473,33 @@ export default function EditRawMaterialPage() {
               type="number"
               value={formData.gstRate}
               onChange={(e) => setFormData({ ...formData, gstRate: e.target.value })}
+            />
+          </div>
+        </div>
+
+        {/* Section 3: Supplier & Storage Location */}
+        <div className="bg-secondary/20 border border-border rounded-xl p-5 space-y-4">
+          <h2 className="text-sm font-bold text-foreground tracking-tight border-b border-border pb-2">
+            3. Primary Vendor & Storage Location Assignment
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <MasterEntityDropdown
+              label="Primary Supplier"
+              entityType="supplier"
+              placeholder="Select Preferred Vendor..."
+              options={suppliers?.map((s) => ({ label: `${s.name} (${s.code})`, value: s.id, raw: s })) || []}
+              value={formData.supplierId}
+              onChange={(val) => setFormData({ ...formData, supplierId: val })}
+            />
+
+            <MasterEntityDropdown
+              label="Warehouse Storage Location"
+              entityType="location"
+              placeholder="Select Warehouse Location..."
+              options={locations?.map((l) => ({ label: `${l.name} (${l.code})`, value: l.id, raw: l })) || []}
+              value={formData.storageLocationId}
+              onChange={(val) => setFormData({ ...formData, storageLocationId: val })}
             />
           </div>
         </div>

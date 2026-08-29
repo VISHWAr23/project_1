@@ -46,6 +46,13 @@ export const createGamjeeProductionBatchSchema = z.object({
   productionUom: z.string().default('Rolls'),
   productionDate: z.string().min(1, 'Production date is required'),
   expectedCompletionDate: z.string().optional().nullable(),
+  calculationMode: z.enum(['FROM_FABRIC', 'FROM_PIECES']).default('FROM_FABRIC').optional().nullable(),
+  pinningSizeMeters: z.number().positive().optional().nullable(),
+  foldingCutsCount: z.number().int().positive().optional().nullable(),
+  cottonSpecId: z.string().uuid().optional().nullable(),
+  cottonTypeName: z.string().optional().nullable(),
+  plannedFabricMeters: z.number().positive().optional().nullable(),
+  plannedCottonKg: z.number().positive().optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 

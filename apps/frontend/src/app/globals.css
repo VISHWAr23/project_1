@@ -13,7 +13,7 @@
     --card-foreground: 222.2 47% 11.2%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 47% 11.2%;
-    --primary: 153 60% 42%; /* Professional Clean Emerald Green #16A34A / #059669 */
+    --primary: 92 49% 43%; /* Official Brand Green from Logo #77B33E */
     --primary-foreground: 0 0% 100%;
     --secondary: 214.3 32% 91%; /* Crisp light surface #E2E8F0 */
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -25,7 +25,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 20% 88%; /* Subtle border #E2E8F0 */
     --input: 214.3 20% 88%;
-    --ring: 153 60% 42%;
+    --ring: 92 49% 43%;
     --radius: 0.375rem;
 
     --sidebar: 214.3 32% 93%;
@@ -34,15 +34,15 @@
   }
 
   .dark {
-    /* Modern Medical Dark Palette (Clean Emerald Green) */
+    /* Modern Medical Dark Palette (Brand Logo Green) */
     --background: 224 22% 8%; /* #0F1117 */
     --foreground: 0 0% 93%; /* #EDEDED */
     --card: 218 18% 13%; /* #1B1F26 */
     --card-foreground: 0 0% 98%;
     --popover: 218 18% 13%;
     --popover-foreground: 0 0% 98%;
-    --primary: 153 60% 53%; /* Modern Clean Emerald Green #3ECF8E / #10B981 */
-    --primary-foreground: 144 80% 10%;
+    --primary: 92 58% 50%; /* Modern Brand Logo Green #77B33E / #82C247 */
+    --primary-foreground: 92 90% 10%;
     --secondary: 220 14% 11%;
     --secondary-foreground: 0 0% 98%;
     --muted: 220 14% 16%;
@@ -53,7 +53,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 220 16% 20%;
     --input: 220 16% 20%;
-    --ring: 153 60% 53%;
+    --ring: 92 58% 50%;
 
     --sidebar: 225 17% 8%;
     --sidebar-foreground: 0 0% 90%;

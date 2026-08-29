@@ -53,7 +53,7 @@ export default function GamjeeProcessingStationPage() {
             </h1>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Execute sequential fabric preparation: Pinning → Folding → Cutting with automated carry-forward.
+            Execute unified fabric preparation (Pinning, Folding & Cutting) to produce cut Gamjee pieces for rolling.
           </p>
         </div>
 
@@ -68,8 +68,8 @@ export default function GamjeeProcessingStationPage() {
       <Card className="p-5 bg-card border-border">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-sm font-bold text-foreground">Batches Awaiting Processing</h3>
-            <p className="text-xs text-muted-foreground">Select a batch to record next processing operation</p>
+            <h3 className="text-sm font-bold text-foreground">Batches Awaiting Fabric Preparation</h3>
+            <p className="text-xs text-muted-foreground">Select a batch to complete pinning, folding & cutting preparation</p>
           </div>
           <span className="text-xs font-mono font-semibold text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded">
             {processingBatches.length} Active Jobs
@@ -105,15 +105,15 @@ export default function GamjeeProcessingStationPage() {
 
                 <div className="flex items-center justify-between text-xs pt-2 border-t border-border/60">
                   <span className="text-muted-foreground font-mono">
-                    WIP: <strong>{Number(b.currentQuantity)} {b.currentUom || 'm'}</strong>
+                    Target: <strong>{Number(b.productionQuantity || 0)} Pieces</strong>
                   </span>
                   <Button
                     size="sm"
-                    className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700 text-white gap-1"
+                    className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
                     onClick={() => setSelectedBatchForOp(b)}
                   >
-                    <Play className="h-3 w-3" />
-                    <span>Process</span>
+                    <Scissors className="h-3 w-3" />
+                    <span>Prepare Fabric</span>
                   </Button>
                 </div>
               </div>

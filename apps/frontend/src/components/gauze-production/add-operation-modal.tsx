@@ -198,13 +198,6 @@ export function AddOperationModal({ batch, isOpen, onClose, onSuccess }: AddOper
           />
         </div>
 
-        <Input
-          label="Operation Notes / Shift Remarks"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="e.g. Cut into 4-inch strips with clean sealed edges"
-        />
-
         <div className="pt-3 border-t border-border flex items-center justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel

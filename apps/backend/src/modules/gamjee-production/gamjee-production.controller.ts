@@ -21,6 +21,7 @@ import {
   CreateGamjeeSizeDto,
   CreateGamjeeOperationTypeDto,
   CreateGamjeeProductMasterDto,
+  CreateGamjeeCottonSpecDto,
 } from './dto/master.dto';
 import { GamjeeBatchQueryDto } from './dto/query.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -116,7 +117,7 @@ export class GamjeeProductionController {
   }
 
   @Get('masters')
-  @ApiOperation({ summary: 'Get Gamjee Sizes, Operations, and Product Masters' })
+  @ApiOperation({ summary: 'Get Gamjee Sizes, Operations, Product Masters, and Cotton Specifications' })
   async getMasters() {
     return this.gamjeeProductionService.getMasters();
   }
@@ -173,5 +174,23 @@ export class GamjeeProductionController {
   @ApiOperation({ summary: 'Delete a Gamjee Product Master' })
   async deleteProductMaster(@Param('id') id: string) {
     return this.gamjeeProductionService.deleteProductMaster(id);
+  }
+
+  @Post('masters/cotton-specs')
+  @ApiOperation({ summary: 'Create a new Gamjee Cotton Roll Specification' })
+  async createCottonSpec(@Body() dto: CreateGamjeeCottonSpecDto) {
+    return this.gamjeeProductionService.createCottonSpec(dto);
+  }
+
+  @Put('masters/cotton-specs/:id')
+  @ApiOperation({ summary: 'Update a Gamjee Cotton Roll Specification' })
+  async updateCottonSpec(@Param('id') id: string, @Body() dto: Partial<CreateGamjeeCottonSpecDto>) {
+    return this.gamjeeProductionService.updateCottonSpec(id, dto);
+  }
+
+  @Delete('masters/cotton-specs/:id')
+  @ApiOperation({ summary: 'Delete a Gamjee Cotton Roll Specification' })
+  async deleteCottonSpec(@Param('id') id: string) {
+    return this.gamjeeProductionService.deleteCottonSpec(id);
   }
 }

@@ -186,13 +186,6 @@ export function SendBleachingModal({ batch, isOpen, onClose, onSuccess }: SendBl
           </div>
         </div>
 
-        <Input
-          label="Dispatch Remarks / Vehicle / Delivery Instructions"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="e.g. Dispatched via Truck TN-29-BF-4412, driver Murugan"
-        />
-
         <div className="pt-3 border-t border-border flex items-center justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel

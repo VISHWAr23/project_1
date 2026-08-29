@@ -71,6 +71,9 @@ export default function RawMaterialsCustomersPage() {
     alternatePhone: '',
     gstin: '',
     panNo: '',
+    dlNo: '',
+    regdNo: '',
+    transportName: '',
     address: '',
     shippingAddress: '',
     city: '',
@@ -108,6 +111,9 @@ export default function RawMaterialsCustomersPage() {
         alternatePhone: '',
         gstin: '',
         panNo: '',
+        dlNo: '',
+        regdNo: '',
+        transportName: '',
         address: '',
         shippingAddress: '',
         city: '',
@@ -134,6 +140,9 @@ export default function RawMaterialsCustomersPage() {
       alternatePhone: customer.alternatePhone || '',
       gstin: customer.gstin || '',
       panNo: customer.panNo || '',
+      dlNo: customer.dlNo || '',
+      regdNo: customer.regdNo || '',
+      transportName: customer.transportName || '',
       address: customer.address || '',
       shippingAddress: customer.shippingAddress || '',
       city: customer.city || '',
@@ -505,6 +514,21 @@ export default function RawMaterialsCustomersPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <Input
+              label="D.L. No. / Regd. No."
+              placeholder="e.g. DL-20B/21B-4492"
+              value={formData.dlNo}
+              onChange={(e) => setFormData({ ...formData, dlNo: e.target.value })}
+            />
+            <Input
+              label="Preferred Transport Name"
+              placeholder="e.g. VRL Logistics / SRS Travels"
+              value={formData.transportName}
+              onChange={(e) => setFormData({ ...formData, transportName: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input
               label="GSTIN Number"
               placeholder="33AAACA0000A1Z5"
               value={formData.gstin}
@@ -521,7 +545,7 @@ export default function RawMaterialsCustomersPage() {
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">Billing / Clinic Address</label>
             <textarea
-              className="w-full bg-secondary/50 border border-border rounded-md text-xs p-2 text-foreground focus:outline-none focus:border-[#3ECF8E]"
+              className="w-full bg-secondary/50 border border-border rounded-md text-xs p-2 text-foreground focus:outline-none focus:border-[#77B33E]"
               rows={2}
               placeholder="Full hospital or clinic billing address..."
               value={formData.address}
@@ -581,6 +605,21 @@ export default function RawMaterialsCustomersPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <Input
+              label="D.L. No. / Regd. No."
+              placeholder="e.g. DL-20B/21B-4492"
+              value={editFormData.dlNo}
+              onChange={(e) => setEditFormData({ ...editFormData, dlNo: e.target.value })}
+            />
+            <Input
+              label="Preferred Transport Name"
+              placeholder="e.g. VRL Logistics / SRS Travels"
+              value={editFormData.transportName}
+              onChange={(e) => setEditFormData({ ...editFormData, transportName: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input
               label="Email Address"
               type="email"
               value={editFormData.email}
@@ -609,7 +648,7 @@ export default function RawMaterialsCustomersPage() {
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">Billing Address</label>
             <textarea
-              className="w-full bg-secondary/50 border border-border rounded-md text-xs p-2 text-foreground focus:outline-none focus:border-[#3ECF8E]"
+              className="w-full bg-secondary/50 border border-border rounded-md text-xs p-2 text-foreground focus:outline-none focus:border-[#77B33E]"
               rows={2}
               value={editFormData.address}
               onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
@@ -662,6 +701,14 @@ export default function RawMaterialsCustomersPage() {
               <div className="p-2.5 bg-secondary/20 rounded border border-border">
                 <span className="text-muted-foreground text-[10px] block">Phone</span>
                 <span className="font-semibold font-mono text-foreground">{viewingCustomer.phone || '—'}</span>
+              </div>
+              <div className="p-2.5 bg-secondary/20 rounded border border-border">
+                <span className="text-muted-foreground text-[10px] block">D.L. No. / Regd. No.</span>
+                <span className="font-mono font-semibold text-foreground">{viewingCustomer.dlNo || viewingCustomer.regdNo || '—'}</span>
+              </div>
+              <div className="p-2.5 bg-secondary/20 rounded border border-border">
+                <span className="text-muted-foreground text-[10px] block">Transport Carrier</span>
+                <span className="font-semibold text-foreground">{viewingCustomer.transportName || '—'}</span>
               </div>
               <div className="p-2.5 bg-secondary/20 rounded border border-border">
                 <span className="text-muted-foreground text-[10px] block">Email</span>

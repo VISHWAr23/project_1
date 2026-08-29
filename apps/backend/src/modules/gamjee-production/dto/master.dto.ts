@@ -127,3 +127,40 @@ export class CreateGamjeeProductMasterDto {
   @IsOptional()
   active?: boolean;
 }
+
+export class CreateGamjeeCottonSpecDto {
+  @ApiProperty({ description: 'Cotton Type / Name', example: '1 KG 900 Web' })
+  @IsString()
+  @IsNotEmpty()
+  cottonType!: string;
+
+  @ApiProperty({ description: 'Cotton Weight in KG', example: 1 })
+  @IsNumber()
+  @Min(0.001, { message: 'Weight must be greater than 0' })
+  weightKg!: number;
+
+  @ApiProperty({ description: 'Web specification', example: 900 })
+  @IsNumber()
+  @Min(0.001, { message: 'Web must be greater than 0' })
+  web!: number;
+
+  @ApiProperty({ description: 'Gamjee Width in CM', example: 15 })
+  @IsNumber()
+  @Min(0.001, { message: 'Gamjee width must be greater than 0' })
+  gamjeeWidthCm!: number;
+
+  @ApiProperty({ description: 'Expected pieces per cotton roll', example: 12 })
+  @IsInt()
+  @Min(1, { message: 'Pieces per roll must be greater than 0' })
+  piecesPerRoll!: number;
+
+  @ApiPropertyOptional({ description: 'Optional description or notes' })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiPropertyOptional({ description: 'Is active status', default: true })
+  @IsBoolean()
+  @IsOptional()
+  active?: boolean;
+}

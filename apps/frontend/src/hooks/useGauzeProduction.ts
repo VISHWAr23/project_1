@@ -208,14 +208,38 @@ export function useManageGauzeMasters() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['gauzeMasters'] }),
   });
 
+  const deleteType = useMutation({
+    mutationFn: (id: string) => gauzeProductionService.deleteGauzeType(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['gauzeMasters'] }),
+  });
+
+  const deleteSize = useMutation({
+    mutationFn: (id: string) => gauzeProductionService.deleteGauzeSize(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['gauzeMasters'] }),
+  });
+
+  const deleteBleaching = useMutation({
+    mutationFn: (id: string) => gauzeProductionService.deleteBleachingType(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['gauzeMasters'] }),
+  });
+
+  const deleteOperation = useMutation({
+    mutationFn: (id: string) => gauzeProductionService.deleteOperationType(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['gauzeMasters'] }),
+  });
+
   return {
     createType,
     updateType,
+    deleteType,
     createSize,
     updateSize,
+    deleteSize,
     createBleaching,
     updateBleaching,
+    deleteBleaching,
     createOperation,
     updateOperation,
+    deleteOperation,
   };
 }

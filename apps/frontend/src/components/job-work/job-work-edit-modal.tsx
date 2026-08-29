@@ -212,19 +212,6 @@ export function JobWorkEditModal({
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-foreground">
-            Work Order Remarks / Instructions
-          </label>
-          <textarea
-            rows={2}
-            value={remarks}
-            onChange={(e) => setRemarks(e.target.value)}
-            placeholder="Special processing requirements or bleaching notes..."
-            className="w-full bg-secondary/50 text-foreground text-xs p-2.5 rounded-lg border border-border focus:outline-none focus:border-primary"
-          />
-        </div>
-
         <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
           <Button variant="outline" size="sm" type="button" onClick={onClose}>
             Cancel

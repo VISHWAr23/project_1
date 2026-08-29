@@ -2,13 +2,14 @@ import { Customer } from './customers.types';
 import { RawMaterial } from './raw-materials.types';
 
 export type OrderStatus =
-  | 'DRAFT'
   | 'CONFIRMED'
+  | 'PARTIALLY_DISPATCHED'
+  | 'DISPATCHED'
+  | 'CANCELLED'
+  | 'DRAFT'
   | 'IN_PRODUCTION'
   | 'READY_FOR_DISPATCH'
-  | 'DISPATCHED'
-  | 'DELIVERED'
-  | 'CANCELLED';
+  | 'DELIVERED';
 
 export type OrderPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
 
@@ -66,6 +67,9 @@ export interface CustomerOrder {
   shippingCharges: number;
   totalAmount: number;
   paidAmount: number;
+  dlNo?: string | null;
+  regdNo?: string | null;
+  transportName?: string | null;
   shippingAddress?: string | null;
   billingAddress?: string | null;
   transportMode?: string | null;
@@ -91,11 +95,23 @@ export interface CustomerOrderStats {
   totalPaidAmount: number;
   pendingPaymentAmount: number;
   confirmedCount: number;
-  inProductionCount: number;
-  readyForDispatchCount: number;
+  partiallyDispatchedCount: number;
   dispatchedCount: number;
-  deliveredCount: number;
   cancelledCount: number;
+}
+
+export interface DispatchItemPayload {
+  itemId: string;
+  dispatchQuantity: number;
+}
+
+export interface RecordOrderDispatchPayload {
+  items: DispatchItemPayload[];
+  dispatchDate?: string;
+  transportName?: string;
+  transportMode?: string;
+  trackingNumber?: string;
+  notes?: string;
 }
 
 export interface CustomerOrderListResponse {
@@ -132,6 +148,9 @@ export interface CreateCustomerOrderPayload {
   paymentMethod?: string;
   shippingCharges?: number;
   discountAmount?: number;
+  dlNo?: string;
+  regdNo?: string;
+  transportName?: string;
   shippingAddress?: string;
   billingAddress?: string;
   transportMode?: string;

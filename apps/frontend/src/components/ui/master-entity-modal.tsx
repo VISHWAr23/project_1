@@ -118,12 +118,16 @@ export function MasterEntityModal({
   const {
     createType,
     updateType,
+    deleteType,
     createSize,
     updateSize,
+    deleteSize,
     createBleaching,
     updateBleaching,
+    deleteBleaching,
     createOperation,
     updateOperation,
+    deleteOperation,
   } = useManageGauzeMasters();
 
   useEffect(() => {
@@ -356,8 +360,21 @@ export function MasterEntityModal({
         case 'designation':
           await deleteDesignation.mutateAsync(initialData.id);
           break;
+        case 'gauzeType':
+          await deleteType.mutateAsync(initialData.id);
+          break;
+        case 'gauzeSize':
+          await deleteSize.mutateAsync(initialData.id);
+          break;
+        case 'bleachingType':
+          await deleteBleaching.mutateAsync(initialData.id);
+          break;
+        case 'operationType':
+          await deleteOperation.mutateAsync(initialData.id);
+          break;
       }
       toast('Deleted', 'Record removed successfully', 'success');
+      if (onSuccess) onSuccess({ id: initialData.id, deleted: true });
       onClose();
     } catch (err: any) {
       toast('Error', err?.message || 'Failed to delete record', 'error');
@@ -367,24 +384,34 @@ export function MasterEntityModal({
   const isPending =
     createCategory.isPending ||
     updateCategory.isPending ||
+    deleteCategory.isPending ||
     createSupplier.isPending ||
     updateSupplier.isPending ||
+    deleteSupplier.isPending ||
     createLocation.isPending ||
     updateLocation.isPending ||
+    deleteLocation.isPending ||
     createDepartment.isPending ||
     updateDepartment.isPending ||
+    deleteDepartment.isPending ||
     createDesignation.isPending ||
     updateDesignation.isPending ||
+    deleteDesignation.isPending ||
     createCompany.isPending ||
     updateCompany.isPending ||
+    deleteCompany.isPending ||
     createType.isPending ||
     updateType.isPending ||
+    deleteType.isPending ||
     createSize.isPending ||
     updateSize.isPending ||
+    deleteSize.isPending ||
     createBleaching.isPending ||
     updateBleaching.isPending ||
+    deleteBleaching.isPending ||
     createOperation.isPending ||
-    updateOperation.isPending;
+    updateOperation.isPending ||
+    deleteOperation.isPending;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={getEntityTitle()} maxWidth={entityType === 'supplier' || entityType === 'jobWorkCompany' ? 'lg' : 'md'}>
@@ -530,14 +557,6 @@ export function MasterEntityModal({
             placeholder="Order in which this operation is performed (1, 2, 3...)"
           />
         )}
-
-        {/* Common Description */}
-        <Input
-          label="Description / Additional Notes"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Optional specifications or notes..."
-        />
 
         {/* Footer Actions */}
         <div className="pt-3 border-t border-border flex items-center justify-between gap-2">

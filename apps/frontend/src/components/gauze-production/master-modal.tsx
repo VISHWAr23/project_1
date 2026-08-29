@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Trash2 } from 'lucide-react';
 import { useManageGauzeMasters } from '@/hooks/useGauzeProduction';
 import { useToast } from '@/components/ui/toast';
 
@@ -12,19 +13,24 @@ interface MasterModalProps {
   onClose: () => void;
   type: 'gauzeType' | 'gauzeSize' | 'bleachingType' | 'operationType';
   initialData?: any;
+  onSuccess?: (savedItem: any) => void;
 }
 
-export function MasterModal({ isOpen, onClose, type, initialData }: MasterModalProps) {
+export function MasterModal({ isOpen, onClose, type, initialData, onSuccess }: MasterModalProps) {
   const { toast } = useToast();
   const {
     createType,
     updateType,
+    deleteType,
     createSize,
     updateSize,
+    deleteSize,
     createBleaching,
     updateBleaching,
+    deleteBleaching,
     createOperation,
     updateOperation,
+    deleteOperation,
   } = useManageGauzeMasters();
 
   const isEdit = Boolean(initialData?.id);
@@ -68,17 +74,18 @@ export function MasterModal({ isOpen, onClose, type, initialData }: MasterModalP
       return;
     }
     try {
+      let result: any = null;
       if (type === 'gauzeType') {
-        if (isEdit) await updateType.mutateAsync({ id: initialData.id, payload: { name, code, description } });
-        else await createType.mutateAsync({ name, code, description, active: true });
+        if (isEdit) result = await updateType.mutateAsync({ id: initialData.id, payload: { name, code, description } });
+        else result = await createType.mutateAsync({ name, code, description, active: true });
       } else if (type === 'gauzeSize') {
         if (isEdit)
-          await updateSize.mutateAsync({
+          result = await updateSize.mutateAsync({
             id: initialData.id,
             payload: { name: name || `${width} ${widthUom} x ${length} ${lengthUom}`, width, widthUom, length, lengthUom, description },
           });
         else
-          await createSize.mutateAsync({
+          result = await createSize.mutateAsync({
             name: name || `${width} ${widthUom} x ${length} ${lengthUom}`,
             width,
             widthUom,
@@ -88,29 +95,53 @@ export function MasterModal({ isOpen, onClose, type, initialData }: MasterModalP
             active: true,
           });
       } else if (type === 'bleachingType') {
-        if (isEdit) await updateBleaching.mutateAsync({ id: initialData.id, payload: { name, code, description } });
-        else await createBleaching.mutateAsync({ name, code, description, active: true });
+        if (isEdit) result = await updateBleaching.mutateAsync({ id: initialData.id, payload: { name, code, description } });
+        else result = await createBleaching.mutateAsync({ name, code, description, active: true });
       } else if (type === 'operationType') {
-        if (isEdit) await updateOperation.mutateAsync({ id: initialData.id, payload: { name, code, sequence, description } });
-        else await createOperation.mutateAsync({ name, code, sequence, description, active: true });
+        if (isEdit) result = await updateOperation.mutateAsync({ id: initialData.id, payload: { name, code, sequence, description } });
+        else result = await createOperation.mutateAsync({ name, code, sequence, description, active: true });
       }
 
       toast('Saved', `${getTitle()} saved successfully!`, 'success');
+      if (onSuccess) onSuccess(result);
       onClose();
     } catch (err: any) {
-      toast('Error', err.message || 'Failed to save master record', 'error');
+      toast('Error', err?.message || 'Failed to save master record', 'error');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!initialData?.id) return;
+    const confirmDelete = window.confirm(`Are you sure you want to delete "${name || initialData?.name || 'this item'}"?`);
+    if (!confirmDelete) return;
+
+    try {
+      if (type === 'gauzeType') await deleteType.mutateAsync(initialData.id);
+      else if (type === 'gauzeSize') await deleteSize.mutateAsync(initialData.id);
+      else if (type === 'bleachingType') await deleteBleaching.mutateAsync(initialData.id);
+      else if (type === 'operationType') await deleteOperation.mutateAsync(initialData.id);
+
+      toast('Deleted', 'Record removed successfully', 'success');
+      if (onSuccess) onSuccess({ id: initialData.id, deleted: true });
+      onClose();
+    } catch (err: any) {
+      toast('Error', err?.message || 'Failed to delete record', 'error');
     }
   };
 
   const isPending =
     createType.isPending ||
     updateType.isPending ||
+    deleteType.isPending ||
     createSize.isPending ||
     updateSize.isPending ||
+    deleteSize.isPending ||
     createBleaching.isPending ||
     updateBleaching.isPending ||
+    deleteBleaching.isPending ||
     createOperation.isPending ||
-    updateOperation.isPending;
+    updateOperation.isPending ||
+    deleteOperation.isPending;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={getTitle()}>
@@ -191,20 +222,28 @@ export function MasterModal({ isOpen, onClose, type, initialData }: MasterModalP
           />
         )}
 
-        <Input
-          label="Description / Specifications"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Detailed description, standards or chemical ratios"
-        />
-
-        <div className="pt-3 border-t border-border flex items-center justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="button" onClick={() => handleSubmit()} isLoading={isPending}>
-            Save Master Record
-          </Button>
+        {/* Footer Actions */}
+        <div className="pt-3 border-t border-border flex items-center justify-between gap-2">
+          {isEdit && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDelete}
+              className="text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 border-rose-500/30 text-xs"
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+              Delete Record
+            </Button>
+          )}
+          <div className="flex items-center gap-2 ml-auto">
+            <Button type="button" variant="outline" onClick={onClose} size="sm">
+              Cancel
+            </Button>
+            <Button type="button" onClick={() => handleSubmit()} isLoading={isPending} size="sm" className="bg-blue-600 hover:bg-blue-700">
+              Save Master Record
+            </Button>
+          </div>
         </div>
       </div>
     </Modal>

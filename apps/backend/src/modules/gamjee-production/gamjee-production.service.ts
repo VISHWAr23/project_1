@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException, OnModuleInit } from '@nestjs/common';
 import { prisma, GamjeeProductionStatus, TransactionType, Prisma } from '@ims/database';
 import { CreateGamjeeProductionBatchDto, UpdateGamjeeProductionBatchDto } from './dto/create-batch.dto';
 import { IssueGamjeeMaterialsDto } from './dto/issue-materials.dto';
@@ -8,6 +8,7 @@ import {
   CreateGamjeeSizeDto,
   CreateGamjeeOperationTypeDto,
   CreateGamjeeProductMasterDto,
+  CreateGamjeeCottonSpecDto,
 } from './dto/master.dto';
 import { GamjeeBatchQueryDto } from './dto/query.dto';
 
@@ -38,14 +39,29 @@ export class GamjeeProductionService implements OnModuleInit {
       if (opCount === 0) {
         await prisma.gamjeeOperationMaster.createMany({
           data: [
-            { name: 'Pinning', code: 'OP-PIN', sequence: 1, description: 'Fabric pinning & edge alignment' },
-            { name: 'Folding', code: 'OP-FOLD', sequence: 2, description: 'Multi-layer longitudinal folding' },
-            { name: 'Cutting', code: 'OP-CUT', sequence: 3, description: 'Precision sizing and cut-off to required roll width' },
-            { name: 'Cotton Preparation', code: 'OP-COTPREP', sequence: 4, description: 'Cotton wool layer prep & weight inspection' },
-            { name: 'Rolling', code: 'OP-ROLL', sequence: 5, description: 'Combining prepared fabric + cotton and rolling into finished rolls' },
-            { name: 'Inspection', code: 'OP-QC', sequence: 6, description: 'Finished roll QC and visual inspection' },
+            { name: 'Fabric Preparation (Pinning, Folding & Cutting)', code: 'OP-FABPREP', sequence: 1, description: 'Pinning fold alignment, longitudinal folding, and precision cutting to Gamjee roll pieces' },
+            { name: 'Pinning', code: 'OP-PIN', sequence: 2, description: 'Fabric pinning & edge alignment' },
+            { name: 'Folding', code: 'OP-FOLD', sequence: 3, description: 'Multi-layer longitudinal folding' },
+            { name: 'Cutting', code: 'OP-CUT', sequence: 4, description: 'Precision sizing and cut-off to required roll width' },
+            { name: 'Cotton Preparation', code: 'OP-COTPREP', sequence: 5, description: 'Cotton wool layer prep & weight inspection' },
+            { name: 'Rolling', code: 'OP-ROLL', sequence: 6, description: 'Combining prepared fabric + cotton and rolling into finished rolls' },
+            { name: 'Inspection', code: 'OP-QC', sequence: 7, description: 'Finished roll QC and visual inspection' },
           ],
         });
+      } else {
+        const prepOpExists = await prisma.gamjeeOperationMaster.findFirst({
+          where: { code: 'OP-FABPREP' },
+        });
+        if (!prepOpExists) {
+          await prisma.gamjeeOperationMaster.create({
+            data: {
+              name: 'Fabric Preparation (Pinning, Folding & Cutting)',
+              code: 'OP-FABPREP',
+              sequence: 1,
+              description: 'Pinning fold alignment, longitudinal folding, and precision cutting to Gamjee roll pieces',
+            },
+          });
+        }
       }
 
       const prodCount = await prisma.gamjeeProductMaster.count();
@@ -57,6 +73,35 @@ export class GamjeeProductionService implements OnModuleInit {
             { productName: 'Cotton Gamjee Roll (10cm x 8m)', gamjeeType: 'Narrow Band', width: 10, widthUom: 'cm', rollLength: 8, lengthUom: 'm', cottonRequirement: 0.070, cottonUom: 'kg', fabricRequirement: 8.0, fabricUom: 'm' },
           ],
         });
+      }
+
+      const cottonSpecCount = await (prisma as any).gamjeeCottonSpecification?.count?.();
+      if (cottonSpecCount === 0) {
+        await (prisma as any).gamjeeCottonSpecification.createMany({
+          data: [
+            { cottonType: '1 KG 900 Web', weightKg: 1.0, web: 900, gamjeeWidthCm: 15, piecesPerRoll: 12, description: 'Standard 1KG 900 Web cotton roll for 15cm width' },
+            { cottonType: '1 KG 900 Web', weightKg: 1.0, web: 900, gamjeeWidthCm: 10, piecesPerRoll: 15, description: 'Standard 1KG 900 Web cotton roll for 10cm width' },
+          ],
+        });
+      }
+
+      // Ensure planning columns exist on gamjee_production_batches individually
+      const columns = [
+        `ALTER TABLE gamjee_production_batches ADD COLUMN IF NOT EXISTS calculation_mode VARCHAR(50) DEFAULT 'FROM_FABRIC'`,
+        `ALTER TABLE gamjee_production_batches ADD COLUMN IF NOT EXISTS pinning_size_meters NUMERIC(10, 2)`,
+        `ALTER TABLE gamjee_production_batches ADD COLUMN IF NOT EXISTS folding_cuts_count INT`,
+        `ALTER TABLE gamjee_production_batches ADD COLUMN IF NOT EXISTS cotton_spec_id UUID`,
+        `ALTER TABLE gamjee_production_batches ADD COLUMN IF NOT EXISTS cotton_type_name VARCHAR(150)`,
+        `ALTER TABLE gamjee_production_batches ADD COLUMN IF NOT EXISTS planned_fabric_meters NUMERIC(10, 2)`,
+        `ALTER TABLE gamjee_production_batches ADD COLUMN IF NOT EXISTS planned_cotton_kg NUMERIC(10, 3)`,
+      ];
+
+      for (const colSql of columns) {
+        try {
+          await prisma.$executeRawUnsafe(colSql);
+        } catch {
+          // Column already exists
+        }
       }
     } catch (e) {
       console.warn('Gamjee masters initialization check:', e);
@@ -269,73 +314,107 @@ export class GamjeeProductionService implements OnModuleInit {
    * Get single batch complete detail tree
    */
   async getBatchById(id: string) {
-    const batch = await prisma.gamjeeProductionBatch.findUnique({
-      where: { id },
-      include: {
-        finishedProduct: {
-          include: {
-            unit: true,
-            category: true,
-            storageLocation: true,
-          },
-        },
-        gamjeeSize: true,
-        createdBy: {
-          select: { id: true, email: true },
-        },
-        materialInputs: {
-          include: {
-            product: {
-              include: { unit: true },
-            },
-            inventoryBatch: true,
-            warehouse: true,
-          },
-          orderBy: { createdAt: 'asc' },
-        },
-        operations: {
-          include: {
-            operationType: true,
-            employee: true,
-          },
-          orderBy: { sequenceNumber: 'asc' },
-        },
-        rollingEntries: {
-          include: {
-            employee: true,
-            finishedRolls: {
-              include: { warehouse: true },
-            },
-          },
-          orderBy: { createdAt: 'asc' },
-        },
-        finishedRolls: {
-          include: {
-            finishedProduct: true,
-            warehouse: true,
-          },
-          orderBy: { createdAt: 'asc' },
-        },
-        materialMovements: {
-          include: {
-            fromLocation: true,
-            toLocation: true,
-          },
-          orderBy: { createdAt: 'asc' },
-        },
-        statusHistory: {
-          include: {
-            changedByUser: {
-              select: { id: true, email: true },
-            },
-          },
-          orderBy: { changedAt: 'asc' },
+    let batch: any = null;
+    const baseInclude = {
+      finishedProduct: {
+        include: {
+          unit: true,
+          category: true,
+          storageLocation: true,
         },
       },
-    });
+      gamjeeSize: true,
+      createdBy: {
+        select: { id: true, email: true },
+      },
+      materialInputs: {
+        include: {
+          product: {
+            include: { unit: true },
+          },
+          inventoryBatch: true,
+          warehouse: true,
+        },
+        orderBy: { createdAt: 'asc' },
+      },
+      operations: {
+        include: {
+          operationType: true,
+          employee: true,
+        },
+        orderBy: { sequenceNumber: 'asc' },
+      },
+      rollingEntries: {
+        include: {
+          employee: true,
+          finishedRolls: {
+            include: { warehouse: true },
+          },
+        },
+        orderBy: { createdAt: 'asc' },
+      },
+      finishedRolls: {
+        include: {
+          finishedProduct: true,
+          warehouse: true,
+        },
+        orderBy: { createdAt: 'asc' },
+      },
+      materialMovements: {
+        include: {
+          fromLocation: true,
+          toLocation: true,
+        },
+        orderBy: { createdAt: 'asc' },
+      },
+      statusHistory: {
+        include: {
+          changedByUser: {
+            select: { id: true, email: true },
+          },
+        },
+        orderBy: { changedAt: 'asc' },
+      },
+    };
+
+    try {
+      batch = await (prisma.gamjeeProductionBatch as any).findUnique({
+        where: { id },
+        include: {
+          ...baseInclude,
+          cottonSpec: true,
+        },
+      });
+    } catch {
+      batch = await (prisma.gamjeeProductionBatch as any).findUnique({
+        where: { id },
+        include: baseInclude,
+      });
+    }
 
     if (!batch) {
-      throw new NotFoundException(`Gamjee Production Batch with ID ${id} not found`);
+      throw new NotFoundException(`Gamjee Production Batch ${id} not found`);
+    }
+
+    // Ensure planning fields are populated
+    if (batch && batch.calculationMode === undefined) {
+      try {
+        const extra: any[] = await prisma.$queryRawUnsafe(
+          `SELECT calculation_mode, pinning_size_meters, folding_cuts_count, cotton_spec_id, cotton_type_name, planned_fabric_meters, planned_cotton_kg FROM gamjee_production_batches WHERE id = $1::uuid`,
+          batch.id
+        );
+        if (extra && extra.length > 0) {
+          batch.calculationMode = extra[0].calculation_mode;
+          batch.pinningSizeMeters = extra[0].pinning_size_meters;
+          batch.foldingCutsCount = extra[0].folding_cuts_count;
+          batch.cottonSpecId = extra[0].cotton_spec_id;
+          batch.cottonTypeName = extra[0].cotton_type_name;
+          batch.plannedFabricMeters = extra[0].planned_fabric_meters;
+          batch.plannedCottonKg = extra[0].planned_cotton_kg;
+        }
+      } catch {
+        // Ignore fallback error
+      }
     }
 
     return batch;
@@ -355,7 +434,8 @@ export class GamjeeProductionService implements OnModuleInit {
     const batchNumber = await this.generateSequenceNumber('GR', 'batch');
 
     const result = await prisma.$transaction(async (tx) => {
-      const batch = await tx.gamjeeProductionBatch.create({
+      // 1. Create base batch record
+      const batch = await (tx as any).gamjeeProductionBatch.create({
         data: {
           batchNumber,
           finishedProductId: dto.finishedProductId,
@@ -377,7 +457,45 @@ export class GamjeeProductionService implements OnModuleInit {
         },
       });
 
-      // Audit status creation
+      // 2. Persist calculation & planning parameters to PostgreSQL table
+      try {
+        const calcMode = dto.calculationMode || 'FROM_FABRIC';
+        const pinSize = dto.pinningSizeMeters ? Number(dto.pinningSizeMeters) : null;
+        const foldCuts = dto.foldingCutsCount ? Number(dto.foldingCutsCount) : null;
+        const cotSpecId = dto.cottonSpecId || null;
+        const cotName = dto.cottonTypeName || null;
+        const planFab = dto.plannedFabricMeters ? Number(dto.plannedFabricMeters) : null;
+        const planCot = dto.plannedCottonKg ? Number(dto.plannedCottonKg) : null;
+
+        if (cotSpecId) {
+          await tx.$executeRaw`
+            UPDATE gamjee_production_batches 
+            SET calculation_mode = ${calcMode}, 
+                pinning_size_meters = ${pinSize}, 
+                folding_cuts_count = ${foldCuts}, 
+                cotton_spec_id = ${cotSpecId}::uuid, 
+                cotton_type_name = ${cotName}, 
+                planned_fabric_meters = ${planFab}, 
+                planned_cotton_kg = ${planCot} 
+            WHERE id = ${batch.id}::uuid
+          `;
+        } else {
+          await tx.$executeRaw`
+            UPDATE gamjee_production_batches 
+            SET calculation_mode = ${calcMode}, 
+                pinning_size_meters = ${pinSize}, 
+                folding_cuts_count = ${foldCuts}, 
+                cotton_type_name = ${cotName}, 
+                planned_fabric_meters = ${planFab}, 
+                planned_cotton_kg = ${planCot} 
+            WHERE id = ${batch.id}::uuid
+          `;
+        }
+      } catch (err) {
+        console.warn('Could not update extra planning fields on gamjee_production_batches:', err);
+      }
+
+      // 3. Audit status creation
       await tx.gamjeeBatchStatusHistory.create({
         data: {
           productionBatchId: batch.id,
@@ -387,6 +505,15 @@ export class GamjeeProductionService implements OnModuleInit {
           remarks: 'Gamjee Production Batch initiated in DRAFT stage',
         },
       });
+
+      // Attach planning fields to returned object
+      (batch as any).calculationMode = dto.calculationMode || 'FROM_FABRIC';
+      (batch as any).pinningSizeMeters = dto.pinningSizeMeters || null;
+      (batch as any).foldingCutsCount = dto.foldingCutsCount || null;
+      (batch as any).cottonSpecId = dto.cottonSpecId || null;
+      (batch as any).cottonTypeName = dto.cottonTypeName || null;
+      (batch as any).plannedFabricMeters = dto.plannedFabricMeters || null;
+      (batch as any).plannedCottonKg = dto.plannedCottonKg || null;
 
       return batch;
     });
@@ -624,16 +751,19 @@ export class GamjeeProductionService implements OnModuleInit {
     const opDate = new Date(dto.operationDate);
 
     // Determine next stage based on operation code
-    let nextStage = batch.currentStage;
-    let nextStatus = batch.status;
+    let nextStage = 'READY_FOR_ROLLING';
+    let nextStatus = GamjeeProductionStatus.READY_FOR_ROLLING;
 
-    if (opType.code === 'OP-PIN' || opType.name.toLowerCase().includes('pin')) {
-      nextStage = 'FOLDING';
-      nextStatus = GamjeeProductionStatus.PINNING;
-    } else if (opType.code === 'OP-FOLD' || opType.name.toLowerCase().includes('fold')) {
-      nextStage = 'CUTTING';
-      nextStatus = GamjeeProductionStatus.FOLDING;
-    } else if (opType.code === 'OP-CUT' || opType.name.toLowerCase().includes('cut')) {
+    if (
+      opType.code === 'OP-FABPREP' ||
+      opType.code === 'OP-CUT' ||
+      opType.code === 'OP-PIN' ||
+      opType.code === 'OP-FOLD' ||
+      opType.name.toLowerCase().includes('prep') ||
+      opType.name.toLowerCase().includes('cut') ||
+      opType.name.toLowerCase().includes('pin') ||
+      opType.name.toLowerCase().includes('fold')
+    ) {
       nextStage = 'READY_FOR_ROLLING';
       nextStatus = GamjeeProductionStatus.READY_FOR_ROLLING;
     }
@@ -999,10 +1129,10 @@ export class GamjeeProductionService implements OnModuleInit {
    * 6. Complete Traceability Chain
    */
   async getTraceability(batchId: string) {
-    const batch = await this.getBatchById(batchId);
+    const batch: any = await this.getBatchById(batchId);
 
-    const fabricInput = batch.materialInputs.find((m) => m.materialType === 'BLEACHED_FABRIC');
-    const cottonInput = batch.materialInputs.find((m) => m.materialType === 'COTTON_ROLL');
+    const fabricInput = batch.materialInputs?.find((m: any) => m.materialType === 'BLEACHED_FABRIC');
+    const cottonInput = batch.materialInputs?.find((m: any) => m.materialType === 'COTTON_ROLL');
 
     return {
       batchSummary: {
@@ -1014,14 +1144,14 @@ export class GamjeeProductionService implements OnModuleInit {
         currentStage: batch.currentStage,
         productionDate: batch.productionDate,
         completionDate: batch.completionDate,
-        totalRolls: batch.finishedRolls.reduce((acc, r) => acc + r.rollCount, 0),
+        totalRolls: (batch.finishedRolls || []).reduce((acc: number, r: any) => acc + (r.rollCount || 0), 0),
       },
       forwardTraceability: {
         rawMaterials: {
           bleachedFabric: fabricInput
             ? {
-                product: fabricInput.product.name,
-                sku: fabricInput.product.sku,
+                product: fabricInput.product?.name,
+                sku: fabricInput.product?.sku,
                 lotNumber: fabricInput.rollOrBatchNumber || fabricInput.inventoryBatch?.batchNumber || 'N/A',
                 quantityIssued: fabricInput.quantityIssued,
                 uom: fabricInput.uom,
@@ -1029,16 +1159,16 @@ export class GamjeeProductionService implements OnModuleInit {
             : null,
           cottonRoll: cottonInput
             ? {
-                product: cottonInput.product.name,
-                sku: cottonInput.product.sku,
+                product: cottonInput.product?.name,
+                sku: cottonInput.product?.sku,
                 lotNumber: cottonInput.rollOrBatchNumber || cottonInput.inventoryBatch?.batchNumber || 'N/A',
                 quantityIssued: cottonInput.quantityIssued,
                 uom: cottonInput.uom,
               }
             : null,
         },
-        operations: batch.operations.map((op) => ({
-          operation: op.operationType.name,
+        operations: (batch.operations || []).map((op: any) => ({
+          operation: op.operationType?.name,
           sequence: op.sequenceNumber,
           input: op.inputQuantity,
           output: op.outputQuantity,
@@ -1046,7 +1176,7 @@ export class GamjeeProductionService implements OnModuleInit {
           operator: op.employee ? `${op.employee.firstName} ${op.employee.lastName}` : 'Unassigned',
           date: op.operationDate,
         })),
-        rolling: batch.rollingEntries.map((rl) => ({
+        rolling: (batch.rollingEntries || []).map((rl: any) => ({
           rollingNumber: rl.rollingNumber,
           fabricUsed: rl.fabricInputQuantity,
           cottonUsed: rl.cottonInputQuantity,
@@ -1055,7 +1185,7 @@ export class GamjeeProductionService implements OnModuleInit {
           operator: rl.employee ? `${rl.employee.firstName} ${rl.employee.lastName}` : 'Unassigned',
           date: rl.rollingDate,
         })),
-        finishedGoods: batch.finishedRolls.map((fr) => ({
+        finishedGoods: (batch.finishedRolls || []).map((fr: any) => ({
           rollBatchNumber: fr.rollBatchNumber,
           rollCount: fr.rollCount,
           totalLength: fr.totalLength,
@@ -1193,13 +1323,17 @@ export class GamjeeProductionService implements OnModuleInit {
    * Master Data APIs
    */
   async getMasters() {
-    const [sizes, operations, products] = await Promise.all([
+    const [sizes, operations, products, cottonSpecs] = await Promise.all([
       prisma.gamjeeSizeMaster.findMany({ where: { active: true }, orderBy: { name: 'asc' } }),
       prisma.gamjeeOperationMaster.findMany({ where: { active: true }, orderBy: { sequence: 'asc' } }),
       prisma.gamjeeProductMaster.findMany({ where: { active: true }, orderBy: { productName: 'asc' } }),
+      (prisma as any).gamjeeCottonSpecification.findMany({
+        where: { active: true },
+        orderBy: [{ cottonType: 'asc' }, { gamjeeWidthCm: 'asc' }],
+      }),
     ]);
 
-    return { sizes, operations, products };
+    return { sizes, operations, products, cottonSpecs: cottonSpecs || [] };
   }
 
   async createSize(dto: CreateGamjeeSizeDto) {
@@ -1262,6 +1396,103 @@ export class GamjeeProductionService implements OnModuleInit {
     if (!prod) throw new NotFoundException(`Product master with ID ${id} not found`);
     return prisma.gamjeeProductMaster.delete({
       where: { id },
+    });
+  }
+
+  /**
+   * Cotton Roll Specification Master APIs
+   */
+  async createCottonSpec(dto: CreateGamjeeCottonSpecDto) {
+    if (dto.weightKg <= 0) throw new BadRequestException('Cotton weight must be greater than 0');
+    if (dto.web <= 0) throw new BadRequestException('Web must be greater than 0');
+    if (dto.gamjeeWidthCm <= 0) throw new BadRequestException('Gamjee width must be greater than 0');
+    if (dto.piecesPerRoll <= 0) throw new BadRequestException('Pieces per roll must be greater than 0');
+
+    // Duplicate check for compound key: cottonType + weightKg + web + gamjeeWidthCm
+    const existing = await (prisma as any).gamjeeCottonSpecification.findFirst({
+      where: {
+        cottonType: dto.cottonType,
+        weightKg: dto.weightKg,
+        web: dto.web,
+        gamjeeWidthCm: dto.gamjeeWidthCm,
+      },
+    });
+
+    if (existing) {
+      throw new ConflictException(
+        `Cotton specification for "${dto.cottonType}" (${dto.weightKg} KG, Web: ${dto.web}) with Gamjee Width ${dto.gamjeeWidthCm} CM already exists.`
+      );
+    }
+
+    return (prisma as any).gamjeeCottonSpecification.create({
+      data: {
+        cottonType: dto.cottonType,
+        weightKg: dto.weightKg,
+        web: dto.web,
+        gamjeeWidthCm: dto.gamjeeWidthCm,
+        piecesPerRoll: dto.piecesPerRoll,
+        description: dto.description || null,
+        active: dto.active ?? true,
+      },
+    });
+  }
+
+  async updateCottonSpec(id: string, dto: Partial<CreateGamjeeCottonSpecDto>) {
+    const spec = await (prisma as any).gamjeeCottonSpecification.findUnique({ where: { id } });
+    if (!spec) throw new NotFoundException(`Cotton specification with ID ${id} not found`);
+
+    if (dto.weightKg !== undefined && dto.weightKg <= 0) throw new BadRequestException('Cotton weight must be greater than 0');
+    if (dto.web !== undefined && dto.web <= 0) throw new BadRequestException('Web must be greater than 0');
+    if (dto.gamjeeWidthCm !== undefined && dto.gamjeeWidthCm <= 0) throw new BadRequestException('Gamjee width must be greater than 0');
+    if (dto.piecesPerRoll !== undefined && dto.piecesPerRoll <= 0) throw new BadRequestException('Pieces per roll must be greater than 0');
+
+    if (dto.cottonType || dto.weightKg !== undefined || dto.web !== undefined || dto.gamjeeWidthCm !== undefined) {
+      const cottonType = dto.cottonType ?? spec.cottonType;
+      const weightKg = dto.weightKg !== undefined ? dto.weightKg : Number(spec.weightKg);
+      const web = dto.web !== undefined ? dto.web : Number(spec.web);
+      const gamjeeWidthCm = dto.gamjeeWidthCm !== undefined ? dto.gamjeeWidthCm : Number(spec.gamjeeWidthCm);
+
+      const duplicate = await (prisma as any).gamjeeCottonSpecification.findFirst({
+        where: {
+          cottonType,
+          weightKg,
+          web,
+          gamjeeWidthCm,
+          NOT: { id },
+        },
+      });
+
+      if (duplicate) {
+        throw new ConflictException(
+          `Cotton specification for "${cottonType}" (${weightKg} KG, Web: ${web}) with Gamjee Width ${gamjeeWidthCm} CM already exists.`
+        );
+      }
+    }
+
+    return (prisma as any).gamjeeCottonSpecification.update({
+      where: { id },
+      data: dto,
+    });
+  }
+
+  async deleteCottonSpec(id: string) {
+    const spec = await (prisma as any).gamjeeCottonSpecification.findUnique({ where: { id } });
+    if (!spec) throw new NotFoundException(`Cotton specification with ID ${id} not found`);
+    return (prisma as any).gamjeeCottonSpecification.delete({
+      where: { id },
+    });
+  }
+
+  /**
+   * Helper to find matching cotton specification for automatic piece count calculation
+   */
+  async findCottonSpec(cottonType: string, gamjeeWidthCm: number) {
+    return (prisma as any).gamjeeCottonSpecification.findFirst({
+      where: {
+        cottonType,
+        gamjeeWidthCm,
+        active: true,
+      },
     });
   }
 }

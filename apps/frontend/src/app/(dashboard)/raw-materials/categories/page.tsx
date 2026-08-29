@@ -175,19 +175,8 @@ export default function CategoriesPage() {
 
       {/* Create Modal */}
       <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Create Material Category">
-
         <form onSubmit={handleCreateSubmit} className="space-y-4">
           <Input label="Category Name" placeholder="e.g. Raw Metals, Packaging, Electricals" value={name} onChange={(e) => setName(e.target.value)} required />
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Description</label>
-            <textarea
-              className="w-full bg-secondary/50 border border-border rounded-md text-xs p-2 text-foreground focus:outline-none focus:border-[#3ECF8E]"
-              rows={3}
-              placeholder="Category scope and application notes..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="ghost" type="button" onClick={() => setIsCreateOpen(false)}>
               Cancel
@@ -204,7 +193,7 @@ export default function CategoriesPage() {
         isOpen={Boolean(editingCategory)}
         onClose={() => setEditingCategory(null)}
         title="Edit Material Category"
-        description="Update category name and details"
+        description="Update category name"
       >
         <form onSubmit={handleEditSubmit} className="space-y-4">
           <Input
@@ -214,16 +203,6 @@ export default function CategoriesPage() {
             onChange={(e) => setEditName(e.target.value)}
             required
           />
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Description</label>
-            <textarea
-              className="w-full bg-secondary/50 border border-border rounded-md text-xs p-2 text-foreground focus:outline-none focus:border-[#3ECF8E]"
-              rows={3}
-              placeholder="Category scope and application notes..."
-              value={editDescription}
-              onChange={(e) => setEditDescription(e.target.value)}
-            />
-          </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="ghost" type="button" onClick={() => setEditingCategory(null)}>
               Cancel

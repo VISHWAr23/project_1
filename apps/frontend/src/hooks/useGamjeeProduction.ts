@@ -221,3 +221,34 @@ export function useDeleteGamjeeProductMaster() {
     },
   });
 }
+
+export function useCreateGamjeeCottonSpec() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: any) => gamjeeProductionService.createCottonSpec(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gamjeeMasters'] });
+    },
+  });
+}
+
+export function useUpdateGamjeeCottonSpec() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: any }) =>
+      gamjeeProductionService.updateCottonSpec(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gamjeeMasters'] });
+    },
+  });
+}
+
+export function useDeleteGamjeeCottonSpec() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => gamjeeProductionService.deleteCottonSpec(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gamjeeMasters'] });
+    },
+  });
+}

@@ -9,6 +9,7 @@ import { CreateCustomerOrderDto } from './dto/create-customer-order.dto';
 import { UpdateCustomerOrderDto } from './dto/update-customer-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { RecordOrderPaymentDto } from './dto/record-order-payment.dto';
+import { RecordOrderDispatchDto } from './dto/record-order-dispatch.dto';
 
 @Injectable()
 export class CustomerOrdersService {
@@ -165,10 +166,8 @@ export class CustomerOrdersService {
     let totalOrdersValue = 0;
     let totalPaidAmount = 0;
     let confirmedCount = 0;
-    let inProductionCount = 0;
-    let readyForDispatchCount = 0;
+    let partiallyDispatchedCount = 0;
     let dispatchedCount = 0;
-    let deliveredCount = 0;
     let cancelledCount = 0;
 
     allOrders.forEach((o) => {
@@ -177,12 +176,15 @@ export class CustomerOrdersService {
       totalOrdersValue += val;
       totalPaidAmount += paid;
 
-      if (o.status === 'CONFIRMED' || o.status === 'DRAFT') confirmedCount++;
-      else if (o.status === 'IN_PRODUCTION') inProductionCount++;
-      else if (o.status === 'READY_FOR_DISPATCH') readyForDispatchCount++;
-      else if (o.status === 'DISPATCHED') dispatchedCount++;
-      else if (o.status === 'DELIVERED') deliveredCount++;
-      else if (o.status === 'CANCELLED') cancelledCount++;
+      if (o.status === 'CONFIRMED' || o.status === 'DRAFT' || o.status === 'IN_PRODUCTION' || o.status === 'READY_FOR_DISPATCH') {
+        confirmedCount++;
+      } else if (o.status === 'PARTIALLY_DISPATCHED') {
+        partiallyDispatchedCount++;
+      } else if (o.status === 'DISPATCHED' || o.status === 'DELIVERED') {
+        dispatchedCount++;
+      } else if (o.status === 'CANCELLED') {
+        cancelledCount++;
+      }
     });
 
     return {
@@ -191,10 +193,8 @@ export class CustomerOrdersService {
       totalPaidAmount,
       pendingPaymentAmount: Math.max(0, totalOrdersValue - totalPaidAmount),
       confirmedCount,
-      inProductionCount,
-      readyForDispatchCount,
+      partiallyDispatchedCount,
       dispatchedCount,
-      deliveredCount,
       cancelledCount,
     };
   }
@@ -318,6 +318,7 @@ export class CustomerOrdersService {
 
     const netTotal = Math.max(0, calculatedSubtotal + calculatedTaxAmount + shipping - calculatedDiscount);
     const initialStatus = dto.status || 'CONFIRMED';
+    const isPaidUpfront = dto.paymentStatus === 'PAID';
 
     return await prisma.$transaction(async (tx) => {
       const createdOrder = await tx.customerOrder.create({
@@ -328,14 +329,17 @@ export class CustomerOrdersService {
           deliveryDueDate: dto.deliveryDueDate ? new Date(dto.deliveryDueDate) : null,
           status: initialStatus,
           priority: dto.priority || 'NORMAL',
-          paymentStatus: dto.paymentStatus || 'PENDING',
+          paymentStatus: isPaidUpfront ? 'PAID' : 'PENDING',
           paymentMethod: dto.paymentMethod || null,
           subtotal: calculatedSubtotal,
           taxAmount: calculatedTaxAmount,
           discountAmount: calculatedDiscount,
           shippingCharges: shipping,
           totalAmount: netTotal,
-          paidAmount: 0,
+          paidAmount: isPaidUpfront ? netTotal : 0,
+          dlNo: dto.dlNo || customer.dlNo || null,
+          regdNo: dto.regdNo || customer.regdNo || null,
+          transportName: dto.transportName || customer.transportName || null,
           shippingAddress: dto.shippingAddress || customer.shippingAddress || customer.address || null,
           billingAddress: dto.billingAddress || customer.address || null,
           transportMode: dto.transportMode || 'ROAD',
@@ -348,7 +352,7 @@ export class CustomerOrdersService {
           statusHistory: {
             create: {
               toStatus: initialStatus,
-              notes: 'Order initiated and created in system',
+              notes: `Order created in system (${isPaidUpfront ? 'Paid Upfront' : 'To Be Paid / Pay After Delivery'})`,
               changedById: userId || null,
             },
           },
@@ -439,6 +443,9 @@ export class CustomerOrdersService {
             discountAmount: discount,
             shippingCharges: shipping,
             totalAmount: netTotal,
+            ...(dto.dlNo !== undefined && { dlNo: dto.dlNo }),
+            ...(dto.regdNo !== undefined && { regdNo: dto.regdNo }),
+            ...(dto.transportName !== undefined && { transportName: dto.transportName }),
             ...(dto.shippingAddress !== undefined && { shippingAddress: dto.shippingAddress }),
             ...(dto.billingAddress !== undefined && { billingAddress: dto.billingAddress }),
             ...(dto.transportMode !== undefined && { transportMode: dto.transportMode }),
@@ -468,6 +475,9 @@ export class CustomerOrdersService {
           ...(dto.paymentMethod !== undefined && { paymentMethod: dto.paymentMethod }),
           ...(dto.shippingCharges !== undefined && { shippingCharges: dto.shippingCharges }),
           ...(dto.discountAmount !== undefined && { discountAmount: dto.discountAmount }),
+          ...(dto.dlNo !== undefined && { dlNo: dto.dlNo }),
+          ...(dto.regdNo !== undefined && { regdNo: dto.regdNo }),
+          ...(dto.transportName !== undefined && { transportName: dto.transportName }),
           ...(dto.shippingAddress !== undefined && { shippingAddress: dto.shippingAddress }),
           ...(dto.billingAddress !== undefined && { billingAddress: dto.billingAddress }),
           ...(dto.transportMode !== undefined && { transportMode: dto.transportMode }),
@@ -551,6 +561,115 @@ export class CustomerOrdersService {
         customer: true,
         items: true,
       },
+    });
+  }
+
+  /**
+   * Record partial or full dispatch/delivery for customer order items
+   */
+  async recordDispatch(id: string, dto: RecordOrderDispatchDto, userId?: string) {
+    const order = await this.findOne(id);
+
+    return await prisma.$transaction(async (tx) => {
+      const dispatchLogSummary: string[] = [];
+
+      for (const itemDto of dto.items) {
+        const lineItem = order.items.find((i) => i.id === itemDto.itemId);
+        if (!lineItem) continue;
+
+        const currentDelivered = Number(lineItem.deliveredQuantity || 0);
+        const orderedQty = Number(lineItem.quantity || 0);
+        const dispatchQty = Math.max(0, Number(itemDto.dispatchQuantity || 0));
+
+        if (dispatchQty <= 0) continue;
+
+        const newDelivered = Math.min(orderedQty, currentDelivered + dispatchQty);
+
+        await tx.customerOrderItem.update({
+          where: { id: itemDto.itemId },
+          data: {
+            deliveredQuantity: newDelivered,
+          },
+        });
+
+        dispatchLogSummary.push(`${lineItem.itemName}: +${dispatchQty} ${lineItem.uom} (${newDelivered}/${orderedQty})`);
+      }
+
+      // Re-fetch all updated items to compute order fulfillment status
+      const updatedItems = await tx.customerOrderItem.findMany({ where: { orderId: id } });
+
+      let totalOrdered = 0;
+      let totalDelivered = 0;
+      let allItemsFullyDelivered = true;
+
+      for (const it of updatedItems) {
+        const oQty = Number(it.quantity);
+        const dQty = Number(it.deliveredQuantity);
+        totalOrdered += oQty;
+        totalDelivered += dQty;
+        if (dQty < oQty) {
+          allItemsFullyDelivered = false;
+        }
+      }
+
+      let newStatus = order.status;
+      if (allItemsFullyDelivered && totalDelivered > 0) {
+        newStatus = 'DISPATCHED';
+      } else if (totalDelivered > 0) {
+        newStatus = 'PARTIALLY_DISPATCHED';
+      }
+
+      const dispatchDate = dto.dispatchDate ? new Date(dto.dispatchDate) : new Date();
+
+      const updatedOrder = await tx.customerOrder.update({
+        where: { id },
+        data: {
+          status: newStatus,
+          dispatchDate: dispatchDate,
+          ...(dto.transportName && { transportName: dto.transportName }),
+          ...(dto.transportMode && { transportMode: dto.transportMode }),
+          ...(dto.trackingNumber && { trackingNumber: dto.trackingNumber }),
+        },
+        include: {
+          customer: true,
+          items: true,
+          statusHistory: {
+            orderBy: { changedAt: 'desc' },
+            include: { changedByUser: { select: { id: true, email: true } } },
+          },
+        },
+      });
+
+      // Audit status change
+      await tx.customerOrderStatusHistory.create({
+        data: {
+          orderId: id,
+          fromStatus: order.status,
+          toStatus: newStatus,
+          notes: `Dispatch Recorded (${newStatus}): ${dispatchLogSummary.join(' | ')}${dto.notes ? ` - ${dto.notes}` : ''}`,
+          changedById: userId || null,
+        },
+      });
+
+      return {
+        ...updatedOrder,
+        subtotal: Number(updatedOrder.subtotal),
+        taxAmount: Number(updatedOrder.taxAmount),
+        discountAmount: Number(updatedOrder.discountAmount),
+        shippingCharges: Number(updatedOrder.shippingCharges),
+        totalAmount: Number(updatedOrder.totalAmount),
+        paidAmount: Number(updatedOrder.paidAmount),
+        items: updatedOrder.items.map((i) => ({
+          ...i,
+          quantity: Number(i.quantity),
+          unitPrice: Number(i.unitPrice),
+          taxRate: Number(i.taxRate),
+          taxAmount: Number(i.taxAmount),
+          discount: Number(i.discount),
+          totalPrice: Number(i.totalPrice),
+          deliveredQuantity: Number(i.deliveredQuantity),
+        })),
+      };
     });
   }
 

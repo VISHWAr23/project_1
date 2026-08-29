@@ -7,6 +7,8 @@ import {
   GamjeeSize,
   GamjeeOperationType,
   GamjeeProductMaster,
+  GamjeeCottonSpecification,
+  CreateGamjeeCottonSpecInput,
 } from '@/types/gamjee-production.types';
 import {
   CreateGamjeeProductionBatchInput,
@@ -160,6 +162,29 @@ export const gamjeeProductionService = {
 
   deleteProductMaster: async (id: string): Promise<any> => {
     return apiClient(`/gamjee-production/masters/products/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  createCottonSpec: async (payload: CreateGamjeeCottonSpecInput): Promise<GamjeeCottonSpecification> => {
+    return apiClient<GamjeeCottonSpecification>('/gamjee-production/masters/cotton-specs', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateCottonSpec: async (
+    id: string,
+    payload: Partial<CreateGamjeeCottonSpecInput>
+  ): Promise<GamjeeCottonSpecification> => {
+    return apiClient<GamjeeCottonSpecification>(`/gamjee-production/masters/cotton-specs/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteCottonSpec: async (id: string): Promise<any> => {
+    return apiClient(`/gamjee-production/masters/cotton-specs/${id}`, {
       method: 'DELETE',
     });
   },

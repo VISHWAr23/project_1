@@ -2,32 +2,25 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   ShoppingCart,
   Plus,
   Search,
   Filter,
   Eye,
-  Edit,
   Trash2,
-  Calendar,
   CreditCard,
   Truck,
   CheckCircle2,
   Clock,
   Printer,
-  ChevronRight,
   AlertCircle,
   Sparkles,
   DollarSign,
-  Package,
   Building,
-  ArrowRight,
-  Receipt,
-  FileCheck,
-  Send,
-  X,
+  PackageCheck,
+  RotateCcw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +34,7 @@ import {
   useCustomerOrderStats,
   useCreateCustomerOrder,
   useUpdateOrderStatus,
+  useRecordOrderDispatch,
   useRecordOrderPayment,
   useDeleteCustomerOrder,
 } from '@/hooks/useCustomerOrders';
@@ -49,7 +43,6 @@ import { useRawMaterials } from '@/hooks/useRawMaterials';
 import {
   CustomerOrder,
   OrderStatus,
-  OrderPriority,
   CreateCustomerOrderItemPayload,
 } from '@/types/customer-orders.types';
 
@@ -74,18 +67,28 @@ export default function CustomerOrdersPage() {
 
   const { data: stats } = useCustomerOrderStats();
   const { data: customersData } = useCustomers({ limit: 100 });
-  const { data: rawMaterialsData } = useRawMaterials({ limit: 100 });
+  const { data: rawMaterialsData } = useRawMaterials({ type: 'FG', limit: 100 });
 
   const createOrder = useCreateCustomerOrder();
   const updateStatus = useUpdateOrderStatus();
+  const recordDispatch = useRecordOrderDispatch();
   const recordPayment = useRecordOrderPayment();
   const deleteOrder = useDeleteCustomerOrder();
 
   // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [viewingOrder, setViewingOrder] = useState<CustomerOrder | null>(null);
+  const [dispatchOrder, setDispatchOrder] = useState<CustomerOrder | null>(null);
   const [paymentOrder, setPaymentOrder] = useState<CustomerOrder | null>(null);
   const [deletingOrder, setDeletingOrder] = useState<CustomerOrder | null>(null);
+
+  // Dispatch Form State for Partial / Full Delivery
+  const [dispatchDate, setDispatchDate] = useState(new Date().toISOString().split('T')[0]);
+  const [dispatchTransportName, setDispatchTransportName] = useState('');
+  const [dispatchTransportMode, setDispatchTransportMode] = useState('ROAD');
+  const [dispatchTrackingNumber, setDispatchTrackingNumber] = useState('');
+  const [dispatchItemQuantities, setDispatchItemQuantities] = useState<Record<string, number>>({});
+  const [dispatchNotes, setDispatchNotes] = useState('');
 
   // Payment form state
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -93,6 +96,7 @@ export default function CustomerOrdersPage() {
   const [paymentNotes, setPaymentNotes] = useState('');
 
   // Create Order Wizard State
+  const [orderPaymentTerm, setOrderPaymentTerm] = useState<'PAID' | 'TO_BE_PAID'>('TO_BE_PAID');
   const [orderFormData, setOrderFormData] = useState({
     customerId: '',
     orderDate: new Date().toISOString().split('T')[0],
@@ -101,6 +105,9 @@ export default function CustomerOrdersPage() {
     paymentMethod: 'BANK_TRANSFER',
     shippingCharges: '0',
     discountAmount: '0',
+    dlNo: '',
+    regdNo: '',
+    transportName: '',
     transportMode: 'ROAD',
     trackingNumber: '',
     shippingAddress: '',
@@ -123,6 +130,9 @@ export default function CustomerOrdersPage() {
   const orders = data?.items || [];
   const customers = customersData?.items || [];
   const materials = rawMaterialsData?.items || [];
+  const finishedProducts = materials.filter(
+    (m) => !m.sku?.startsWith('RM-') && !m.sku?.startsWith('PM-') && !m.isPackagingMaterial
+  );
 
   // Recalculate totals for create wizard
   const calculatedSubtotal = lineItems.reduce((acc, curr) => {
@@ -148,13 +158,16 @@ export default function CustomerOrdersPage() {
     setOrderFormData((prev) => ({
       ...prev,
       customerId,
+      dlNo: cust?.dlNo || cust?.regdNo || '',
+      regdNo: cust?.regdNo || cust?.dlNo || '',
+      transportName: cust?.transportName || '',
       billingAddress: cust?.address || '',
       shippingAddress: cust?.shippingAddress || cust?.address || '',
     }));
   };
 
   const handleItemProductSelect = (index: number, productId: string) => {
-    const prod = materials.find((m) => m.id === productId);
+    const prod = finishedProducts.find((m) => m.id === productId) || materials.find((m) => m.id === productId);
     if (!prod) return;
 
     setLineItems((prev) => {
@@ -215,9 +228,13 @@ export default function CustomerOrdersPage() {
         orderDate: orderFormData.orderDate,
         deliveryDueDate: orderFormData.deliveryDueDate || undefined,
         priority: orderFormData.priority,
-        paymentMethod: orderFormData.paymentMethod,
+        paymentStatus: orderPaymentTerm === 'PAID' ? 'PAID' : 'PENDING',
+        paymentMethod: orderPaymentTerm === 'PAID' ? orderFormData.paymentMethod : undefined,
         shippingCharges: Number(orderFormData.shippingCharges) || 0,
         discountAmount: Number(orderFormData.discountAmount) || 0,
+        dlNo: orderFormData.dlNo || undefined,
+        regdNo: orderFormData.regdNo || undefined,
+        transportName: orderFormData.transportName || undefined,
         shippingAddress: orderFormData.shippingAddress,
         billingAddress: orderFormData.billingAddress,
         transportMode: orderFormData.transportMode,
@@ -233,8 +250,26 @@ export default function CustomerOrdersPage() {
         })),
       });
 
-      toast('Order Created', 'Customer sales order registered successfully', 'success');
+      toast('Order Created', `Order registered successfully (${orderPaymentTerm === 'PAID' ? 'Paid Upfront' : 'Pay After Delivery'})`, 'success');
       setIsCreateOpen(false);
+      setOrderPaymentTerm('TO_BE_PAID');
+      setOrderFormData({
+        customerId: '',
+        orderDate: new Date().toISOString().split('T')[0],
+        deliveryDueDate: '',
+        priority: 'NORMAL',
+        paymentMethod: 'BANK_TRANSFER',
+        shippingCharges: '0',
+        discountAmount: '0',
+        dlNo: '',
+        regdNo: '',
+        transportName: '',
+        transportMode: 'ROAD',
+        trackingNumber: '',
+        shippingAddress: '',
+        billingAddress: '',
+        notes: '',
+      });
       setLineItems([
         {
           itemName: '',
@@ -252,22 +287,61 @@ export default function CustomerOrdersPage() {
     }
   };
 
-  const handleAdvanceStatus = async (order: CustomerOrder, nextStatus: string) => {
+  // Open Dispatch Modal with pre-filled remaining quantities
+  const handleOpenDispatchModal = (order: CustomerOrder) => {
+    setDispatchOrder(order);
+    setDispatchDate(new Date().toISOString().split('T')[0]);
+    setDispatchTransportName(order.transportName || order.customer?.transportName || '');
+    setDispatchTransportMode(order.transportMode || 'ROAD');
+    setDispatchTrackingNumber(order.trackingNumber || '');
+    setDispatchNotes('');
+
+    const initialQtys: Record<string, number> = {};
+    order.items.forEach((item) => {
+      const remaining = Math.max(0, Number(item.quantity) - Number(item.deliveredQuantity || 0));
+      initialQtys[item.id] = remaining;
+    });
+    setDispatchItemQuantities(initialQtys);
+  };
+
+  // Submit Partial / Full Dispatch
+  const handleRecordDispatchSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dispatchOrder) return;
+
+    const itemsToDispatch = Object.entries(dispatchItemQuantities)
+      .map(([itemId, dispatchQuantity]) => ({
+        itemId,
+        dispatchQuantity: Number(dispatchQuantity) || 0,
+      }))
+      .filter((i) => i.dispatchQuantity > 0);
+
+    if (itemsToDispatch.length === 0) {
+      toast('Validation Error', 'Please specify quantity to dispatch for at least one line item', 'warning');
+      return;
+    }
+
     try {
-      await updateStatus.mutateAsync({
-        id: order.id,
+      const updated = await recordDispatch.mutateAsync({
+        id: dispatchOrder.id,
         payload: {
-          status: nextStatus,
-          notes: `Status updated to ${nextStatus}`,
+          items: itemsToDispatch,
+          dispatchDate,
+          transportName: dispatchTransportName || undefined,
+          transportMode: dispatchTransportMode,
+          trackingNumber: dispatchTrackingNumber || undefined,
+          notes: dispatchNotes || undefined,
         },
       });
-      toast('Status Updated', `Order #${order.orderNumber} transitioned to ${nextStatus}`, 'success');
-      if (viewingOrder?.id === order.id) {
-        setViewingOrder((prev) => (prev ? { ...prev, status: nextStatus as OrderStatus } : null));
+
+      toast('Dispatch Recorded', `Order #${dispatchOrder.orderNumber} updated to ${updated.status}`, 'success');
+      setDispatchOrder(null);
+      if (viewingOrder?.id === dispatchOrder.id) {
+        setViewingOrder(updated);
       }
       refetch();
     } catch (err: any) {
-      toast('Status Update Failed', err.message || 'Could not update status', 'error');
+      toast('Dispatch Failed', err.message || 'Could not record dispatch', 'error');
     }
   };
 
@@ -311,22 +385,36 @@ export default function CustomerOrdersPage() {
     }
   };
 
-  const getStatusBadge = (status: OrderStatus) => {
+  const getStatusBadge = (status: OrderStatus | string) => {
     switch (status) {
-      case 'DRAFT':
-        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-muted text-muted-foreground border border-border">DRAFT</span>;
       case 'CONFIRMED':
-        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">CONFIRMED</span>;
+      case 'DRAFT':
       case 'IN_PRODUCTION':
-        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">IN PRODUCTION</span>;
       case 'READY_FOR_DISPATCH':
-        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">READY FOR DISPATCH</span>;
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 inline-flex items-center gap-1">
+            <Clock className="h-3 w-3" /> Confirmed
+          </span>
+        );
+      case 'PARTIALLY_DISPATCHED':
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 inline-flex items-center gap-1">
+            <Truck className="h-3 w-3" /> Partially Dispatched
+          </span>
+        );
       case 'DISPATCHED':
-        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">DISPATCHED</span>;
       case 'DELIVERED':
-        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">DELIVERED</span>;
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 inline-flex items-center gap-1">
+            <CheckCircle2 className="h-3 w-3" /> Dispatched
+          </span>
+        );
       case 'CANCELLED':
-        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20">CANCELLED</span>;
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
+            Cancelled
+          </span>
+        );
       default:
         return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-secondary text-muted-foreground">{status}</span>;
     }
@@ -335,12 +423,24 @@ export default function CustomerOrdersPage() {
   const getPaymentBadge = (status: string) => {
     switch (status) {
       case 'PAID':
-        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">PAID</span>;
+        return (
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+            PAID
+          </span>
+        );
       case 'PARTIALLY_PAID':
-        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">PARTIAL</span>;
+        return (
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+            PARTIAL
+          </span>
+        );
       case 'PENDING':
       default:
-        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">PENDING</span>;
+        return (
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30" title="To be paid upon delivery">
+            PAY AFTER DELIVERY
+          </span>
+        );
     }
   };
 
@@ -349,11 +449,11 @@ export default function CustomerOrdersPage() {
       key: 'orderNumber',
       header: 'Order #',
       sortable: true,
-      width: '140px',
+      width: '130px',
       render: (row) => (
         <button
           onClick={() => setViewingOrder(row)}
-          className="font-mono font-bold text-blue-600 dark:text-blue-400 hover:underline text-left block"
+          className="font-mono font-bold text-blue-600 dark:text-blue-400 hover:underline text-left block text-xs"
         >
           {row.orderNumber}
         </button>
@@ -365,7 +465,7 @@ export default function CustomerOrdersPage() {
       sortable: true,
       render: (row) => (
         <div>
-          <span className="font-bold text-foreground block">{row.customer?.name || 'Unknown Client'}</span>
+          <span className="font-bold text-foreground block text-xs">{row.customer?.name || 'Unknown Client'}</span>
           <span className="text-[11px] text-muted-foreground block">
             {row.customer?.city || 'Tamil Nadu'} • {row.customer?.phone || ''}
           </span>
@@ -386,22 +486,39 @@ export default function CustomerOrdersPage() {
     },
     {
       key: 'items' as any,
-      header: 'Line Items',
-      render: (row) => (
-        <div className="text-xs">
-          <span className="text-foreground font-medium block">
-            {row.items?.length || 0} Products
-          </span>
-          <span className="text-[11px] text-muted-foreground block truncate max-w-[170px]">
-            {row.items?.[0]?.itemName || 'Consignment Items'}
-            {(row.items?.length || 0) > 1 && ` +${row.items.length - 1} more`}
-          </span>
-        </div>
-      ),
+      header: 'Delivery Fulfillment',
+      render: (row) => {
+        const totalOrdered = row.items.reduce((s, i) => s + Number(i.quantity || 0), 0);
+        const totalDelivered = row.items.reduce((s, i) => s + Number(i.deliveredQuantity || 0), 0);
+        const pending = Math.max(0, totalOrdered - totalDelivered);
+
+        return (
+          <div className="text-xs space-y-1 min-w-[150px]">
+            <div className="flex items-center justify-between font-mono text-[11px]">
+              <span className="font-semibold text-foreground">
+                {totalDelivered}/{totalOrdered} Delivered
+              </span>
+              {pending > 0 ? (
+                <span className="text-amber-500 font-bold">({pending} left)</span>
+              ) : (
+                <span className="text-emerald-500 font-bold">✓ Fulfilled</span>
+              )}
+            </div>
+            <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all ${
+                  totalDelivered >= totalOrdered ? 'bg-emerald-500' : totalDelivered > 0 ? 'bg-amber-500' : 'bg-muted'
+                }`}
+                style={{ width: `${totalOrdered > 0 ? Math.min(100, (totalDelivered / totalOrdered) * 100) : 0}%` }}
+              />
+            </div>
+          </div>
+        );
+      },
     },
     {
       key: 'totalAmount',
-      header: 'Total Value',
+      header: 'Value & Terms',
       align: 'right',
       render: (row) => (
         <div className="text-right text-xs font-mono">
@@ -414,7 +531,7 @@ export default function CustomerOrdersPage() {
     },
     {
       key: 'status',
-      header: 'Order Status',
+      header: 'Dispatch Status',
       align: 'center',
       render: (row) => getStatusBadge(row.status),
     },
@@ -422,43 +539,62 @@ export default function CustomerOrdersPage() {
       key: 'actions' as any,
       header: 'Actions',
       align: 'right',
-      width: '130px',
-      render: (row) => (
-        <div className="flex items-center justify-end gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setViewingOrder(row)}
-            title="View Invoice & Details"
-          >
-            <Eye className="h-3.5 w-3.5 text-muted-foreground hover:text-blue-500" />
-          </Button>
+      width: '160px',
+      render: (row) => {
+        const canDispatch = row.status !== 'DISPATCHED' && row.status !== 'DELIVERED' && row.status !== 'CANCELLED';
 
-          {row.paymentStatus !== 'PAID' && (
+        return (
+          <div className="flex items-center justify-end gap-1">
+            {canDispatch && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-[11px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30 gap-1"
+                onClick={() => handleOpenDispatchModal(row)}
+                title="Dispatch Partial / Full Order"
+              >
+                <Truck className="h-3 w-3" />
+                <span>Dispatch</span>
+              </Button>
+            )}
+
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
-                setPaymentOrder(row);
-                setPaymentAmount(String(row.totalAmount - row.paidAmount));
-              }}
-              title="Record Payment"
+              className="h-7 w-7 p-0"
+              onClick={() => setViewingOrder(row)}
+              title="View Invoice & Details"
             >
-              <CreditCard className="h-3.5 w-3.5 text-emerald-400 hover:text-emerald-300" />
+              <Eye className="h-3.5 w-3.5 text-muted-foreground hover:text-blue-500" />
             </Button>
-          )}
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setDeletingOrder(row)}
-            title="Delete Order"
-            className="hover:text-red-500 text-muted-foreground"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      ),
+            {row.paymentStatus !== 'PAID' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={() => {
+                  setPaymentOrder(row);
+                  setPaymentAmount(String(row.totalAmount - row.paidAmount));
+                }}
+                title="Record Payment"
+              >
+                <CreditCard className="h-3.5 w-3.5 text-emerald-500 hover:text-emerald-400" />
+              </Button>
+            )}
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 hover:text-red-500 text-muted-foreground"
+              onClick={() => setDeletingOrder(row)}
+              title="Delete Order"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -477,7 +613,7 @@ export default function CustomerOrdersPage() {
             Customer Orders & Sales Fulfillment
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Manage hospital orders, packaging & production staging, invoice printing, and delivery dispatch
+            Manage customer orders, partial & full delivery dispatches, and payment settlement terms
           </p>
         </div>
 
@@ -503,11 +639,11 @@ export default function CustomerOrdersPage() {
         <div className="bg-secondary/30 border border-border rounded-xl p-4 flex items-center justify-between">
           <div>
             <span className="text-xs text-muted-foreground block font-medium">Total Orders Value</span>
-            <span className="text-2xl font-bold text-emerald-400 font-mono mt-1 block">
+            <span className="text-2xl font-bold text-emerald-500 font-mono mt-1 block">
               ₹ {(stats?.totalOrdersValue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
             </span>
           </div>
-          <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-lg">
+          <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-lg">
             <DollarSign className="h-5 w-5" />
           </div>
         </div>
@@ -526,36 +662,36 @@ export default function CustomerOrdersPage() {
 
         <div className="bg-secondary/30 border border-border rounded-xl p-4 flex items-center justify-between">
           <div>
-            <span className="text-xs text-muted-foreground block font-medium">Dispatched Orders</span>
+            <span className="text-xs text-muted-foreground block font-medium">Partially Dispatched</span>
             <span className="text-2xl font-bold text-amber-500 font-mono mt-1 block">
-              {stats?.dispatchedCount || 0}
+              {stats?.partiallyDispatchedCount || 0}
             </span>
           </div>
           <div className="p-3 bg-amber-500/10 text-amber-500 rounded-lg">
-            <Truck className="h-5 w-5" />
+            <RotateCcw className="h-5 w-5" />
           </div>
         </div>
 
         <div className="bg-secondary/30 border border-border rounded-xl p-4 flex items-center justify-between">
           <div>
-            <span className="text-xs text-muted-foreground block font-medium">Delivered & Fulfilled</span>
-            <span className="text-2xl font-bold text-emerald-400 font-mono mt-1 block">
-              {stats?.deliveredCount || 0}
+            <span className="text-xs text-muted-foreground block font-medium">Dispatched & Fulfilled</span>
+            <span className="text-2xl font-bold text-emerald-500 font-mono mt-1 block">
+              {stats?.dispatchedCount || 0}
             </span>
           </div>
-          <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-lg">
-            <CheckCircle2 className="h-5 w-5" />
+          <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-lg">
+            <PackageCheck className="h-5 w-5" />
           </div>
         </div>
       </div>
 
-      {/* Lifecycle Status Tabs */}
+      {/* Simplified Status Tabs */}
       <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto">
         {[
           { id: 'ALL', label: 'All Orders' },
-          { id: 'CONFIRMED', label: 'Confirmed' },
+          { id: 'CONFIRMED', label: 'Confirmed (Pending Dispatch)' },
+          { id: 'PARTIALLY_DISPATCHED', label: 'Partially Dispatched' },
           { id: 'DISPATCHED', label: 'Dispatched' },
-          { id: 'DELIVERED', label: 'Delivered' },
           { id: 'CANCELLED', label: 'Cancelled' },
         ].map((tab) => (
           <button
@@ -564,9 +700,9 @@ export default function CustomerOrdersPage() {
               setSelectedStatus(tab.id);
               setCurrentPage(1);
             }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
               selectedStatus === tab.id
-                ? 'bg-blue-600 text-white shadow-sm'
+                ? 'bg-blue-600 text-white shadow-xs'
                 : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
             }`}
           >
@@ -579,7 +715,7 @@ export default function CustomerOrdersPage() {
       <div className="bg-secondary/20 border border-border rounded-xl p-4 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-            <Filter className="h-3.5 w-3.5 text-[#3ECF8E]" /> Search & Filter Sales Orders
+            <Filter className="h-3.5 w-3.5 text-blue-500" /> Search & Filter Sales Orders
           </span>
           <Button
             variant="ghost"
@@ -605,7 +741,7 @@ export default function CustomerOrdersPage() {
               placeholder="Search by Order #, Customer Name, Product, Tracking #..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-secondary/60 text-foreground text-xs pl-9 pr-3 py-2 rounded-md border border-border focus:outline-none focus:border-[#3ECF8E]"
+              className="w-full bg-secondary/60 text-foreground text-xs pl-9 pr-3 py-2 rounded-md border border-border focus:outline-hidden focus:border-blue-500"
             />
           </div>
 
@@ -620,10 +756,10 @@ export default function CustomerOrdersPage() {
 
           <Select
             options={[
-              { label: 'All Payment Statuses', value: '' },
+              { label: 'All Payment Terms', value: '' },
               { label: 'Paid in Full', value: 'PAID' },
+              { label: 'Pay After Delivery', value: 'PENDING' },
               { label: 'Partially Paid', value: 'PARTIALLY_PAID' },
-              { label: 'Pending Payment', value: 'PENDING' },
             ]}
             value={selectedPaymentStatus}
             onChange={(e) => setSelectedPaymentStatus(e.target.value)}
@@ -653,14 +789,96 @@ export default function CustomerOrdersPage() {
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         title="Create Customer Sales Order"
-        description="Draft and confirm an order with item lines, tax calculations, and delivery specifications"
+        description="Draft and place an order with finished product lines and payment terms"
         maxWidth="3xl"
       >
         <form onSubmit={handleCreateOrderSubmit} className="space-y-5">
+          {/* STEP 1: PAYMENT SETTLEMENT TERM SELECTION */}
+          <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between border-b border-primary/20 pb-2">
+              <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <CreditCard className="h-4 w-4 text-blue-500" /> Payment Terms / Settlement Type *
+              </span>
+              <span className="text-[11px] font-mono text-muted-foreground">Settlement agreement with client</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Option A: Paid */}
+              <div
+                onClick={() => setOrderPaymentTerm('PAID')}
+                className={`cursor-pointer p-3.5 rounded-xl border-2 transition-all flex items-start gap-3 ${
+                  orderPaymentTerm === 'PAID'
+                    ? 'border-emerald-500 bg-emerald-500/10 shadow-xs'
+                    : 'border-border bg-card/60 hover:border-border/80'
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
+                    orderPaymentTerm === 'PAID' ? 'border-emerald-500 bg-emerald-500' : 'border-muted-foreground'
+                  }`}
+                >
+                  {orderPaymentTerm === 'PAID' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-foreground">Paid (Paid in Full)</h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Payment received upfront / advance before shipment
+                  </p>
+                </div>
+              </div>
+
+              {/* Option B: To Be Paid / Pay After Delivery */}
+              <div
+                onClick={() => setOrderPaymentTerm('TO_BE_PAID')}
+                className={`cursor-pointer p-3.5 rounded-xl border-2 transition-all flex items-start gap-3 ${
+                  orderPaymentTerm === 'TO_BE_PAID'
+                    ? 'border-blue-500 bg-blue-500/10 shadow-xs'
+                    : 'border-border bg-card/60 hover:border-border/80'
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
+                    orderPaymentTerm === 'TO_BE_PAID' ? 'border-blue-500 bg-blue-500' : 'border-muted-foreground'
+                  }`}
+                >
+                  {orderPaymentTerm === 'TO_BE_PAID' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-foreground">To Be Paid (Pay After Delivery)</h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Credit payment / invoice settlement upon goods delivery
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {orderPaymentTerm === 'PAID' && (
+              <div className="pt-2 border-t border-primary/10 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-foreground mb-1">Payment Method</label>
+                  <Select
+                    options={[
+                      { label: 'Bank Transfer (NEFT/RTGS)', value: 'BANK_TRANSFER' },
+                      { label: 'UPI / QR Payment', value: 'UPI' },
+                      { label: 'Cash Payment', value: 'CASH' },
+                      { label: 'Cheque / Demand Draft', value: 'CHEQUE' },
+                    ]}
+                    value={orderFormData.paymentMethod}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, paymentMethod: e.target.value })}
+                  />
+                </div>
+                <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-between text-xs font-mono">
+                  <span className="text-muted-foreground">Settlement Amount:</span>
+                  <strong className="text-emerald-600 dark:text-emerald-400">₹ {calculatedNetTotal.toLocaleString('en-IN')}</strong>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Customer & Dates */}
           <div className="bg-secondary/20 p-4 rounded-xl border border-border space-y-3">
             <h3 className="text-xs font-bold text-foreground border-b border-border pb-1">
-              1. Customer & Schedule Information
+              2. Customer, Regulatory & Transport Information
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
@@ -690,6 +908,22 @@ export default function CustomerOrdersPage() {
                 type="date"
                 value={orderFormData.deliveryDueDate}
                 onChange={(e) => setOrderFormData({ ...orderFormData, deliveryDueDate: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label="D.L. No. / Regd. No."
+                placeholder="e.g. DL-20B/21B-4492"
+                value={orderFormData.dlNo}
+                onChange={(e) => setOrderFormData({ ...orderFormData, dlNo: e.target.value })}
+              />
+
+              <Input
+                label="Transport Carrier Name"
+                placeholder="e.g. VRL Logistics / SRS Travels / ABT"
+                value={orderFormData.transportName}
+                onChange={(e) => setOrderFormData({ ...orderFormData, transportName: e.target.value })}
               />
             </div>
 
@@ -733,7 +967,7 @@ export default function CustomerOrdersPage() {
           <div className="bg-secondary/20 p-4 rounded-xl border border-border space-y-3">
             <div className="flex items-center justify-between border-b border-border pb-1">
               <h3 className="text-xs font-bold text-foreground">
-                2. Order Product Items ({lineItems.length})
+                3. Finished Goods Order Items ({lineItems.length})
               </h3>
               <Button
                 type="button"
@@ -771,12 +1005,12 @@ export default function CustomerOrdersPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
                     <div className="sm:col-span-2">
                       <label className="block text-[10px] text-muted-foreground mb-1">
-                        Preset Material / Finished Good
+                        Select Finished Product
                       </label>
                       <Select
                         options={[
-                          { label: 'Choose from Inventory Master...', value: '' },
-                          ...materials.map((m) => ({ label: `${m.name} (${m.sku})`, value: m.id })),
+                          { label: 'Choose Finished Product...', value: '' },
+                          ...finishedProducts.map((m) => ({ label: `${m.name} (${m.sku})`, value: m.id })),
                         ]}
                         value={item.productId || ''}
                         onChange={(e) => handleItemProductSelect(idx, e.target.value)}
@@ -858,7 +1092,7 @@ export default function CustomerOrdersPage() {
                       <span className="block text-[10px] text-muted-foreground mb-1 font-sans">
                         Line Total
                       </span>
-                      <span className="block text-xs font-mono font-bold text-emerald-400 mt-2">
+                      <span className="block text-xs font-mono font-bold text-emerald-500 mt-2">
                         ₹{' '}
                         {(
                           (item.quantity * item.unitPrice * (1 + (item.taxRate || 0) / 100)) -
@@ -895,30 +1129,16 @@ export default function CustomerOrdersPage() {
                 <span>₹ {calculatedSubtotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="text-xs text-muted-foreground flex justify-between sm:justify-end gap-6">
-                <span>GST Tax (12%):</span>
+                <span>GST Tax:</span>
                 <span>₹ {calculatedTax.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
               </div>
               <div className="text-sm font-bold text-foreground flex justify-between sm:justify-end gap-6 pt-1 border-t border-border">
-                <span>Net Payable:</span>
-                <span className="text-emerald-400">
+                <span>Net Payable ({orderPaymentTerm === 'PAID' ? 'Paid Upfront' : 'Pay After Delivery'}):</span>
+                <span className="text-emerald-500 font-bold">
                   ₹ {calculatedNetTotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                 </span>
               </div>
             </div>
-          </div>
-
-          {/* Shipping Address */}
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
-              Consignment Destination Delivery Address
-            </label>
-            <textarea
-              className="w-full bg-secondary/50 border border-border rounded-md text-xs p-2 text-foreground focus:outline-none focus:border-[#3ECF8E]"
-              rows={2}
-              placeholder="Delivery destination address..."
-              value={orderFormData.shippingAddress}
-              onChange={(e) => setOrderFormData({ ...orderFormData, shippingAddress: e.target.value })}
-            />
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t border-border">
@@ -930,6 +1150,122 @@ export default function CustomerOrdersPage() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* DISPATCH / PARTIAL DELIVERY MODAL */}
+      <Modal
+        isOpen={Boolean(dispatchOrder)}
+        onClose={() => setDispatchOrder(null)}
+        title={`Record Dispatch / Delivery (Order #${dispatchOrder?.orderNumber})`}
+        maxWidth="2xl"
+      >
+        {dispatchOrder && (
+          <form onSubmit={handleRecordDispatchSubmit} className="space-y-5">
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-3.5 text-xs flex items-center justify-between">
+              <div>
+                <span className="font-bold text-foreground block">Client: {dispatchOrder.customer?.name}</span>
+                <span className="text-muted-foreground">Order Date: {new Date(dispatchOrder.orderDate).toLocaleDateString('en-IN')}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-muted-foreground block">Current Status</span>
+                {getStatusBadge(dispatchOrder.status)}
+              </div>
+            </div>
+
+            {/* Line Items Partial Dispatch Table */}
+            <div className="border border-border rounded-xl p-4 bg-card/60 space-y-3">
+              <div className="flex items-center justify-between border-b border-border pb-2">
+                <h4 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Truck className="h-4 w-4 text-amber-500" /> Specify Quantities to Dispatch
+                </h4>
+                <span className="text-[11px] text-muted-foreground">Enter quantity to ship in this delivery batch</span>
+              </div>
+
+              <div className="space-y-3">
+                {dispatchOrder.items.map((item) => {
+                  const ordered = Number(item.quantity);
+                  const alreadyDelivered = Number(item.deliveredQuantity || 0);
+                  const remaining = Math.max(0, ordered - alreadyDelivered);
+                  const currentDispatch = dispatchItemQuantities[item.id] !== undefined ? dispatchItemQuantities[item.id] : remaining;
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="p-3 bg-secondary/30 rounded-lg border border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <span className="font-bold text-foreground block">{item.itemName}</span>
+                        <div className="flex items-center gap-3 mt-1 font-mono text-[11px] text-muted-foreground">
+                          <span>Ordered: <strong>{ordered} {item.uom}</strong></span>
+                          <span>Already Shipped: <strong>{alreadyDelivered} {item.uom}</strong></span>
+                          <span className={remaining > 0 ? 'text-amber-500 font-semibold' : 'text-emerald-500'}>
+                            Pending: <strong>{remaining} {item.uom}</strong>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="w-full sm:w-48">
+                        <label className="block text-[10px] text-muted-foreground mb-1 font-semibold">
+                          Dispatch Now ({item.uom})
+                        </label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max={remaining}
+                          step="1"
+                          value={currentDispatch}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setDispatchItemQuantities((prev) => ({
+                              ...prev,
+                              [item.id]: val,
+                            }));
+                          }}
+                          disabled={remaining <= 0}
+                          className="h-8 font-mono font-bold text-emerald-600 dark:text-emerald-400"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Transport & Carrier Details */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Input
+                label="Dispatch Date"
+                type="date"
+                value={dispatchDate}
+                onChange={(e) => setDispatchDate(e.target.value)}
+                required
+              />
+
+              <Input
+                label="Transport Carrier Name"
+                placeholder="e.g. VRL Logistics / ABT"
+                value={dispatchTransportName}
+                onChange={(e) => setDispatchTransportName(e.target.value)}
+              />
+
+              <Input
+                label="Vehicle / Tracking #"
+                placeholder="TN-38-BZ-4589"
+                value={dispatchTrackingNumber}
+                onChange={(e) => setDispatchTrackingNumber(e.target.value)}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-border">
+              <Button variant="ghost" type="button" onClick={() => setDispatchOrder(null)} disabled={recordDispatch.isPending}>
+                Cancel
+              </Button>
+              <Button variant="primary" type="submit" disabled={recordDispatch.isPending} className="bg-amber-600 hover:bg-amber-700 text-white font-semibold">
+                {recordDispatch.isPending ? 'Recording Dispatch...' : 'Confirm & Dispatch Goods'}
+              </Button>
+            </div>
+          </form>
+        )}
       </Modal>
 
       {/* VIEW ORDER INVOICE & DETAILS MODAL */}
@@ -964,42 +1300,30 @@ export default function CustomerOrdersPage() {
                 </div>
               </div>
 
-              {/* Status Advancement Stepper */}
-              <div className="bg-secondary/40 p-3 rounded-lg border border-border">
-                <div className="flex items-center justify-between mb-2">
+              {/* Status & Delivery Progress */}
+              <div className="bg-secondary/40 p-3 rounded-lg border border-border flex items-center justify-between">
+                <div>
                   <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                    <Truck className="h-4 w-4 text-blue-500" /> Order Fulfillment Pipeline
+                    <Truck className="h-4 w-4 text-blue-500" /> Dispatch & Delivery Status: {viewingOrder.status}
                   </span>
-                  <span className="text-[10px] text-muted-foreground font-mono">
-                    Priority: {viewingOrder.priority}
-                  </span>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Payment Terms: <strong>{viewingOrder.paymentStatus === 'PAID' ? 'Paid in Full' : 'Pay After Delivery'}</strong>
+                  </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  {viewingOrder.status === 'CONFIRMED' && (
-                    <Button
-                      size="sm"
-                      onClick={() => handleAdvanceStatus(viewingOrder, 'DISPATCHED')}
-                      className="bg-amber-600 hover:bg-amber-700 text-white text-xs h-7 gap-1"
-                    >
-                      <Truck className="h-3 w-3" /> Mark as Dispatched
-                    </Button>
-                  )}
-                  {viewingOrder.status === 'DISPATCHED' && (
-                    <Button
-                      size="sm"
-                      onClick={() => handleAdvanceStatus(viewingOrder, 'DELIVERED')}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-7 gap-1"
-                    >
-                      <CheckCircle2 className="h-3 w-3" /> Confirm Delivery
-                    </Button>
-                  )}
-                  {viewingOrder.status === 'DELIVERED' && (
-                    <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
-                      <CheckCircle2 className="h-4 w-4" /> Consignment successfully fulfilled and delivered
-                    </span>
-                  )}
-                </div>
+                {viewingOrder.status !== 'DISPATCHED' && viewingOrder.status !== 'DELIVERED' && viewingOrder.status !== 'CANCELLED' && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const o = viewingOrder;
+                      setViewingOrder(null);
+                      handleOpenDispatchModal(o);
+                    }}
+                    className="bg-amber-600 hover:bg-amber-700 text-white text-xs h-7 gap-1"
+                  >
+                    <Truck className="h-3 w-3" /> Record Dispatch / Delivery
+                  </Button>
+                )}
               </div>
 
               {/* Customer & Shipping Details */}
@@ -1009,51 +1333,68 @@ export default function CustomerOrdersPage() {
                   <p className="font-semibold text-blue-600 dark:text-blue-400">{viewingOrder.customer?.name}</p>
                   <p className="text-muted-foreground">{viewingOrder.billingAddress || viewingOrder.customer?.address || '—'}</p>
                   <p className="font-mono text-muted-foreground">GSTIN: {viewingOrder.customer?.gstin || '—'}</p>
+                  <p className="font-mono text-muted-foreground">
+                    D.L. No. / Regd. No.: {viewingOrder.dlNo || viewingOrder.regdNo || viewingOrder.customer?.dlNo || viewingOrder.customer?.regdNo || '—'}
+                  </p>
                 </div>
 
                 <div className="p-3 bg-secondary/20 rounded-lg border border-border space-y-1">
-                  <span className="font-bold text-foreground block">Consignment Shipping Destination</span>
-                  <p className="text-foreground">{viewingOrder.shippingAddress || viewingOrder.customer?.shippingAddress || '—'}</p>
-                  <p className="text-muted-foreground">Transport: {viewingOrder.transportMode || 'Road'}</p>
-                  <p className="font-mono text-muted-foreground">Tracking #: {viewingOrder.trackingNumber || '—'}</p>
+                  <span className="font-bold text-foreground block">Shipping & Transport Details</span>
+                  <p className="text-foreground">Transport Carrier: {viewingOrder.transportName || viewingOrder.customer?.transportName || '—'}</p>
+                  <p className="text-muted-foreground">Transport Mode: {viewingOrder.transportMode || 'Road Transport'}</p>
+                  <p className="font-mono text-muted-foreground">Vehicle / Tracking #: {viewingOrder.trackingNumber || '—'}</p>
                 </div>
               </div>
 
-              {/* Line Items Table */}
+              {/* Line Items Table with Delivery Tracking */}
               <div className="overflow-x-auto pt-2">
                 <table className="w-full text-xs text-left">
                   <thead className="bg-secondary/60 text-muted-foreground font-mono uppercase text-[10px] border-b border-border">
                     <tr>
                       <th className="py-2 px-3">Item Description</th>
-                      <th className="py-2 px-3 text-right">Qty</th>
+                      <th className="py-2 px-3 text-right">Ordered</th>
+                      <th className="py-2 px-3 text-right">Dispatched</th>
+                      <th className="py-2 px-3 text-right">Pending</th>
                       <th className="py-2 px-3 text-right">Rate (₹)</th>
                       <th className="py-2 px-3 text-right">GST</th>
                       <th className="py-2 px-3 text-right">Total (₹)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border font-mono">
-                    {viewingOrder.items.map((i, idx) => (
-                      <tr key={i.id || idx}>
-                        <td className="py-2.5 px-3 font-sans">
-                          <span className="font-bold text-foreground block">{i.itemName}</span>
-                          {i.specification && (
-                            <span className="text-[10px] text-muted-foreground block">{i.specification}</span>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-3 text-right text-foreground font-bold">
-                          {Number(i.quantity)} {i.uom}
-                        </td>
-                        <td className="py-2.5 px-3 text-right text-muted-foreground">
-                          {Number(i.unitPrice).toFixed(2)}
-                        </td>
-                        <td className="py-2.5 px-3 text-right text-muted-foreground">
-                          {Number(i.taxRate)}%
-                        </td>
-                        <td className="py-2.5 px-3 text-right text-foreground font-bold">
-                          {Number(i.totalPrice).toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
+                    {viewingOrder.items.map((i, idx) => {
+                      const ordered = Number(i.quantity);
+                      const dispatched = Number(i.deliveredQuantity || 0);
+                      const pending = Math.max(0, ordered - dispatched);
+
+                      return (
+                        <tr key={i.id || idx}>
+                          <td className="py-2.5 px-3 font-sans">
+                            <span className="font-bold text-foreground block">{i.itemName}</span>
+                            {i.specification && (
+                              <span className="text-[10px] text-muted-foreground block">{i.specification}</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 text-right text-foreground font-bold">
+                            {ordered} {i.uom}
+                          </td>
+                          <td className="py-2.5 px-3 text-right text-emerald-500 font-bold">
+                            {dispatched} {i.uom}
+                          </td>
+                          <td className={`py-2.5 px-3 text-right font-bold ${pending > 0 ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                            {pending} {i.uom}
+                          </td>
+                          <td className="py-2.5 px-3 text-right text-muted-foreground">
+                            {Number(i.unitPrice).toFixed(2)}
+                          </td>
+                          <td className="py-2.5 px-3 text-right text-muted-foreground">
+                            {Number(i.taxRate)}%
+                          </td>
+                          <td className="py-2.5 px-3 text-right text-foreground font-bold">
+                            {Number(i.totalPrice).toFixed(2)}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1066,7 +1407,7 @@ export default function CustomerOrdersPage() {
                     {getPaymentBadge(viewingOrder.paymentStatus)}
                   </div>
                   <p className="text-muted-foreground">
-                    Paid Amount: ₹ {Number(viewingOrder.paidAmount).toLocaleString('en-IN')}
+                    Settled Amount: ₹ {Number(viewingOrder.paidAmount).toLocaleString('en-IN')}
                   </p>
                 </div>
 
@@ -1081,7 +1422,7 @@ export default function CustomerOrdersPage() {
                   </div>
                   <div className="flex justify-between sm:justify-end gap-6 text-sm font-bold text-foreground pt-1 border-t border-border">
                     <span>Grand Total:</span>
-                    <span className="text-emerald-400">
+                    <span className="text-emerald-500 font-bold">
                       ₹ {Number(viewingOrder.totalAmount).toLocaleString('en-IN')}
                     </span>
                   </div>
@@ -1132,104 +1473,72 @@ export default function CustomerOrdersPage() {
         title={`Record Payment for Order #${paymentOrder?.orderNumber}`}
         maxWidth="md"
       >
-        <form onSubmit={handleRecordPaymentSubmit} className="space-y-4">
-          <div className="p-3 bg-secondary/30 rounded-lg border border-border text-xs space-y-1 font-mono">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Total Order Amount:</span>
-              <span className="font-bold text-foreground">
-                ₹ {Number(paymentOrder?.totalAmount || 0).toLocaleString('en-IN')}
+        {paymentOrder && (
+          <form onSubmit={handleRecordPaymentSubmit} className="space-y-4">
+            <div className="bg-primary/5 p-3 rounded-lg border border-primary/20 text-xs flex justify-between items-center font-mono">
+              <span className="text-muted-foreground">Total: ₹ {paymentOrder.totalAmount.toLocaleString('en-IN')}</span>
+              <span className="text-emerald-600 dark:text-emerald-400">Paid: ₹ {paymentOrder.paidAmount.toLocaleString('en-IN')}</span>
+              <span className="text-rose-500 font-bold">
+                Due: ₹ {(paymentOrder.totalAmount - paymentOrder.paidAmount).toLocaleString('en-IN')}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Already Paid:</span>
-              <span className="text-emerald-400">
-                ₹ {Number(paymentOrder?.paidAmount || 0).toLocaleString('en-IN')}
-              </span>
-            </div>
-            <div className="flex justify-between font-bold border-t border-border pt-1">
-              <span className="text-foreground">Outstanding Balance:</span>
-              <span className="text-amber-400">
-                ₹ {Math.max(0, (paymentOrder?.totalAmount || 0) - (paymentOrder?.paidAmount || 0)).toLocaleString('en-IN')}
-              </span>
-            </div>
-          </div>
 
-          <Input
-            label="Payment Amount (₹)"
-            type="number"
-            value={paymentAmount}
-            onChange={(e) => setPaymentAmount(e.target.value)}
-            required
-          />
-
-          <div>
-            <label className="block text-xs font-semibold text-foreground mb-1.5">Payment Method</label>
-            <Select
-              options={[
-                { label: 'Bank Transfer (NEFT / RTGS / IMPS)', value: 'BANK_TRANSFER' },
-                { label: 'UPI / Digital Payment', value: 'UPI' },
-                { label: 'Cheque / Demand Draft', value: 'CHEQUE' },
-                { label: 'Cash on Delivery / Advance', value: 'CASH' },
-              ]}
-              value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
+            <Input
+              label="Payment Amount (₹)"
+              type="number"
+              value={paymentAmount}
+              onChange={(e) => setPaymentAmount(e.target.value)}
+              required
             />
-          </div>
 
-          <Input
-            label="Reference / Transaction Notes"
-            placeholder="e.g. UTR: SBIN0002891901"
-            value={paymentNotes}
-            onChange={(e) => setPaymentNotes(e.target.value)}
-          />
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1.5">Payment Method</label>
+              <Select
+                options={[
+                  { label: 'Bank Transfer (NEFT/RTGS)', value: 'BANK_TRANSFER' },
+                  { label: 'UPI / Direct', value: 'UPI' },
+                  { label: 'Cash Payment', value: 'CASH' },
+                  { label: 'Cheque Deposit', value: 'CHEQUE' },
+                ]}
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              />
+            </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-border">
-            <Button variant="ghost" type="button" onClick={() => setPaymentOrder(null)}>
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit" disabled={recordPayment.isPending}>
-              {recordPayment.isPending ? 'Recording...' : 'Confirm Payment'}
-            </Button>
-          </div>
-        </form>
+            <div className="flex justify-end gap-2 pt-2 border-t border-border">
+              <Button variant="ghost" type="button" onClick={() => setPaymentOrder(null)}>
+                Cancel
+              </Button>
+              <Button variant="primary" type="submit" disabled={recordPayment.isPending}>
+                {recordPayment.isPending ? 'Recording...' : 'Record Payment Receipt'}
+              </Button>
+            </div>
+          </form>
+        )}
       </Modal>
 
       {/* DELETE ORDER MODAL */}
       <Modal
         isOpen={Boolean(deletingOrder)}
         onClose={() => setDeletingOrder(null)}
-        title="Cancel & Delete Order"
-        maxWidth="md"
+        title="Delete Customer Order"
+        maxWidth="sm"
       >
-        <div className="space-y-4">
-          <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl space-y-2 text-xs text-red-300">
-            <div className="flex items-center gap-2 font-bold text-red-400 text-sm">
-              <AlertCircle className="h-5 w-5 shrink-0" />
-              Confirm Order Deletion
-            </div>
-            <p>
-              Are you sure you want to cancel and delete order{' '}
-              <strong className="text-foreground">#{deletingOrder?.orderNumber}</strong>?
+        {deletingOrder && (
+          <div className="space-y-4 text-xs">
+            <p className="text-muted-foreground">
+              Are you sure you want to delete order <strong className="text-foreground">#{deletingOrder.orderNumber}</strong>?
             </p>
-            <p className="text-muted-foreground">This action cannot be undone.</p>
+            <div className="flex justify-end gap-2 pt-2 border-t border-border">
+              <Button variant="ghost" onClick={() => setDeletingOrder(null)}>
+                Cancel
+              </Button>
+              <Button variant="danger" onClick={handleDelete} disabled={deleteOrder.isPending}>
+                {deleteOrder.isPending ? 'Deleting...' : 'Delete Order'}
+              </Button>
+            </div>
           </div>
-
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <Button variant="ghost" size="sm" type="button" onClick={() => setDeletingOrder(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              className="bg-red-600 hover:bg-red-700 text-white border-none"
-              onClick={handleDelete}
-              disabled={deleteOrder.isPending}
-              leftIcon={<Trash2 className="h-3.5 w-3.5" />}
-            >
-              {deleteOrder.isPending ? 'Deleting...' : 'Delete Order'}
-            </Button>
-          </div>
-        </div>
+        )}
       </Modal>
     </motion.div>
   );

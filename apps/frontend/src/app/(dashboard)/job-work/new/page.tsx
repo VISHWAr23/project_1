@@ -185,13 +185,6 @@ export default function CreateJobWorkOrderPage() {
                 required
               />
             </div>
-
-            <Input
-              label="Remarks / Technical Instructions"
-              placeholder="e.g. Electroplating specification 15 micron, smooth finish..."
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-            />
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-border">

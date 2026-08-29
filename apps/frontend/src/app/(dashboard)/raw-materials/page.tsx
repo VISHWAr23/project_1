@@ -313,21 +313,6 @@ export default function RawMaterialsPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link href="/raw-materials/categories">
-            <Button variant="outline" size="sm" leftIcon={<Layers className="h-3.5 w-3.5" />}>
-              Categories
-            </Button>
-          </Link>
-          <Link href="/raw-materials/suppliers">
-            <Button variant="outline" size="sm" leftIcon={<Building2 className="h-3.5 w-3.5" />}>
-              Suppliers
-            </Button>
-          </Link>
-          <Link href="/raw-materials/locations">
-            <Button variant="outline" size="sm" leftIcon={<MapPin className="h-3.5 w-3.5" />}>
-              Locations
-            </Button>
-          </Link>
           <Link href="/raw-materials/history">
             <Button variant="outline" size="sm" leftIcon={<History className="h-3.5 w-3.5" />}>
               Stock Ledger

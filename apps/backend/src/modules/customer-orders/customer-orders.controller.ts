@@ -16,6 +16,7 @@ import { CreateCustomerOrderDto } from './dto/create-customer-order.dto';
 import { UpdateCustomerOrderDto } from './dto/update-customer-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { RecordOrderPaymentDto } from './dto/record-order-payment.dto';
+import { RecordOrderDispatchDto } from './dto/record-order-dispatch.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @ApiTags('Customer Orders Management')
@@ -90,6 +91,17 @@ export class CustomerOrdersController {
   ) {
     const userId = req.user?.id;
     return this.customerOrdersService.updateStatus(id, dto, userId);
+  }
+
+  @Patch(':id/dispatch')
+  @ApiOperation({ summary: 'Record full or partial dispatch/delivery for customer order' })
+  async recordDispatch(
+    @Param('id') id: string,
+    @Body() dto: RecordOrderDispatchDto,
+    @Req() req: any,
+  ) {
+    const userId = req.user?.id;
+    return this.customerOrdersService.recordDispatch(id, dto, userId);
   }
 
   @Patch(':id/payment')

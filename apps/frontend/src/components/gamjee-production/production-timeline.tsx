@@ -22,9 +22,14 @@ export function GamjeeProductionTimeline({ batch }: ProductionTimelineProps) {
   const cottonInput = batch.materialInputs?.find((m) => m.materialType === 'COTTON_ROLL');
 
   const operations = batch.operations || [];
-  const pinningOp = operations.find((o) => o.operationType?.code === 'OP-PIN' || o.operationType?.name?.toLowerCase().includes('pin'));
-  const foldingOp = operations.find((o) => o.operationType?.code === 'OP-FOLD' || o.operationType?.name?.toLowerCase().includes('fold'));
-  const cuttingOp = operations.find((o) => o.operationType?.code === 'OP-CUT' || o.operationType?.name?.toLowerCase().includes('cut'));
+  const prepOp = operations.find((o) =>
+    o.operationType?.code === 'OP-FABPREP' ||
+    o.operationType?.code === 'OP-CUT' ||
+    o.operationType?.code === 'OP-PIN' ||
+    o.operationType?.code === 'OP-FOLD' ||
+    o.operationType?.name?.toLowerCase().includes('cut') ||
+    o.operationType?.name?.toLowerCase().includes('prep')
+  );
 
   const rollingEntry = batch.rollingEntries?.[0];
   const finishedRoll = batch.finishedRolls?.[0];
@@ -35,92 +40,59 @@ export function GamjeeProductionTimeline({ batch }: ProductionTimelineProps) {
       name: '1. Materials Issued',
       icon: PackageCheck,
       isCompleted: Boolean(fabricInput && cottonInput),
-      isCurrent: batch.status === 'MATERIALS_SELECTED',
+      isCurrent: batch.status === 'MATERIALS_SELECTED' && !prepOp,
       date: fabricInput?.issuedDate || batch.productionDate,
       primaryText: fabricInput && cottonInput
         ? `${Number(fabricInput.quantityIssued)} ${fabricInput.uom} + ${Number(cottonInput.quantityIssued)} ${cottonInput.uom}`
         : 'Pending Materials Issue',
       secondaryText: fabricInput && cottonInput
         ? `Fabric: ${fabricInput.product?.name} | Cotton: ${cottonInput.product?.name}`
-        : 'Bleached fabric & cotton roll required',
-      badge: 'Inputs Allocated',
+        : 'Bleached fabric & cotton roll allocated',
+      badge: fabricInput && cottonInput ? 'Allocated' : 'Pending',
     },
     {
-      id: 'pinning',
-      name: '2. Pinning',
-      icon: Pin,
-      isCompleted: Boolean(pinningOp),
-      isCurrent: batch.status === 'PINNING' || (Boolean(fabricInput) && !pinningOp),
-      date: pinningOp?.operationDate,
-      primaryText: pinningOp
-        ? `Output: ${Number(pinningOp.outputQuantity)} ${pinningOp.outputUom || 'm'}`
-        : 'Awaiting Pinning',
-      secondaryText: pinningOp
-        ? `Wastage: ${Number(pinningOp.wastageQuantity)} ${pinningOp.outputUom || 'm'} | By: ${pinningOp.employee ? `${pinningOp.employee.firstName}` : 'Operator'}`
-        : 'Edge pinning & alignment',
-      badge: pinningOp ? 'Pinned' : undefined,
-    },
-    {
-      id: 'folding',
-      name: '3. Folding',
-      icon: Layers,
-      isCompleted: Boolean(foldingOp),
-      isCurrent: batch.status === 'FOLDING' || (Boolean(pinningOp) && !foldingOp),
-      date: foldingOp?.operationDate,
-      primaryText: foldingOp
-        ? `Output: ${Number(foldingOp.outputQuantity)} ${foldingOp.outputUom || 'm'}`
-        : 'Awaiting Folding',
-      secondaryText: foldingOp
-        ? `Wastage: ${Number(foldingOp.wastageQuantity)} ${foldingOp.outputUom || 'm'} | By: ${foldingOp.employee ? `${foldingOp.employee.firstName}` : 'Operator'}`
-        : 'Layer folding & preparation',
-      badge: foldingOp ? 'Folded' : undefined,
-    },
-    {
-      id: 'cutting',
-      name: '4. Cutting',
+      id: 'fabric_prep',
+      name: '2. Fabric Preparation',
       icon: Scissors,
-      isCompleted: Boolean(cuttingOp),
-      isCurrent: batch.status === 'CUTTING' || (Boolean(foldingOp) && !cuttingOp),
-      date: cuttingOp?.operationDate,
-      primaryText: cuttingOp
-        ? `Prepared: ${Number(cuttingOp.outputQuantity)} ${cuttingOp.outputUom || 'm'}`
-        : 'Awaiting Cutting',
-      secondaryText: cuttingOp
-        ? `Wastage: ${Number(cuttingOp.wastageQuantity)} ${cuttingOp.outputUom || 'm'} | By: ${cuttingOp.employee ? `${cuttingOp.employee.firstName}` : 'Operator'}`
-        : 'Cut to roll width/spec',
-      badge: cuttingOp ? 'Prepared Fabric' : undefined,
-    },
-    {
-      id: 'cotton_prep',
-      name: '5. Ready for Rolling',
-      icon: Sparkles,
-      isCompleted: Boolean(cuttingOp && cottonInput),
-      isCurrent: batch.status === 'READY_FOR_ROLLING' || batch.status === 'COTTON_PREPARATION',
-      date: cuttingOp?.operationDate,
-      primaryText: cuttingOp && cottonInput
-        ? `${Number(cuttingOp.outputQuantity)}m Fabric + ${Number(cottonInput.quantityRemaining || cottonInput.quantityIssued)}kg Cotton`
-        : 'Pending Prep',
-      secondaryText: 'Both materials matched and ready for rolling machine',
-      badge: cuttingOp && cottonInput ? 'Ready' : undefined,
+      isCompleted: Boolean(prepOp),
+      isCurrent:
+        (batch.status === 'MATERIALS_SELECTED' ||
+          batch.status === 'PINNING' ||
+          batch.status === 'FOLDING' ||
+          batch.status === 'CUTTING') &&
+        !prepOp,
+      date: prepOp?.operationDate,
+      primaryText: prepOp
+        ? `Prepared: ${Number(prepOp.outputQuantity)} Pieces`
+        : 'Awaiting Fabric Prep',
+      secondaryText: prepOp
+        ? `Output: ${Number(prepOp.outputQuantity)} pieces (${batch.pinningSizeMeters || 3}m / ${batch.foldingCutsCount || 3} cuts)`
+        : `Pins, folds & cuts to ${batch.productionQuantity || 'target'} pieces`,
+      badge: prepOp ? 'Prepared' : undefined,
     },
     {
       id: 'rolling',
-      name: '6. Rolling',
+      name: '3. Rolling',
       icon: Scroll,
       isCompleted: Boolean(rollingEntry),
-      isCurrent: batch.status === 'ROLLING',
+      isCurrent:
+        (batch.status === 'READY_FOR_ROLLING' ||
+          batch.status === 'COTTON_PREPARATION' ||
+          batch.status === 'ROLLING' ||
+          (Boolean(prepOp) && !rollingEntry)) &&
+        batch.status !== 'COMPLETED',
       date: rollingEntry?.rollingDate,
       primaryText: rollingEntry
         ? `${rollingEntry.finishedRollQuantity} Rolls Produced`
-        : 'Pending Rolling',
+        : 'Ready for Rolling',
       secondaryText: rollingEntry
         ? `Fabric: ${rollingEntry.fabricInputQuantity}m | Cotton: ${rollingEntry.cottonInputQuantity}kg`
-        : 'Combine fabric + cotton roll',
+        : 'Combine prepared fabric pieces + cotton roll',
       badge: rollingEntry ? `${rollingEntry.finishedRollQuantity} Rolls` : undefined,
     },
     {
       id: 'completed',
-      name: '7. Finished Stock',
+      name: '4. Finished Stock',
       icon: CheckCircle2,
       isCompleted: batch.status === 'COMPLETED' || Boolean(finishedRoll),
       isCurrent: batch.status === 'COMPLETED',
@@ -146,13 +118,13 @@ export function GamjeeProductionTimeline({ batch }: ProductionTimelineProps) {
         </div>
         <div className="text-right">
           <span className="text-xs font-mono font-medium text-muted-foreground">
-            Stage {stages.findIndex((s) => s.isCurrent) + 1 || (batch.status === 'COMPLETED' ? 7 : 1)} of {stages.length}
+            Stage {stages.findIndex((s) => s.isCurrent) + 1 || (batch.status === 'COMPLETED' ? 4 : 1)} of {stages.length}
           </span>
         </div>
       </div>
 
       <div className="relative">
-        <div className="hidden lg:grid grid-cols-7 gap-3 relative">
+        <div className="hidden lg:grid grid-cols-4 gap-3 relative">
           {stages.map((stage, idx) => {
             const Icon = stage.icon;
             const isDone = stage.isCompleted;

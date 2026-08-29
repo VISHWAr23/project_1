@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -159,6 +160,12 @@ export class GauzeProductionController {
     return this.gauzeProductionService.updateGauzeType(id, dto);
   }
 
+  @Delete('masters/types/:id')
+  @ApiOperation({ summary: 'Delete Gauze Type master record' })
+  async deleteGauzeType(@Param('id') id: string) {
+    return this.gauzeProductionService.deleteGauzeType(id);
+  }
+
   @Post('masters/sizes')
   @ApiOperation({ summary: 'Create new Gauze Size dimension master record' })
   async createGauzeSize(@Body() dto: CreateGauzeSizeDto) {
@@ -169,6 +176,12 @@ export class GauzeProductionController {
   @ApiOperation({ summary: 'Update Gauze Size dimension master record' })
   async updateGauzeSize(@Param('id') id: string, @Body() dto: Partial<CreateGauzeSizeDto>) {
     return this.gauzeProductionService.updateGauzeSize(id, dto);
+  }
+
+  @Delete('masters/sizes/:id')
+  @ApiOperation({ summary: 'Delete Gauze Size dimension master record' })
+  async deleteGauzeSize(@Param('id') id: string) {
+    return this.gauzeProductionService.deleteGauzeSize(id);
   }
 
   @Post('masters/bleaching')
@@ -183,6 +196,12 @@ export class GauzeProductionController {
     return this.gauzeProductionService.updateBleachingType(id, dto);
   }
 
+  @Delete('masters/bleaching/:id')
+  @ApiOperation({ summary: 'Delete Bleaching Process Type master record' })
+  async deleteBleachingType(@Param('id') id: string) {
+    return this.gauzeProductionService.deleteBleachingType(id);
+  }
+
   @Post('masters/operations')
   @ApiOperation({ summary: 'Create new Internal Processing Operation master record' })
   async createOperationType(@Body() dto: CreateGauzeOperationTypeDto) {
@@ -193,5 +212,11 @@ export class GauzeProductionController {
   @ApiOperation({ summary: 'Update Internal Processing Operation master record' })
   async updateOperationType(@Param('id') id: string, @Body() dto: Partial<CreateGauzeOperationTypeDto>) {
     return this.gauzeProductionService.updateOperationType(id, dto);
+  }
+
+  @Delete('masters/operations/:id')
+  @ApiOperation({ summary: 'Delete Internal Processing Operation master record' })
+  async deleteOperationType(@Param('id') id: string) {
+    return this.gauzeProductionService.deleteOperationType(id);
   }
 }

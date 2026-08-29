@@ -224,11 +224,11 @@ export default function CreateGauzeBatchPage() {
           </div>
         </Card>
 
-        {/* Step 3: Production Schedule & Notes */}
+        {/* Step 3: Production Schedule */}
         <Card className="p-5 bg-card border-border space-y-4">
           <div className="flex items-center gap-2 pb-3 border-b border-border text-sm font-bold text-foreground">
             <Calendar className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-            3. Production Schedule & Notes
+            3. Production Schedule
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -245,15 +245,6 @@ export default function CreateGauzeBatchPage() {
               value={expectedCompletionDate}
               onChange={(e) => setExpectedCompletionDate(e.target.value)}
             />
-
-            <div className="sm:col-span-2">
-              <Input
-                label="Production Notes / Quality Instructions"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="e.g. Urgent order for sterile absorbent swabs, target 10cm x 10cm 8-ply"
-              />
-            </div>
           </div>
         </Card>
 

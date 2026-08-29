@@ -3,7 +3,9 @@
 import React, { useState } from 'react';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit2 } from 'lucide-react';
+import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { useToast } from '@/components/ui/toast';
+import { useManageGauzeMasters } from '@/hooks/useGauzeProduction';
 import { MasterModal } from './master-modal';
 
 interface MasterDropdownProps {
@@ -15,8 +17,12 @@ interface MasterDropdownProps {
   required?: boolean;
   type?: 'gauzeType' | 'gauzeSize' | 'bleachingType' | 'operationType';
   mastersList?: any[];
+  allowAdd?: boolean;
+  allowEdit?: boolean;
+  allowDelete?: boolean;
   onAddNewCustom?: () => void;
   onEditCustom?: () => void;
+  onDeleteCustom?: (selectedId: string) => void;
   className?: string;
   disabled?: boolean;
 }
@@ -30,15 +36,23 @@ export function MasterDropdown({
   required = false,
   type,
   mastersList = [],
+  allowAdd = true,
+  allowEdit = true,
+  allowDelete = true,
   onAddNewCustom,
   onEditCustom,
+  onDeleteCustom,
   className,
   disabled = false,
 }: MasterDropdownProps) {
+  const { toast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
 
+  const { deleteType, deleteSize, deleteBleaching, deleteOperation } = useManageGauzeMasters();
+
   const selectedItem = value && mastersList.length > 0 ? mastersList.find((item) => item.id === value) : null;
+  const selectedOption = options.find((opt) => opt.value === value);
 
   const handleOpenAdd = () => {
     if (onAddNewCustom) {
@@ -59,6 +73,49 @@ export function MasterDropdown({
     setIsModalOpen(true);
   };
 
+  const handleDeleteInline = async () => {
+    if (!value) return;
+    const itemName = selectedOption?.label || selectedItem?.name || label;
+    const confirmDelete = window.confirm(`Are you sure you want to delete "${itemName}"?`);
+    if (!confirmDelete) return;
+
+    if (onDeleteCustom) {
+      onDeleteCustom(value);
+      onChange('');
+      return;
+    }
+
+    if (!type) return;
+
+    try {
+      if (type === 'gauzeType') await deleteType.mutateAsync(value);
+      else if (type === 'gauzeSize') await deleteSize.mutateAsync(value);
+      else if (type === 'bleachingType') await deleteBleaching.mutateAsync(value);
+      else if (type === 'operationType') await deleteOperation.mutateAsync(value);
+
+      onChange('');
+      toast('Deleted', `"${itemName}" deleted successfully`, 'success');
+    } catch (err: any) {
+      toast('Error', err?.message || 'Failed to delete record', 'error');
+    }
+  };
+
+  const handleModalSuccess = (savedItem: any) => {
+    if (savedItem?.deleted) {
+      if (value === savedItem.id) {
+        onChange('');
+      }
+    } else if (savedItem?.id) {
+      onChange(savedItem.id);
+    }
+  };
+
+  const isDeleting =
+    deleteType.isPending ||
+    deleteSize.isPending ||
+    deleteBleaching.isPending ||
+    deleteOperation.isPending;
+
   return (
     <div className={`space-y-1.5 ${className || ''}`}>
       {/* Label and Quick Actions Header */}
@@ -68,9 +125,9 @@ export function MasterDropdown({
           {required && <span className="text-rose-500">*</span>}
         </label>
 
-        {/* Quick inline Add / Edit micro-buttons */}
+        {/* Quick inline Add / Edit / Delete micro-buttons */}
         <div className="flex items-center gap-1.5">
-          {value && (type || onEditCustom) && (
+          {allowEdit && value && (type || onEditCustom) && (
             <button
               type="button"
               onClick={handleOpenEdit}
@@ -82,7 +139,20 @@ export function MasterDropdown({
             </button>
           )}
 
-          {(type || onAddNewCustom) && (
+          {allowDelete && value && (type || onDeleteCustom) && (
+            <button
+              type="button"
+              onClick={handleDeleteInline}
+              disabled={isDeleting}
+              title={`Delete selected ${label}`}
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-900/30 transition-colors disabled:opacity-50"
+            >
+              <Trash2 className="h-2.5 w-2.5" />
+              <span>Delete</span>
+            </button>
+          )}
+
+          {allowAdd && (type || onAddNewCustom) && (
             <button
               type="button"
               onClick={handleOpenAdd}
@@ -112,6 +182,7 @@ export function MasterDropdown({
           onClose={() => setIsModalOpen(false)}
           type={type}
           initialData={modalMode === 'edit' ? selectedItem : undefined}
+          onSuccess={handleModalSuccess}
         />
       )}
     </div>

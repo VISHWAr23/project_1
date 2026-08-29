@@ -1606,6 +1606,9 @@ model Customer {
   alternatePhone  String?  @map("alternate_phone") @db.VarChar(20)
   gstin           String?  @db.VarChar(20)
   panNo           String?  @map("pan_no") @db.VarChar(20)
+  dlNo            String?  @map("dl_no") @db.VarChar(100)
+  regdNo          String?  @map("regd_no") @db.VarChar(100)
+  transportName   String?  @map("transport_name") @db.VarChar(255)
   address         String?  @db.Text
   shippingAddress String?  @map("shipping_address") @db.Text
   city            String?  @db.VarChar(100)
@@ -1645,6 +1648,9 @@ model CustomerOrder {
   shippingCharges Decimal   @default(0) @map("shipping_charges") @db.Decimal(12, 2)
   totalAmount     Decimal   @default(0) @map("total_amount") @db.Decimal(12, 2)
   paidAmount      Decimal   @default(0) @map("paid_amount") @db.Decimal(12, 2)
+  dlNo            String?   @map("dl_no") @db.VarChar(100)
+  regdNo          String?   @map("regd_no") @db.VarChar(100)
+  transportName   String?   @map("transport_name") @db.VarChar(255)
   shippingAddress String?   @map("shipping_address") @db.Text
   billingAddress  String?   @map("billing_address") @db.Text
   transportMode   String?   @map("transport_mode") @db.VarChar(50)
@@ -1761,6 +1767,24 @@ model GamjeeProductMaster {
   @@map("gamjee_product_masters")
 }
 
+model GamjeeCottonSpecification {
+  id             String   @id @default(uuid()) @db.Uuid
+  cottonType     String   @map("cotton_type") @db.VarChar(150)
+  weightKg       Decimal  @map("weight_kg") @db.Decimal(10, 3)
+  web            Decimal  @db.Decimal(10, 2)
+  gamjeeWidthCm  Decimal  @map("gamjee_width_cm") @db.Decimal(10, 2)
+  piecesPerRoll  Int      @map("pieces_per_roll")
+  description    String?  @db.Text
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  batches        GamjeeProductionBatch[]
+
+  @@unique([cottonType, weightKg, web, gamjeeWidthCm], map: "unique_cotton_spec_combination")
+  @@map("gamjee_cotton_specifications")
+}
+
 model GamjeeProductionBatch {
   id                     String                 @id @default(uuid()) @db.Uuid
   batchNumber            String                 @unique @map("batch_number") @db.VarChar(100)
@@ -1777,6 +1801,17 @@ model GamjeeProductionBatch {
   productionDate         DateTime               @default(now()) @map("production_date") @db.Date
   expectedCompletionDate DateTime?              @map("expected_completion_date") @db.Date
   completionDate         DateTime?              @map("completion_date") @db.Date
+
+  // Production Planning & Material Calculation Parameters
+  calculationMode        String?                @default("FROM_FABRIC") @map("calculation_mode") @db.VarChar(50)
+  pinningSizeMeters      Decimal?               @map("pinning_size_meters") @db.Decimal(10, 2)
+  foldingCutsCount       Int?                   @map("folding_cuts_count")
+  cottonSpecId           String?                @map("cotton_spec_id") @db.Uuid
+  cottonSpec             GamjeeCottonSpecification? @relation(fields: [cottonSpecId], references: [id], onDelete: SetNull)
+  cottonTypeName         String?                @map("cotton_type_name") @db.VarChar(150)
+  plannedFabricMeters    Decimal?               @map("planned_fabric_meters") @db.Decimal(10, 2)
+  plannedCottonKg        Decimal?               @map("planned_cotton_kg") @db.Decimal(10, 3)
+
   notes                  String?                @db.Text
   createdById            String?                @map("created_by") @db.Uuid
   createdBy              User?                  @relation(fields: [createdById], references: [id], onDelete: SetNull)

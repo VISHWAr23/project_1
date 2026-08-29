@@ -343,17 +343,6 @@ export default function NewRawMaterialPage() {
               </div>
             )}
           </div>
-
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Material Description</label>
-            <textarea
-              className="w-full bg-secondary/50 border border-border rounded-md text-xs p-2 text-foreground focus:outline-none focus:border-[#3ECF8E]"
-              rows={2}
-              placeholder="Technical specifications, grade details, dimensions, alloy composition..."
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            />
-          </div>
         </div>
 
         {/* Section 1.5: Finished Good Variant, Size & Packaging Specifications */}
@@ -576,17 +565,6 @@ export default function NewRawMaterialPage() {
               options={locations?.map((l) => ({ label: `${l.name} (${l.code})`, value: l.id, raw: l })) || []}
               value={formData.storageLocationId}
               onChange={(val) => setFormData({ ...formData, storageLocationId: val })}
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Remarks / Quality Notes</label>
-            <textarea
-              className="w-full bg-secondary/50 border border-border rounded-md text-xs p-2 text-foreground focus:outline-none focus:border-[#3ECF8E]"
-              rows={2}
-              placeholder="Storage temperature constraints, handling safety instructions..."
-              value={formData.remarks}
-              onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
             />
           </div>
         </div>

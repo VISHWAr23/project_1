@@ -4,6 +4,7 @@ import {
   CustomerOrderStats,
   CustomerOrderListResponse,
   CreateCustomerOrderPayload,
+  RecordOrderDispatchPayload,
   CustomerOrderQueryFilters,
 } from '@/types/customer-orders.types';
 
@@ -37,10 +38,8 @@ export const customerOrdersService = {
         totalPaidAmount: mockOrders.reduce((sum, o) => sum + o.paidAmount, 0),
         pendingPaymentAmount: mockOrders.reduce((sum, o) => sum + (o.totalAmount - o.paidAmount), 0),
         confirmedCount: mockOrders.filter((o) => o.status === 'CONFIRMED').length,
-        inProductionCount: mockOrders.filter((o) => o.status === 'IN_PRODUCTION').length,
-        readyForDispatchCount: mockOrders.filter((o) => o.status === 'READY_FOR_DISPATCH').length,
-        dispatchedCount: mockOrders.filter((o) => o.status === 'DISPATCHED').length,
-        deliveredCount: mockOrders.filter((o) => o.status === 'DELIVERED').length,
+        partiallyDispatchedCount: mockOrders.filter((o) => o.status === 'PARTIALLY_DISPATCHED').length,
+        dispatchedCount: mockOrders.filter((o) => o.status === 'DISPATCHED' || o.status === 'DELIVERED').length,
         cancelledCount: mockOrders.filter((o) => o.status === 'CANCELLED').length,
       };
     }
@@ -72,6 +71,13 @@ export const customerOrdersService = {
 
   async updateStatus(id: string, payload: { status: string; notes?: string }): Promise<CustomerOrder> {
     return await apiClient<CustomerOrder>(`/customer-orders/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async recordDispatch(id: string, payload: RecordOrderDispatchPayload): Promise<CustomerOrder> {
+    return await apiClient<CustomerOrder>(`/customer-orders/${id}/dispatch`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     });
@@ -126,6 +132,8 @@ const mockOrders: CustomerOrder[] = [
     shippingCharges: 2500,
     totalAmount: 209700,
     paidAmount: 100000,
+    dlNo: 'DL-20B/21B-4492',
+    transportName: 'VRL Logistics Express',
     shippingAddress: 'Central Pharmacy Warehouse, Apollo Health City, Chennai',
     billingAddress: '21 Greams Lane, Thousand Lights, Chennai',
     transportMode: 'ROAD',

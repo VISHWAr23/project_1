@@ -11,13 +11,15 @@ import {
   useUpdateGamjeeOperation,
   useCreateGamjeeProductMaster,
   useUpdateGamjeeProductMaster,
+  useCreateGamjeeCottonSpec,
+  useUpdateGamjeeCottonSpec,
 } from '@/hooks/useGamjeeProduction';
 import { toast } from '@/components/ui/toast';
 
 interface MasterModalProps {
   isOpen: boolean;
   onClose: () => void;
-  type: 'size' | 'operation' | 'product';
+  type: 'size' | 'operation' | 'product' | 'cotton-spec';
   initialData?: any;
 }
 
@@ -28,6 +30,8 @@ export function MasterModal({ isOpen, onClose, type, initialData }: MasterModalP
   const updateOp = useUpdateGamjeeOperation();
   const createProd = useCreateGamjeeProductMaster();
   const updateProd = useUpdateGamjeeProductMaster();
+  const createCotton = useCreateGamjeeCottonSpec();
+  const updateCotton = useUpdateGamjeeCottonSpec();
 
   const isEdit = Boolean(initialData?.id);
 
@@ -51,6 +55,15 @@ export function MasterModal({ isOpen, onClose, type, initialData }: MasterModalP
   const [cottonReq, setCottonReq] = useState<number | ''>(0.1);
   const [fabricReq, setFabricReq] = useState<number | ''>(8.0);
 
+  // Cotton Specification State
+  const [cottonType, setCottonType] = useState('');
+  const [cottonWeightKg, setCottonWeightKg] = useState<number | ''>(1.0);
+  const [cottonWeb, setCottonWeb] = useState<number | ''>(900);
+  const [cottonGamjeeWidthCm, setCottonGamjeeWidthCm] = useState<number | ''>(15);
+  const [cottonPiecesPerRoll, setCottonPiecesPerRoll] = useState<number | ''>(12);
+  const [cottonDesc, setCottonDesc] = useState('');
+  const [cottonActive, setCottonActive] = useState(true);
+
   useEffect(() => {
     if (initialData) {
       if (type === 'size') {
@@ -70,6 +83,14 @@ export function MasterModal({ isOpen, onClose, type, initialData }: MasterModalP
         setGamjeeType(initialData.gamjeeType || '');
         setCottonReq(initialData.cottonRequirement ?? 0.1);
         setFabricReq(initialData.fabricRequirement ?? 8.0);
+      } else if (type === 'cotton-spec') {
+        setCottonType(initialData.cottonType || '');
+        setCottonWeightKg(initialData.weightKg != null ? Number(initialData.weightKg) : 1.0);
+        setCottonWeb(initialData.web != null ? Number(initialData.web) : 900);
+        setCottonGamjeeWidthCm(initialData.gamjeeWidthCm != null ? Number(initialData.gamjeeWidthCm) : 15);
+        setCottonPiecesPerRoll(initialData.piecesPerRoll != null ? Number(initialData.piecesPerRoll) : 12);
+        setCottonDesc(initialData.description || '');
+        setCottonActive(initialData.active ?? true);
       }
     } else {
       if (type === 'size') {
@@ -89,6 +110,14 @@ export function MasterModal({ isOpen, onClose, type, initialData }: MasterModalP
         setGamjeeType('');
         setCottonReq(0.1);
         setFabricReq(8.0);
+      } else if (type === 'cotton-spec') {
+        setCottonType('');
+        setCottonWeightKg(1.0);
+        setCottonWeb(900);
+        setCottonGamjeeWidthCm(15);
+        setCottonPiecesPerRoll(12);
+        setCottonDesc('');
+        setCottonActive(true);
       }
     }
   }, [initialData, type, isOpen]);
@@ -191,6 +220,48 @@ export function MasterModal({ isOpen, onClose, type, initialData }: MasterModalP
           });
           toast.success('Gamjee Product Master created successfully!');
         }
+      } else if (type === 'cotton-spec') {
+        if (!cottonType.trim()) {
+          toast.error('Please enter Cotton Type / Name (e.g. 1 KG 900 Web)');
+          return;
+        }
+        if (Number(cottonWeightKg) <= 0) {
+          toast.error('Cotton Weight must be greater than 0');
+          return;
+        }
+        if (Number(cottonWeb) <= 0) {
+          toast.error('Web must be greater than 0');
+          return;
+        }
+        if (Number(cottonGamjeeWidthCm) <= 0) {
+          toast.error('Gamjee Width must be greater than 0');
+          return;
+        }
+        if (Number(cottonPiecesPerRoll) <= 0) {
+          toast.error('Pieces per roll must be greater than 0');
+          return;
+        }
+
+        const payload = {
+          cottonType: cottonType.trim(),
+          weightKg: Number(cottonWeightKg),
+          web: Number(cottonWeb),
+          gamjeeWidthCm: Number(cottonGamjeeWidthCm),
+          piecesPerRoll: Math.round(Number(cottonPiecesPerRoll)),
+          description: cottonDesc.trim() || undefined,
+          active: cottonActive,
+        };
+
+        if (isEdit) {
+          await updateCotton.mutateAsync({
+            id: initialData.id,
+            payload,
+          });
+          toast.success('Cotton Specification updated successfully!');
+        } else {
+          await createCotton.mutateAsync(payload);
+          toast.success('Cotton Specification added successfully!');
+        }
       }
 
       onClose();
@@ -203,6 +274,7 @@ export function MasterModal({ isOpen, onClose, type, initialData }: MasterModalP
     size: isEdit ? 'Edit Gamjee Roll Size' : 'Create New Gamjee Roll Size',
     operation: isEdit ? 'Edit Production Operation' : 'Create New Production Operation',
     product: isEdit ? 'Edit Gamjee Product Configuration' : 'Create Gamjee Product Configuration',
+    'cotton-spec': isEdit ? 'Edit Cotton Roll Specification' : 'Add Cotton Roll Specification',
   };
 
   const isSaving =
@@ -211,7 +283,9 @@ export function MasterModal({ isOpen, onClose, type, initialData }: MasterModalP
     createOp.isPending ||
     updateOp.isPending ||
     createProd.isPending ||
-    updateProd.isPending;
+    updateProd.isPending ||
+    createCotton.isPending ||
+    updateCotton.isPending;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={titles[type]} size="md">
@@ -251,14 +325,6 @@ export function MasterModal({ isOpen, onClose, type, initialData }: MasterModalP
                 />
               </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-foreground mb-1">Description</label>
-              <Input
-                placeholder="e.g. Standard absorbent dressing"
-                value={sizeDesc}
-                onChange={(e) => setSizeDesc(e.target.value)}
-              />
-            </div>
           </>
         )}
 
@@ -296,14 +362,6 @@ export function MasterModal({ isOpen, onClose, type, initialData }: MasterModalP
                   onChange={(e) => setOpSeq(e.target.value === '' ? '' : Number(e.target.value))}
                 />
               </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-foreground mb-1">Description</label>
-              <Input
-                placeholder="e.g. Specialized sealing operation"
-                value={opDesc}
-                onChange={(e) => setOpDesc(e.target.value)}
-              />
             </div>
           </>
         )}
@@ -352,12 +410,103 @@ export function MasterModal({ isOpen, onClose, type, initialData }: MasterModalP
           </>
         )}
 
+        {type === 'cotton-spec' && (
+          <>
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1">
+                Cotton Type / Name <span className="text-rose-500">*</span>
+              </label>
+              <Input
+                placeholder="e.g. 1 KG 900 Web"
+                value={cottonType}
+                onChange={(e) => setCottonType(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-foreground mb-1">
+                  Cotton Weight (KG) <span className="text-rose-500">*</span>
+                </label>
+                <Input
+                  type="number"
+                  step="0.001"
+                  min="0.001"
+                  placeholder="e.g. 1.0"
+                  value={cottonWeightKg}
+                  onChange={(e) => setCottonWeightKg(e.target.value === '' ? '' : Number(e.target.value))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-foreground mb-1">
+                  Web <span className="text-rose-500">*</span>
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  placeholder="e.g. 900"
+                  value={cottonWeb}
+                  onChange={(e) => setCottonWeb(e.target.value === '' ? '' : Number(e.target.value))}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-foreground mb-1">
+                  Gamjee Width (CM) <span className="text-rose-500">*</span>
+                </label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  placeholder="e.g. 15"
+                  value={cottonGamjeeWidthCm}
+                  onChange={(e) => setCottonGamjeeWidthCm(e.target.value === '' ? '' : Number(e.target.value))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-foreground mb-1">
+                  Pieces per Cotton Roll <span className="text-rose-500">*</span>
+                </label>
+                <Input
+                  type="number"
+                  step="1"
+                  min="1"
+                  placeholder="e.g. 12"
+                  value={cottonPiecesPerRoll}
+                  onChange={(e) => setCottonPiecesPerRoll(e.target.value === '' ? '' : Number(e.target.value))}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                type="checkbox"
+                id="cottonActive"
+                checked={cottonActive}
+                onChange={(e) => setCottonActive(e.target.checked)}
+                className="h-4 w-4 rounded border-border text-emerald-600 focus:ring-emerald-500"
+              />
+              <label htmlFor="cottonActive" className="text-xs text-foreground cursor-pointer select-none">
+                Active Specification (Available in Gamjee Production calculations)
+              </label>
+            </div>
+          </>
+        )}
+
         <div className="flex justify-end gap-3 pt-3 border-t border-border">
           <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
             Cancel
           </Button>
           <Button type="submit" disabled={isSaving}>
-            {isSaving ? 'Saving...' : isEdit ? 'Update Master Record' : 'Save Master Record'}
+            {isSaving ? 'Saving...' : isEdit ? 'Update Specification' : 'Save Specification'}
           </Button>
         </div>
       </form>

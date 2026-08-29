@@ -107,57 +107,39 @@ export default function GamjeeBatchDetailPage() {
       );
     }
 
-    if (batch.status === 'MATERIALS_SELECTED' || batch.currentStage === 'PINNING') {
-      return (
-        <Button
-          onClick={() => {
-            setActiveOperationCode('OP-PIN');
-            setIsOperationModalOpen(true);
-          }}
-          className="h-9 gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-semibold"
-        >
-          <Pin className="h-4 w-4" />
-          <span>Record Fabric Pinning</span>
-        </Button>
-      );
-    }
-
-    if (batch.status === 'PINNING' || batch.currentStage === 'FOLDING') {
-      return (
-        <Button
-          onClick={() => {
-            setActiveOperationCode('OP-FOLD');
-            setIsOperationModalOpen(true);
-          }}
-          className="h-9 gap-1.5 text-xs bg-amber-600 hover:bg-amber-700 text-white shadow-xs font-semibold"
-        >
-          <Layers className="h-4 w-4" />
-          <span>Record Fabric Folding</span>
-        </Button>
-      );
-    }
-
-    if (batch.status === 'FOLDING' || batch.currentStage === 'CUTTING') {
-      return (
-        <Button
-          onClick={() => {
-            setActiveOperationCode('OP-CUT');
-            setIsOperationModalOpen(true);
-          }}
-          className="h-9 gap-1.5 text-xs bg-orange-600 hover:bg-orange-700 text-white shadow-xs font-semibold"
-        >
-          <Scissors className="h-4 w-4" />
-          <span>Record Fabric Cutting</span>
-        </Button>
-      );
+    if (
+      batch.status === 'MATERIALS_SELECTED' ||
+      batch.status === 'PINNING' ||
+      batch.status === 'FOLDING' ||
+      batch.status === 'CUTTING' ||
+      batch.currentStage === 'PINNING' ||
+      batch.currentStage === 'FOLDING' ||
+      batch.currentStage === 'CUTTING'
+    ) {
+      const hasPrep = (batch.operations || []).length > 0;
+      if (!hasPrep) {
+        return (
+          <Button
+            onClick={() => {
+              setActiveOperationCode('OP-FABPREP');
+              setIsOperationModalOpen(true);
+            }}
+            className="h-9 gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-semibold"
+          >
+            <Scissors className="h-4 w-4" />
+            <span>Record Fabric Preparation (Pinning, Folding & Cutting)</span>
+          </Button>
+        );
+      }
     }
 
     if (
-      batch.status === 'CUTTING' ||
       batch.status === 'READY_FOR_ROLLING' ||
       batch.status === 'COTTON_PREPARATION' ||
+      batch.status === 'ROLLING' ||
       batch.currentStage === 'READY_FOR_ROLLING' ||
-      batch.currentStage === 'ROLLING'
+      batch.currentStage === 'ROLLING' ||
+      ((batch.operations || []).length > 0 && batch.status !== 'COMPLETED')
     ) {
       return (
         <Button
@@ -254,6 +236,47 @@ export default function GamjeeBatchDetailPage() {
             </p>
           </div>
         </div>
+
+        {/* Planned Production Blueprint & Formula Specifications */}
+        {(batch.pinningSizeMeters || batch.plannedFabricMeters || batch.cottonTypeName) && (
+          <div className="mt-4 p-3.5 rounded-lg bg-secondary/30 border border-border/80 space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold text-foreground">
+              <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                <Scissors className="h-3.5 w-3.5" /> Planned Production Blueprint
+              </span>
+              <span className="text-[10px] font-mono text-muted-foreground">
+                Mode: {batch.calculationMode === 'FROM_PIECES' ? 'Target Output Driven' : 'Fabric Roll Driven'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+              <div className="p-2 bg-background/60 rounded border border-border/60">
+                <span className="text-[10px] text-muted-foreground block font-sans">Pinning Fold Size</span>
+                <span className="font-bold text-blue-600 dark:text-blue-400">
+                  {batch.pinningSizeMeters ? `${Number(batch.pinningSizeMeters)} m / fold` : '3 m / fold'}
+                </span>
+              </div>
+              <div className="p-2 bg-background/60 rounded border border-border/60">
+                <span className="text-[10px] text-muted-foreground block font-sans">Folding Cuts Multiplier</span>
+                <span className="font-bold text-purple-600 dark:text-purple-400">
+                  {batch.foldingCutsCount ? `${batch.foldingCutsCount} cuts / fold` : '3 cuts / fold'}
+                </span>
+              </div>
+              <div className="p-2 bg-background/60 rounded border border-border/60">
+                <span className="text-[10px] text-muted-foreground block font-sans">Cotton Specification</span>
+                <span className="font-bold text-amber-600 dark:text-amber-400 truncate block">
+                  {batch.cottonTypeName || batch.cottonSpec?.cottonType || '1 KG 900 Web'}
+                </span>
+              </div>
+              <div className="p-2 bg-background/60 rounded border border-border/60">
+                <span className="text-[10px] text-muted-foreground block font-sans">Planned Cotton Req</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                  {batch.plannedCottonKg ? `${Number(batch.plannedCottonKg)} KG` : '-'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Visual Pipeline Timeline */}

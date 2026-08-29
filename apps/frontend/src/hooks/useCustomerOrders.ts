@@ -65,6 +65,19 @@ export function useUpdateOrderStatus() {
   });
 }
 
+export function useRecordOrderDispatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: any }) =>
+      customerOrdersService.recordDispatch(id, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['customerOrders'] });
+      queryClient.invalidateQueries({ queryKey: ['customerOrder', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['customerOrderStats'] });
+    },
+  });
+}
+
 export function useRecordOrderPayment() {
   const queryClient = useQueryClient();
   return useMutation({

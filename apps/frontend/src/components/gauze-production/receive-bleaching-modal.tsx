@@ -201,13 +201,6 @@ export function ReceiveBleachingModal({
           />
         </div>
 
-        <Input
-          label="Quality Inspection Notes / Gate Entry Reference"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="e.g. Delivery Challan #DC-9921, Whiteness 88%, Absorbency 2.4s"
-        />
-
         <div className="pt-3 border-t border-border flex items-center justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel

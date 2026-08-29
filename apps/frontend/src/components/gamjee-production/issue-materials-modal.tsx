@@ -40,18 +40,18 @@ export function IssueMaterialsModal({ isOpen, onClose, batch }: IssueMaterialsMo
       m.category?.name?.toLowerCase().includes('raw')
   );
 
+  const fixedFabricQty = Number(batch.plannedFabricMeters || batch.productionQuantity || 100);
+  const fixedCottonQty = Number(batch.plannedCottonKg || 10);
+
   const [fabricProductId, setFabricProductId] = useState('');
-  const [fabricQty, setFabricQty] = useState<number | ''>(1000);
   const [fabricRollNo, setFabricRollNo] = useState('');
   const [fabricUom, setFabricUom] = useState('meter');
 
   const [cottonProductId, setCottonProductId] = useState('');
-  const [cottonQty, setCottonQty] = useState<number | ''>(12);
   const [cottonRollNo, setCottonRollNo] = useState('');
   const [cottonUom, setCottonUom] = useState('kg');
 
   const [issuedDate, setIssuedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [notes, setNotes] = useState('');
 
   // Auto-select first matching products
   useEffect(() => {
@@ -69,17 +69,13 @@ export function IssueMaterialsModal({ isOpen, onClose, batch }: IssueMaterialsMo
   const fabricStock = Number(selectedFabric?.currentStockBalance || 0);
   const cottonStock = Number(selectedCotton?.currentStockBalance || 0);
 
-  const isFabricOverstock = Number(fabricQty) > fabricStock && fabricStock > 0;
-  const isCottonOverstock = Number(cottonQty) > cottonStock && cottonStock > 0;
+  const isFabricOverstock = fixedFabricQty > fabricStock && fabricStock > 0;
+  const isCottonOverstock = fixedCottonQty > cottonStock && cottonStock > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fabricProductId || !cottonProductId) {
       toast.error('Please select both Bleached Fabric and Cotton Roll products');
-      return;
-    }
-    if (!fabricQty || Number(fabricQty) <= 0 || !cottonQty || Number(cottonQty) <= 0) {
-      toast.error('Please enter valid quantities greater than zero');
       return;
     }
 
@@ -89,14 +85,13 @@ export function IssueMaterialsModal({ isOpen, onClose, batch }: IssueMaterialsMo
         payload: {
           fabricProductId,
           fabricRollOrBatchNumber: fabricRollNo || undefined,
-          fabricQuantityIssued: Number(fabricQty),
+          fabricQuantityIssued: fixedFabricQty,
           fabricUom,
           cottonProductId,
           cottonRollOrBatchNumber: cottonRollNo || undefined,
-          cottonQuantityIssued: Number(cottonQty),
+          cottonQuantityIssued: fixedCottonQty,
           cottonUom,
           issuedDate,
-          notes: notes || undefined,
         },
       });
 
@@ -126,11 +121,16 @@ export function IssueMaterialsModal({ isOpen, onClose, batch }: IssueMaterialsMo
 
         {/* Section 1: Bleached Fabric */}
         <div className="border border-border/80 rounded-xl p-4 bg-card/60 space-y-4">
-          <div className="flex items-center gap-2 border-b border-border pb-2">
-            <Layers className="h-4 w-4 text-blue-500" />
-            <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
-              1. Bleached Fabric Allocation
-            </h4>
+          <div className="flex items-center justify-between border-b border-border pb-2">
+            <div className="flex items-center gap-2">
+              <Layers className="h-4 w-4 text-blue-500" />
+              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                1. Bleached Fabric Allocation
+              </h4>
+            </div>
+            <span className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">
+              Fixed: {fixedFabricQty} {fabricUom}
+            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -168,42 +168,36 @@ export function IssueMaterialsModal({ isOpen, onClose, batch }: IssueMaterialsMo
                 onChange={(e) => setFabricRollNo(e.target.value)}
               />
             </div>
+          </div>
 
+          <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg flex items-center justify-between">
             <div>
-              <label className="block text-xs font-medium text-foreground mb-1">
-                Quantity to Issue <span className="text-rose-500">*</span>
-              </label>
-              <Input
-                type="number"
-                step="0.001"
-                min="0.001"
-                placeholder="1000"
-                value={fabricQty}
-                onChange={(e) => setFabricQty(e.target.value === '' ? '' : Number(e.target.value))}
-                required
-              />
-              {isFabricOverstock && (
-                <div className="flex items-center gap-1 mt-1 text-[11px] text-rose-500 font-medium">
-                  <AlertCircle className="h-3 w-3 shrink-0" />
-                  <span>Exceeds available warehouse stock ({fabricStock})</span>
-                </div>
-              )}
+              <span className="text-[10px] text-muted-foreground block">Required Quantity (Calculated at Batch Creation):</span>
+              <span className="text-sm font-bold text-blue-600 dark:text-blue-400 font-mono">
+                {fixedFabricQty} {fabricUom}
+              </span>
             </div>
-
-            <div>
-              <label className="block text-xs font-medium text-foreground mb-1">Fabric UOM</label>
-              <Input value={fabricUom} onChange={(e) => setFabricUom(e.target.value)} />
-            </div>
+            {isFabricOverstock && (
+              <div className="flex items-center gap-1 text-[11px] text-rose-500 font-medium">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span>Exceeds warehouse balance ({fabricStock})</span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Section 2: Cotton Roll */}
         <div className="border border-border/80 rounded-xl p-4 bg-card/60 space-y-4">
-          <div className="flex items-center gap-2 border-b border-border pb-2">
-            <Sparkles className="h-4 w-4 text-amber-500" />
-            <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
-              2. Cotton Roll Allocation
-            </h4>
+          <div className="flex items-center justify-between border-b border-border pb-2">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-amber-500" />
+              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                2. Cotton Roll Allocation
+              </h4>
+            </div>
+            <span className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
+              Fixed: {fixedCottonQty} {cottonUom}
+            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -241,49 +235,28 @@ export function IssueMaterialsModal({ isOpen, onClose, batch }: IssueMaterialsMo
                 onChange={(e) => setCottonRollNo(e.target.value)}
               />
             </div>
+          </div>
 
+          <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-center justify-between">
             <div>
-              <label className="block text-xs font-medium text-foreground mb-1">
-                Cotton Quantity to Issue <span className="text-rose-500">*</span>
-              </label>
-              <Input
-                type="number"
-                step="0.001"
-                min="0.001"
-                placeholder="12"
-                value={cottonQty}
-                onChange={(e) => setCottonQty(e.target.value === '' ? '' : Number(e.target.value))}
-                required
-              />
-              {isCottonOverstock && (
-                <div className="flex items-center gap-1 mt-1 text-[11px] text-rose-500 font-medium">
-                  <AlertCircle className="h-3 w-3 shrink-0" />
-                  <span>Exceeds available warehouse stock ({cottonStock})</span>
-                </div>
-              )}
+              <span className="text-[10px] text-muted-foreground block">Required Cotton (Calculated at Batch Creation):</span>
+              <span className="text-sm font-bold text-amber-600 dark:text-amber-400 font-mono">
+                {fixedCottonQty} {cottonUom}
+              </span>
             </div>
-
-            <div>
-              <label className="block text-xs font-medium text-foreground mb-1">Cotton UOM</label>
-              <Input value={cottonUom} onChange={(e) => setCottonUom(e.target.value)} />
-            </div>
+            {isCottonOverstock && (
+              <div className="flex items-center gap-1 text-[11px] text-rose-500 font-medium">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span>Exceeds warehouse balance ({cottonStock})</span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Section 3: Date & Notes */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-foreground mb-1">Issue Date</label>
-            <Input type="date" value={issuedDate} onChange={(e) => setIssuedDate(e.target.value)} required />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-foreground mb-1">Notes / Instructions</label>
-            <Input
-              placeholder="e.g. High absorbency roll production batch"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-          </div>
+        {/* Section 3: Date */}
+        <div>
+          <label className="block text-xs font-medium text-foreground mb-1">Issue Date</label>
+          <Input type="date" value={issuedDate} onChange={(e) => setIssuedDate(e.target.value)} required />
         </div>
 
         <div className="flex justify-end gap-3 pt-3 border-t border-border">

@@ -148,6 +148,12 @@ export const gauzeProductionService = {
     });
   },
 
+  deleteGauzeType: async (id: string): Promise<any> => {
+    return apiClient(`/gauze-production/masters/types/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
   createGauzeSize: async (payload: GauzeSizeInput): Promise<GauzeSize> => {
     return apiClient<GauzeSize>('/gauze-production/masters/sizes', {
       method: 'POST',
@@ -159,6 +165,12 @@ export const gauzeProductionService = {
     return apiClient<GauzeSize>(`/gauze-production/masters/sizes/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
+    });
+  },
+
+  deleteGauzeSize: async (id: string): Promise<any> => {
+    return apiClient(`/gauze-production/masters/sizes/${id}`, {
+      method: 'DELETE',
     });
   },
 
@@ -176,6 +188,12 @@ export const gauzeProductionService = {
     });
   },
 
+  deleteBleachingType: async (id: string): Promise<any> => {
+    return apiClient(`/gauze-production/masters/bleaching/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
   createOperationType: async (payload: GauzeOperationTypeInput): Promise<GauzeOperationType> => {
     return apiClient<GauzeOperationType>('/gauze-production/masters/operations', {
       method: 'POST',
@@ -187,6 +205,12 @@ export const gauzeProductionService = {
     return apiClient<GauzeOperationType>(`/gauze-production/masters/operations/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
+    });
+  },
+
+  deleteOperationType: async (id: string): Promise<any> => {
+    return apiClient(`/gauze-production/masters/operations/${id}`, {
+      method: 'DELETE',
     });
   },
 };
