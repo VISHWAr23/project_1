@@ -21,8 +21,8 @@ export class SalaryService {
       prisma.payrollRun.count(),
       prisma.payrollRun.count({ where: { status: { in: [PayrollStatus.DRAFT, PayrollStatus.PENDING_APPROVAL] } } }),
       prisma.payrollRun.count({ where: { status: PayrollStatus.APPROVED } }),
-      prisma.payrollRun.findUnique({
-        where: { month_year: { month: currentMonth, year: currentYear } },
+      prisma.payrollRun.findFirst({
+        where: { month: currentMonth, year: currentYear, periodType: 'MONTHLY' },
         include: { items: true },
       }),
     ]);

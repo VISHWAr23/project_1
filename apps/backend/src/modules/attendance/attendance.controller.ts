@@ -1,13 +1,16 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AttendanceService } from './attendance.service';
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
 import { BulkAttendanceDto } from './dto/bulk-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AttendanceStatus } from '@ims/database';
 
 @ApiTags('Attendance Management')
 @Controller('attendance')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 

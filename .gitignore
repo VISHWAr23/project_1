@@ -10,6 +10,7 @@ node_modules/
 yarn-error.log*
 npm-debug.log*
 pnpm-debug.log*
+.agents/
 
 # ==========================================
 # Build & Distribution Artifacts

@@ -9,6 +9,8 @@ import { EmployeeStatus } from '@ims/database';
 
 @ApiTags('Employee Management')
 @Controller('employees')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class EmployeeController {
   constructor(private readonly employeeService: EmployeeService) {}
 

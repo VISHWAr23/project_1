@@ -385,7 +385,10 @@ export default function MaterialDetailPage() {
 
       {activeTab === 'history' && (
         <div className="space-y-4">
-          <StockHistoryLedger items={material.inventoryTransactions || []} />
+          <StockHistoryLedger
+            items={material.inventoryTransactions || []}
+            unitAbbreviation={material.unit?.abbreviation || 'Units'}
+          />
         </div>
       )}
 

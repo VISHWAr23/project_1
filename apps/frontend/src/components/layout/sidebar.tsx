@@ -16,6 +16,7 @@ import {
   CircleDollarSign,
   FileBarChart,
   Settings,
+  Bell,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -43,6 +44,7 @@ export const navItems: NavItem[] = [
   { title: 'Employees', href: '/employees', icon: Users },
   { title: 'Attendance', href: '/attendance', icon: CalendarCheck },
   { title: 'Salary & Payroll', href: '/salary', icon: CircleDollarSign },
+  { title: 'Notifications', href: '/notifications', icon: Bell },
   { title: 'Reports & Analytics', href: '/reports', icon: FileBarChart },
   { title: 'System Settings', href: '/settings', icon: Settings },
 ];

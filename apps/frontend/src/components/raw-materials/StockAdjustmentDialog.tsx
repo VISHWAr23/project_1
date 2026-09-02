@@ -25,10 +25,11 @@ export function StockAdjustmentDialog({ isOpen, onClose, material }: StockAdjust
   const [notes, setNotes] = useState<string>('');
 
   const numQty = Number(quantity) || 0;
+  const currentStock = Math.max(0, Number(material.currentStockBalance) || 0);
   const isSubtraction = ['WORK_ORDER_ISSUE', 'JOB_WORK_DISPATCH', 'ADJUSTMENT_SUBTRACT', 'TRANSFER'].includes(transactionType);
   const projectedStock = isSubtraction
-    ? material.currentStockBalance - numQty
-    : material.currentStockBalance + numQty;
+    ? currentStock - numQty
+    : currentStock + numQty;
 
   const isNegativeError = projectedStock < 0;
 
@@ -77,7 +78,7 @@ export function StockAdjustmentDialog({ isOpen, onClose, material }: StockAdjust
           <div>
             <span className="text-muted-foreground block">Current Stock:</span>
             <span className="font-mono font-bold text-sm text-foreground">
-              {material.currentStockBalance} {material.unit?.abbreviation || 'Units'}
+              {currentStock} {material.unit?.abbreviation || 'Units'}
             </span>
           </div>
           <div className="text-right">
@@ -87,7 +88,7 @@ export function StockAdjustmentDialog({ isOpen, onClose, material }: StockAdjust
                 isNegativeError ? 'text-rose-500' : 'text-[#2563EB]'
               }`}
             >
-              {projectedStock} {material.unit?.abbreviation || 'Units'}
+              {Math.max(0, projectedStock)} {material.unit?.abbreviation || 'Units'}
             </span>
           </div>
         </div>
@@ -95,7 +96,7 @@ export function StockAdjustmentDialog({ isOpen, onClose, material }: StockAdjust
         {isNegativeError && (
           <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-md flex items-center gap-2 text-rose-400 text-xs">
             <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>Negative stock prohibited! Maximum available stock is {material.currentStockBalance}.</span>
+            <span>Negative stock prohibited! Maximum available stock is {currentStock} {material.unit?.abbreviation || 'Units'}.</span>
           </div>
         )}
 

@@ -346,10 +346,24 @@ export class GauzeProductionService implements OnModuleInit {
       throw new NotFoundException('Selected Raw Material / Product not found');
     }
 
+    const currentStock = Number(product.currentStockBalance);
+    if (currentStock < Number(dto.inputQuantity)) {
+      throw new BadRequestException(
+        `Insufficient raw material stock for ${product.name}. Available: ${currentStock} ${dto.inputUom}, Required: ${dto.inputQuantity} ${dto.inputUom}`
+      );
+    }
+
     const batchNumber = await this.generateSequenceNumber('GZ', 'batch');
 
     const result = await prisma.$transaction(async (tx) => {
-      // Create main batch
+      // 1. Deduct raw material stock
+      const newStock = Math.max(0, currentStock - Number(dto.inputQuantity));
+      await tx.rawMaterial.update({
+        where: { id: dto.productId },
+        data: { currentStockBalance: newStock },
+      });
+
+      // 2. Create main batch
       const batch = await tx.gauzeProductionBatch.create({
         data: {
           batchNumber,
@@ -371,7 +385,7 @@ export class GauzeProductionService implements OnModuleInit {
         },
       });
 
-      // Create linked raw material roll record
+      // 3. Create linked raw material roll record
       await tx.gauzeRawMaterial.create({
         data: {
           productionBatchId: batch.id,
@@ -389,7 +403,25 @@ export class GauzeProductionService implements OnModuleInit {
         },
       });
 
-      // Create initial material movement
+      // 4. Record stock transaction in inventory ledger
+      if (userId) {
+        await tx.inventoryTransaction.create({
+          data: {
+            rawMaterialId: dto.productId,
+            transactionType: TransactionType.WORK_ORDER_ISSUE,
+            quantity: dto.inputQuantity,
+            previousStock: currentStock,
+            newStock: newStock,
+            referenceNumber: batchNumber,
+            referenceDocumentType: 'GAUZE_PRODUCTION_BATCH',
+            referenceDocumentId: batch.id,
+            notes: `Raw material issued to Gauze Production Batch ${batchNumber}`,
+            createdByUserId: userId,
+          },
+        });
+      }
+
+      // 5. Create initial material movement
       await tx.gauzeMaterialMovement.create({
         data: {
           productionBatchId: batch.id,
@@ -406,7 +438,7 @@ export class GauzeProductionService implements OnModuleInit {
         },
       });
 
-      // Audit status history
+      // 6. Audit status history
       await tx.gauzeBatchStatusHistory.create({
         data: {
           productionBatchId: batch.id,

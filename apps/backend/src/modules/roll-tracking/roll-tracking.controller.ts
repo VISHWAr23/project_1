@@ -1,10 +1,15 @@
 import { Controller, Get, Post, Put, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { RollTrackingService } from './roll-tracking.service';
 import { CreateRollDto } from './dto/create-roll.dto';
 import { UpdateRollStatusDto } from './dto/update-roll-status.dto';
 import { RollStatus, RollStage } from '@ims/database';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
+@ApiTags('Roll Tracking & Genealogy')
 @Controller('rolls')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class RollTrackingController {
   constructor(private readonly rollTrackingService: RollTrackingService) {}
 

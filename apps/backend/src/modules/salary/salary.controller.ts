@@ -1,13 +1,16 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, Req } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SalaryService } from './salary.service';
 import { PayrollStatus } from '@ims/database';
 import { GeneratePayrollDto } from './dto/generate-payroll.dto';
 import { UpdatePayrollItemAdjustmentDto } from './dto/update-payroll-item.dto';
 import { RecordSalaryPaymentDto } from './dto/record-payment.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @ApiTags('Salary & Payroll Management')
 @Controller('salary')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class SalaryController {
   constructor(private readonly salaryService: SalaryService) {}
 

@@ -4,7 +4,7 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
-import { prisma, Prisma } from '@ims/database';
+import { prisma, Prisma, TransactionType } from '@ims/database';
 import { CreateCustomerOrderDto } from './dto/create-customer-order.dto';
 import { UpdateCustomerOrderDto } from './dto/update-customer-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -591,6 +591,40 @@ export class CustomerOrdersService {
             deliveredQuantity: newDelivered,
           },
         });
+
+        // Deduct finished goods stock and record inventory transaction
+        if (lineItem.productId) {
+          const product = await tx.rawMaterial.findUnique({
+            where: { id: lineItem.productId },
+          });
+
+          if (product) {
+            const currentStock = Number(product.currentStockBalance);
+            const newStock = Math.max(0, currentStock - dispatchQty);
+
+            await tx.rawMaterial.update({
+              where: { id: lineItem.productId },
+              data: { currentStockBalance: newStock },
+            });
+
+            if (userId) {
+              await tx.inventoryTransaction.create({
+                data: {
+                  rawMaterialId: lineItem.productId,
+                  transactionType: TransactionType.WORK_ORDER_ISSUE,
+                  quantity: dispatchQty,
+                  previousStock: currentStock,
+                  newStock: newStock,
+                  referenceNumber: order.orderNumber,
+                  referenceDocumentType: 'CustomerOrder',
+                  referenceDocumentId: order.id,
+                  notes: `Customer order dispatch: ${order.orderNumber} - ${lineItem.itemName} (${dispatchQty} ${lineItem.uom})`,
+                  createdByUserId: userId,
+                },
+              });
+            }
+          }
+        }
 
         dispatchLogSummary.push(`${lineItem.itemName}: +${dispatchQty} ${lineItem.uom} (${newDelivered}/${orderedQty})`);
       }

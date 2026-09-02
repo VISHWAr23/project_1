@@ -13,6 +13,7 @@ import { GauzeProductionModule } from './modules/gauze-production/gauze-producti
 import { GamjeeProductionModule } from './modules/gamjee-production/gamjee-production.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { CustomerOrdersModule } from './modules/customer-orders/customer-orders.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { CustomerOrdersModule } from './modules/customer-orders/customer-orders.
     HealthModule,
     AuthModule,
     DashboardModule,
+    NotificationsModule,
     JobWorkModule,
     RawMaterialsModule,
     RollTrackingModule,

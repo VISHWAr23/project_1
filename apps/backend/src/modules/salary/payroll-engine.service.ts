@@ -67,16 +67,27 @@ export class PayrollEngineService {
     const defaultWorkingDays = 26;
     const calculatedItems: CalculatedPayrollItem[] = [];
 
-    for (const emp of employees) {
-      const attendanceLogs = await prisma.attendanceLog.findMany({
-        where: {
-          employeeId: emp.id,
-          date: {
-            gte: startDate,
-            lte: endDate,
-          },
+    // Batch fetch all attendance logs for the entire cohort in the date range (eliminates N+1)
+    const employeeIds = employees.map((e) => e.id);
+    const allAttendanceLogs = await prisma.attendanceLog.findMany({
+      where: {
+        employeeId: { in: employeeIds },
+        date: {
+          gte: startDate,
+          lte: endDate,
         },
-      });
+      },
+    });
+
+    const logsByEmployee = new Map<string, typeof allAttendanceLogs>();
+    for (const log of allAttendanceLogs) {
+      const list = logsByEmployee.get(log.employeeId) || [];
+      list.push(log);
+      logsByEmployee.set(log.employeeId, list);
+    }
+
+    for (const emp of employees) {
+      const attendanceLogs = logsByEmployee.get(emp.id) || [];
 
       let presentDays = 0;
       let absentDays = 0;
@@ -119,7 +130,12 @@ export class PayrollEngineService {
       const esiDeduction = Number(emp.salaryStructure ? emp.salaryStructure.esiDeduction : 0);
 
       const payableDays = presentDays + 0.5 * halfDays;
-      const basicSalary = Math.round(baseWage * payableDays * 100) / 100;
+
+      // Prorate monthly wage based on standard working days in month (or multiply for daily rate)
+      const isDailyWage = salaryType.toLowerCase().includes('daily') || (salaryType.toLowerCase().includes('wage') && !salaryType.toLowerCase().includes('monthly'));
+      const basicSalary = isDailyWage
+        ? Math.round(baseWage * payableDays * 100) / 100
+        : Math.round(((baseWage / (defaultWorkingDays || 26)) * payableDays) * 100) / 100;
 
       const overtimeSalary = Math.round(totalOvertimeHours * otRatePerHour * 100) / 100;
       const initialGross = Math.round((basicSalary + overtimeSalary) * 100) / 100;
@@ -232,16 +248,27 @@ export class PayrollEngineService {
     const workingDaysInWeek = 6;
     const calculatedItems: CalculatedPayrollItem[] = [];
 
-    for (const emp of employees) {
-      const attendanceLogs = await prisma.attendanceLog.findMany({
-        where: {
-          employeeId: emp.id,
-          date: {
-            gte: startDate,
-            lte: endDate,
-          },
+    // Batch fetch attendance logs for all employees for the week
+    const employeeIds = employees.map((e) => e.id);
+    const allAttendanceLogs = await prisma.attendanceLog.findMany({
+      where: {
+        employeeId: { in: employeeIds },
+        date: {
+          gte: startDate,
+          lte: endDate,
         },
-      });
+      },
+    });
+
+    const logsByEmployee = new Map<string, typeof allAttendanceLogs>();
+    for (const log of allAttendanceLogs) {
+      const list = logsByEmployee.get(log.employeeId) || [];
+      list.push(log);
+      logsByEmployee.set(log.employeeId, list);
+    }
+
+    for (const emp of employees) {
+      const attendanceLogs = logsByEmployee.get(emp.id) || [];
 
       let presentDays = 0;
       let absentDays = 0;
@@ -281,7 +308,12 @@ export class PayrollEngineService {
       const otRatePerHour = Number(emp.otRatePerHour || 0);
 
       const payableDays = presentDays + 0.5 * halfDays;
-      const basicSalary = Math.round(baseWage * payableDays * 100) / 100;
+
+      // In weekly payroll, check if baseWage represents daily or weekly rate
+      const isDailyWage = salaryType.toLowerCase().includes('daily') || (!salaryType.toLowerCase().includes('monthly') && !salaryType.toLowerCase().includes('weekly'));
+      const basicSalary = isDailyWage
+        ? Math.round(baseWage * payableDays * 100) / 100
+        : Math.round(((baseWage / workingDaysInWeek) * payableDays) * 100) / 100;
 
       const overtimeSalary = Math.round(totalOvertimeHours * otRatePerHour * 100) / 100;
       const initialGross = Math.round((basicSalary + overtimeSalary) * 100) / 100;

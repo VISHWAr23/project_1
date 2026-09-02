@@ -599,7 +599,7 @@ export class GamjeeProductionService implements OnModuleInit {
       });
 
       // 3. Deduct Fabric from Raw Material stock
-      const newFabricStock = Number(fabricProduct.currentStockBalance) - dto.fabricQuantityIssued;
+      const newFabricStock = Math.max(0, Number(fabricProduct.currentStockBalance) - dto.fabricQuantityIssued);
       await tx.rawMaterial.update({
         where: { id: dto.fabricProductId },
         data: { currentStockBalance: newFabricStock },
@@ -630,7 +630,7 @@ export class GamjeeProductionService implements OnModuleInit {
       }
 
       // 4. Deduct Cotton from Raw Material stock
-      const newCottonStock = Number(cottonProduct.currentStockBalance) - dto.cottonQuantityIssued;
+      const newCottonStock = Math.max(0, Number(cottonProduct.currentStockBalance) - dto.cottonQuantityIssued);
       await tx.rawMaterial.update({
         where: { id: dto.cottonProductId },
         data: { currentStockBalance: newCottonStock },

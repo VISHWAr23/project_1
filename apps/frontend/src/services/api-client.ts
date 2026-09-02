@@ -30,10 +30,24 @@ export async function apiClient<T = any>(
     }
   }
 
-  const data = await response.json();
+  let data: any;
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    try {
+      data = await response.json();
+    } catch {
+      data = {};
+    }
+  } else {
+    data = await response.text();
+  }
 
   if (!response.ok) {
-    throw new Error(data.message || 'An error occurred while communicating with the server');
+    const errorMsg =
+      (typeof data === 'object' && data?.message) ||
+      (typeof data === 'string' && data.length > 0 ? data : response.statusText) ||
+      'An error occurred while communicating with the server';
+    throw new Error(errorMsg);
   }
 
   return data as T;

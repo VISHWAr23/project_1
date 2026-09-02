@@ -224,6 +224,7 @@ model User {
 
   customerOrdersCreated       CustomerOrder[]
   customerOrderStatusChanges CustomerOrderStatusHistory[]
+  notifications              Notification[]              @relation("UserNotifications")
 
   @@index([email], map: "idx_users_email")
   @@index([role], map: "idx_users_role")
@@ -413,7 +414,7 @@ model PayrollRun {
   items              PayrollItem[]
   payrollDetails     PayrollDetail[]
 
-  @@unique([month, year], map: "unique_payroll_month_year")
+  @@index([month, year], map: "idx_payroll_month_year")
   @@index([status], map: "idx_payroll_status")
   @@map("payroll_runs")
 }
@@ -1994,5 +1995,42 @@ model GamjeeBatchStatusHistory {
   @@map("gamjee_batch_status_history")
 }
 
+// ==========================================
+// NOTIFICATIONS & SYSTEM ALERTS
+// ==========================================
 
+enum NotificationType {
+  STOCK_ALERT
+  JOB_WORK
+  PRODUCTION
+  PAYROLL
+  ATTENDANCE
+  CUSTOMER_ORDER
+  SYSTEM
+}
 
+enum NotificationSeverity {
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
+}
+
+model Notification {
+  id        String               @id @default(uuid()) @db.Uuid
+  userId    String?              @map("user_id") @db.Uuid
+  user      User?                @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  title     String               @db.VarChar(200)
+  message   String               @db.Text
+  type      NotificationType     @default(SYSTEM)
+  severity  NotificationSeverity @default(INFO)
+  link      String?              @db.VarChar(500)
+  isRead    Boolean              @default(false) @map("is_read")
+  createdAt DateTime             @default(now()) @map("created_at")
+  updatedAt DateTime             @updatedAt @map("updated_at")
+
+  @@index([userId, isRead], map: "idx_notifications_user_read")
+  @@index([type], map: "idx_notifications_type")
+  @@index([createdAt], map: "idx_notifications_created")
+  @@map("notifications")
+}

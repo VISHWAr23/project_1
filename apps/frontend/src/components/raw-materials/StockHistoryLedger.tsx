@@ -6,9 +6,10 @@ import { ArrowUpRight, ArrowDownLeft, RefreshCw, Truck, RotateCcw, Shuffle, File
 
 interface StockHistoryLedgerProps {
   items: InventoryTransactionItem[];
+  unitAbbreviation?: string;
 }
 
-export function StockHistoryLedger({ items }: StockHistoryLedgerProps) {
+export function StockHistoryLedger({ items, unitAbbreviation = 'Units' }: StockHistoryLedgerProps) {
   const getTransactionBadge = (type: InventoryTransactionItem['transactionType']) => {
     switch (type) {
       case 'PURCHASE_RECEIPT':
@@ -98,16 +99,18 @@ export function StockHistoryLedger({ items }: StockHistoryLedgerProps) {
       key: 'quantity',
       header: 'Weight / Qty',
       align: 'right',
-      width: '125px',
+      width: '135px',
       render: (row) => {
-        const isAddition = ['PURCHASE_RECEIPT', 'ADJUSTMENT_ADD', 'JOB_WORK_RETURN'].includes(row.transactionType);
+        const isAddition =
+          ['PURCHASE_RECEIPT', 'ADJUSTMENT_ADD', 'JOB_WORK_RETURN'].includes(row.transactionType) ||
+          Number(row.newStock) > Number(row.previousStock);
         return (
           <span
             className={`font-mono font-bold text-xs whitespace-nowrap ${
-              isAddition ? 'text-blue-600 dark:text-blue-400' : 'text-rose-400'
+              isAddition ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'
             }`}
           >
-            {isAddition ? '+' : '-'}{Number(row.quantity || 0).toFixed(2)} Kg
+            {isAddition ? '+' : '-'}{Math.abs(Number(row.quantity || 0)).toFixed(2)} {unitAbbreviation}
           </span>
         );
       },
@@ -116,10 +119,10 @@ export function StockHistoryLedger({ items }: StockHistoryLedgerProps) {
       key: 'previousStock',
       header: 'Prev Stock',
       align: 'right',
-      width: '115px',
+      width: '120px',
       render: (row) => (
         <span className="font-mono text-xs text-muted-foreground whitespace-nowrap">
-          {Number(row.previousStock || 0).toFixed(2)} Kg
+          {Math.max(0, Number(row.previousStock || 0)).toFixed(2)} {unitAbbreviation}
         </span>
       ),
     },
@@ -127,10 +130,10 @@ export function StockHistoryLedger({ items }: StockHistoryLedgerProps) {
       key: 'newStock',
       header: 'New Stock',
       align: 'right',
-      width: '115px',
+      width: '120px',
       render: (row) => (
         <span className="font-mono text-xs font-bold text-foreground whitespace-nowrap">
-          {Number(row.newStock || 0).toFixed(2)} Kg
+          {Math.max(0, Number(row.newStock || 0)).toFixed(2)} {unitAbbreviation}
         </span>
       ),
     },

@@ -148,10 +148,10 @@ export class RawMaterialsService {
     // Format & filter by stockStatus and type if specified
     const items = rawItems
       .map((item) => {
-        const current = Number(item.currentStockBalance);
-        const min = Number(item.minimumStockLevel);
-        const max = Number(item.maximumStockLevel);
-        const reserved = Number(item.reservedStock);
+        const current = Math.max(0, Number(item.currentStockBalance));
+        const min = Math.max(0, Number(item.minimumStockLevel));
+        const max = Math.max(0, Number(item.maximumStockLevel));
+        const reserved = Math.max(0, Number(item.reservedStock));
         const available = Math.max(0, current - reserved);
 
         let status: 'OPTIMAL' | 'LOW_STOCK' | 'OVERSTOCK' | 'OUT_OF_STOCK' = 'OPTIMAL';
@@ -277,10 +277,10 @@ export class RawMaterialsService {
       throw new NotFoundException(`Raw material with ID ${id} not found`);
     }
 
-    const current = Number(item.currentStockBalance);
-    const min = Number(item.minimumStockLevel);
-    const max = Number(item.maximumStockLevel);
-    const reserved = Number(item.reservedStock);
+    const current = Math.max(0, Number(item.currentStockBalance));
+    const min = Math.max(0, Number(item.minimumStockLevel));
+    const max = Math.max(0, Number(item.maximumStockLevel));
+    const reserved = Math.max(0, Number(item.reservedStock));
     const available = Math.max(0, current - reserved);
 
     return {

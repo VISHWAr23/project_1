@@ -107,7 +107,15 @@ export default function GlobalStockHistoryPage() {
         </div>
       </div>
 
-      <StockHistoryLedger items={transactions} />
+      {(() => {
+        const selectedMat = rawMaterials?.items.find((m) => m.id === selectedMaterialId);
+        return (
+          <StockHistoryLedger
+            items={transactions}
+            unitAbbreviation={selectedMat?.unit?.abbreviation || 'Units'}
+          />
+        );
+      })()}
 
       <Pagination
         currentPage={currentPage}
