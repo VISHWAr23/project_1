@@ -1,6 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, AlertTriangle, AlertCircle, Info, X } from 'lucide-react';
 
@@ -54,6 +55,11 @@ export const toast = Object.assign(
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const showToast = (title: string, description?: string, type: ToastType = 'info') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -76,36 +82,42 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     info: <Info className="h-4 w-4 text-blue-500" />,
   };
 
+  const toastContainer = (
+    <div className="fixed bottom-5 right-5 z-[9999] flex flex-col space-y-2 max-w-sm w-full pointer-events-none">
+      <AnimatePresence>
+        {toasts.map((t) => (
+          <motion.div
+            key={t.id}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            className="pointer-events-auto flex items-start justify-between p-3.5 rounded-lg bg-popover border border-border shadow-xl text-foreground text-xs"
+          >
+            <div className="flex items-start gap-2.5">
+              <div className="mt-0.5">{icons[t.type]}</div>
+              <div>
+                <h4 className="font-semibold text-foreground">{t.title}</h4>
+                {t.description && <p className="text-muted-foreground text-[11px] mt-0.5">{t.description}</p>}
+              </div>
+            </div>
+            <button
+              onClick={() => removeToast(t.id)}
+              className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors ml-2"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+
   return (
     <ToastContext.Provider value={{ toast: showToast, removeToast }}>
       {children}
-      <div className="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 max-w-sm w-full pointer-events-none">
-        <AnimatePresence>
-          {toasts.map((t) => (
-            <motion.div
-              key={t.id}
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              className="pointer-events-auto flex items-start justify-between p-3.5 rounded-lg bg-popover border border-border shadow-xl text-foreground text-xs"
-            >
-              <div className="flex items-start gap-2.5">
-                <div className="mt-0.5">{icons[t.type]}</div>
-                <div>
-                  <h4 className="font-semibold text-foreground">{t.title}</h4>
-                  {t.description && <p className="text-muted-foreground text-[11px] mt-0.5">{t.description}</p>}
-                </div>
-              </div>
-              <button
-                onClick={() => removeToast(t.id)}
-                className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors ml-2"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+      {mounted && typeof document !== 'undefined'
+        ? createPortal(toastContainer, document.body)
+        : null}
     </ToastContext.Provider>
   );
 }
