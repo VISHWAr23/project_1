@@ -49,7 +49,7 @@ export default function EmployeesPage() {
   const [reportEmployee, setReportEmployee] = useState<Employee | null>(null);
 
   // Queries & Mutations
-  const { data: employeesData, isLoading, refetch } = useEmployees({
+  const { data: employeesData, isLoading, isError, error, refetch } = useEmployees({
     search,
     departmentId: deptFilter,
     status: statusFilter,
@@ -354,6 +354,25 @@ export default function EmployeesPage() {
           </div>
         </div>
       </div>
+
+      {isError && (
+        <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 flex items-center justify-between text-xs text-rose-400 font-mono">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-400" />
+            <span>
+              Unable to fetch employees: {(error as Error)?.message || 'Server or network error'}.
+            </span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            className="border-rose-500/30 text-rose-300 hover:bg-rose-500/20"
+          >
+            Retry
+          </Button>
+        </div>
+      )}
 
       {/* Main Employee Table */}
       <Table
