@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, UserPlus } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { LatestEmployee } from '@/types/dashboard/dashboard.types';
 
 interface LatestEmployeesProps {
@@ -11,38 +11,8 @@ interface LatestEmployeesProps {
   isLoading?: boolean;
 }
 
-const defaultItems: LatestEmployee[] = [
-  {
-    id: 'emp-1',
-    employeeCode: 'EMP-112',
-    fullName: 'Rajesh Verma',
-    department: 'Quality Assurance',
-    designation: 'Senior QA Inspector',
-    joiningDate: '2026-08-01',
-    status: 'ACTIVE',
-  },
-  {
-    id: 'emp-2',
-    employeeCode: 'EMP-111',
-    fullName: 'Priya Sundaram',
-    department: 'CNC Machining',
-    designation: 'VMC Programmer',
-    joiningDate: '2026-07-28',
-    status: 'ACTIVE',
-  },
-  {
-    id: 'emp-3',
-    employeeCode: 'EMP-110',
-    fullName: 'Amitabh Choudhury',
-    department: 'Inventory & Logistics',
-    designation: 'Store Keeper',
-    joiningDate: '2026-07-20',
-    status: 'ACTIVE',
-  },
-];
-
 export const LatestEmployees: React.FC<LatestEmployeesProps> = ({
-  items = defaultItems,
+  items = [],
   isLoading = false,
 }) => {
   return (
@@ -62,6 +32,11 @@ export const LatestEmployees: React.FC<LatestEmployeesProps> = ({
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-12 bg-muted/40 animate-pulse rounded-md"></div>
             ))}
+          </div>
+        ) : items.length === 0 ? (
+          <div className="h-32 flex flex-col items-center justify-center text-center p-4 border border-dashed rounded-lg border-border/60">
+            <Users className="h-8 w-8 text-muted-foreground/40 mb-1" />
+            <p className="text-xs font-medium text-muted-foreground">No recent employees found</p>
           </div>
         ) : (
           <div className="space-y-2.5">
