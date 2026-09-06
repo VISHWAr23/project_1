@@ -28,10 +28,10 @@ export function useJobWorkOrderDetail(id: string) {
   });
 }
 
-export function useJobWorkCompanies() {
+export function useJobWorkCompanies(params?: { includeInactive?: boolean }) {
   return useQuery({
-    queryKey: ['jobWorkCompanies'],
-    queryFn: () => jobWorkService.getCompanies(),
+    queryKey: ['jobWorkCompanies', params],
+    queryFn: () => jobWorkService.getCompanies(params),
   });
 }
 

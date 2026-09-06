@@ -19,6 +19,12 @@ export interface JobWorkCompany {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  _count?: {
+    jobWorkOrders?: number;
+    jobWorkChallans?: number;
+    cottonRolls?: number;
+    gauzeBleachingJobs?: number;
+  };
 }
 
 export interface RawMaterialUnit {

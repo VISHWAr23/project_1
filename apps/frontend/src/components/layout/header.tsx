@@ -14,6 +14,7 @@ const ROUTE_LABELS: Record<string, string> = {
   '/dashboard': 'Executive Dashboard',
   '/raw-materials': 'Materials & Products Master',
   '/job-work': 'Job Work Pipeline',
+  '/job-work/vendors': 'Job Work Vendors & Processing Mills',
   '/employees': 'Employee Directory',
   '/attendance': 'Daily Attendance & Shifts',
   '/salary': 'Salary & Payroll Engine',

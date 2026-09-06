@@ -33,9 +33,9 @@ export class JobWorkController {
   }
 
   @Get('companies')
-  @ApiOperation({ summary: 'Get active Job Working Vendor companies for dropdowns' })
-  async getCompanies() {
-    return this.jobWorkService.getCompanies();
+  @ApiOperation({ summary: 'Get Job Working Vendor companies' })
+  async getCompanies(@Query('includeInactive') includeInactive?: string) {
+    return this.jobWorkService.getCompanies(includeInactive === 'true' || includeInactive === undefined);
   }
 
   @Post('companies')

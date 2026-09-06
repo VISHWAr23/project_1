@@ -594,11 +594,21 @@ export class JobWorkService {
   }
 
   /**
-   * Helper: Get companies for select drop-downs
+   * Helper: Get companies for select drop-downs and vendor management
    */
-  async getCompanies() {
+  async getCompanies(includeInactive = true) {
     return prisma.jobWorkCompany.findMany({
-      where: { isActive: true },
+      where: includeInactive ? undefined : { isActive: true },
+      include: {
+        _count: {
+          select: {
+            jobWorkOrders: true,
+            jobWorkChallans: true,
+            cottonRolls: true,
+            gauzeBleachingJobs: true,
+          },
+        },
+      },
       orderBy: { companyName: 'asc' },
     });
   }
@@ -622,6 +632,16 @@ export class JobWorkService {
         address: data.address || null,
         creditDays: data.creditDays ? Number(data.creditDays) : 30,
         isActive: true,
+      },
+      include: {
+        _count: {
+          select: {
+            jobWorkOrders: true,
+            jobWorkChallans: true,
+            cottonRolls: true,
+            gauzeBleachingJobs: true,
+          },
+        },
       },
     });
   }
@@ -651,13 +671,30 @@ export class JobWorkService {
         ...(data.creditDays !== undefined ? { creditDays: Number(data.creditDays) } : {}),
         ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
       },
+      include: {
+        _count: {
+          select: {
+            jobWorkOrders: true,
+            jobWorkChallans: true,
+            cottonRolls: true,
+            gauzeBleachingJobs: true,
+          },
+        },
+      },
     });
   }
 
   async deleteCompany(id: string) {
-    return prisma.jobWorkCompany.delete({
-      where: { id },
-    });
+    try {
+      return await prisma.jobWorkCompany.delete({
+        where: { id },
+      });
+    } catch {
+      return await prisma.jobWorkCompany.update({
+        where: { id },
+        data: { isActive: false },
+      });
+    }
   }
 
   /**

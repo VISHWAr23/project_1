@@ -103,9 +103,9 @@ export default function JobWorkProductionHubPage() {
               <span>Staff ({activeEmployeesCount})</span>
             </Button>
           </Link>
-          <Link href="/settings">
-            <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs">
-              <Building2 className="h-4 w-4 text-blue-600" />
+          <Link href="/job-work/vendors">
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs border-blue-500/30 hover:bg-blue-500/10 text-foreground">
+              <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               <span>Vendors ({companies.length})</span>
             </Button>
           </Link>

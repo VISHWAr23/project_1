@@ -98,8 +98,12 @@ export const jobWorkService = {
     return await apiClient<ReturnRegisterResponse>(`/job-work/returns?${query.toString()}`);
   },
 
-  async getCompanies(): Promise<JobWorkCompany[]> {
-    return await apiClient<JobWorkCompany[]>('/job-work/companies');
+  async getCompanies(params?: { includeInactive?: boolean }): Promise<JobWorkCompany[]> {
+    const query = new URLSearchParams();
+    if (params?.includeInactive !== undefined) {
+      query.append('includeInactive', String(params.includeInactive));
+    }
+    return await apiClient<JobWorkCompany[]>(`/job-work/companies${query.toString() ? `?${query.toString()}` : ''}`);
   },
 
   async createCompany(payload: Partial<JobWorkCompany>): Promise<JobWorkCompany> {
