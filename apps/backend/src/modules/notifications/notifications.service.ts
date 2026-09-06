@@ -206,7 +206,7 @@ export class NotificationsService {
 
     for (const jw of activeJobWorks) {
       const title = `Active Job Work: ${jw.jobWorkNumber}`;
-      const message = `Challan ${jw.challanNumber || jw.jobWorkNumber} with ${jw.jobWorkCompany.companyName} is in progress (${jw.pendingWeight} Kg pending return).`;
+      const message = `Challan ${jw.challanNumber || jw.jobWorkNumber} with ${jw.jobWorkCompany?.companyName || 'Subcontractor'} is in progress (${jw.pendingWeight} Kg pending return).`;
 
       const existing = await prisma.notification.findFirst({
         where: { title, isRead: false },

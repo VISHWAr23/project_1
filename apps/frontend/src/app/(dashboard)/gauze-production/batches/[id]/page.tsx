@@ -31,17 +31,15 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { BatchStatusBadge } from '@/components/gauze-production/batch-status-badge';
 import { ProductionTimeline } from '@/components/gauze-production/production-timeline';
-import { TraceabilityView } from '@/components/gauze-production/traceability-view';
 import { SendBleachingModal } from '@/components/gauze-production/send-bleaching-modal';
 import { ReceiveBleachingModal } from '@/components/gauze-production/receive-bleaching-modal';
 import { AddOperationModal } from '@/components/gauze-production/add-operation-modal';
 import { PackingModal } from '@/components/gauze-production/packing-modal';
 import {
   useGauzeBatchDetail,
-  useGauzeTraceability,
   useUpdateGauzeBatchStatus,
 } from '@/hooks/useGauzeProduction';
-import { formatDate, formatDateTime } from '@/lib/date-utils';
+import { formatDate } from '@/lib/date-utils';
 import { useToast } from '@/components/ui/toast';
 
 export default function GauzeBatchDetailPage() {
@@ -51,7 +49,6 @@ export default function GauzeBatchDetailPage() {
   const { toast } = useToast();
 
   const { data: batch, isLoading, refetch } = useGauzeBatchDetail(id);
-  const { data: traceability } = useGauzeTraceability(id);
   const updateStatusMutation = useUpdateGauzeBatchStatus();
 
   // Modals state
@@ -62,7 +59,7 @@ export default function GauzeBatchDetailPage() {
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'bleaching' | 'operations' | 'packing' | 'traceability' | 'movements' | 'history'
+    'overview' | 'bleaching' | 'operations' | 'packing'
   >('overview');
 
   if (isLoading) {
@@ -358,9 +355,6 @@ export default function GauzeBatchDetailPage() {
           { id: 'bleaching', label: `2. Bleaching (${batch.bleachingJobs.length})`, icon: Truck },
           { id: 'operations', label: `3. Operations (${batch.operations.length})`, icon: Layers },
           { id: 'packing', label: `4. Packing (${batch.packingEntries.length})`, icon: Box },
-          { id: 'traceability', label: '5. Traceability Tree', icon: ArrowRightLeft },
-          { id: 'movements', label: `6. Movement Ledger (${batch.materialMovements.length})`, icon: FileBarChart },
-          { id: 'history', label: `7. Status Log (${batch.statusHistory.length})`, icon: History },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -675,95 +669,6 @@ export default function GauzeBatchDetailPage() {
             </div>
           )}
         </div>
-      )}
-
-      {/* Tab 5: Traceability */}
-      {activeTab === 'traceability' && (
-        <div>
-          {traceability ? (
-            <TraceabilityView data={traceability} />
-          ) : (
-            <Card className="p-8 text-center text-muted-foreground text-xs">
-              Loading traceability chain...
-            </Card>
-          )}
-        </div>
-      )}
-
-      {/* Tab 6: Material Movements Ledger */}
-      {activeTab === 'movements' && (
-        <Card className="p-5 bg-card border-border">
-          <h3 className="text-sm font-bold text-foreground mb-3">Immutable Material Movement Ledger</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="text-[11px] font-mono uppercase bg-secondary/50 text-muted-foreground border-b border-border">
-                <tr>
-                  <th className="py-2 px-3">Date</th>
-                  <th className="py-2 px-3">Movement Type</th>
-                  <th className="py-2 px-3">From</th>
-                  <th className="py-2 px-3">To</th>
-                  <th className="py-2 px-3 text-right">Quantity</th>
-                  <th className="py-2 px-3">Notes</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/50 font-mono">
-                {batch.materialMovements.map((mov) => (
-                  <tr key={mov.id} className="hover:bg-secondary/20">
-                    <td className="py-2 px-3 text-muted-foreground">
-                      {formatDate(mov.movementDate)}
-                    </td>
-                    <td className="py-2 px-3">
-                      <span className="px-1.5 py-0.5 rounded bg-secondary font-bold text-foreground text-[10px]">
-                        {mov.movementType}
-                      </span>
-                    </td>
-                    <td className="py-2 px-3 text-muted-foreground font-sans">
-                      {mov.fromLocation?.name || mov.fromLocationName || '—'}
-                    </td>
-                    <td className="py-2 px-3 text-foreground font-sans font-medium">
-                      {mov.toLocation?.name || mov.toLocationName || '—'}
-                    </td>
-                    <td className="py-2 px-3 text-right font-bold text-blue-600 dark:text-blue-400">
-                      {Number(mov.quantity).toLocaleString()} {mov.uom}
-                    </td>
-                    <td className="py-2 px-3 text-muted-foreground font-sans text-[11px]">
-                      {mov.notes || '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
-
-      {/* Tab 7: Status History Audit Log */}
-      {activeTab === 'history' && (
-        <Card className="p-5 bg-card border-border">
-          <h3 className="text-sm font-bold text-foreground mb-3">Status Progression & Audit Trail</h3>
-          <div className="space-y-3">
-            {batch.statusHistory.map((hist) => (
-              <div key={hist.id} className="flex items-start gap-3 text-xs">
-                <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center shrink-0 mt-0.5 text-muted-foreground">
-                  <History className="h-3.5 w-3.5" />
-                </div>
-                <div className="flex-1 bg-secondary/20 p-3 rounded-lg border border-border/50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-semibold text-muted-foreground">{hist.oldStatus || 'START'}</span>
-                      <span>→</span>
-                      <strong className="text-foreground">{hist.newStatus}</strong>
-                    </div>
-                    <span className="text-[11px] font-mono text-muted-foreground">
-                      {formatDateTime(hist.changedAt)}
-                    </span>
-                  </div>
-                  {hist.remarks && <p className="text-muted-foreground mt-1">{hist.remarks}</p>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
       )}
 
       {/* Action Modals */}

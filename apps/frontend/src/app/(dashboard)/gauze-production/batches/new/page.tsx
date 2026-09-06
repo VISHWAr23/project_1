@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Factory,
@@ -12,6 +12,7 @@ import {
   Building2,
   Layers,
   Sparkles,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -23,8 +24,13 @@ import { useCreateGauzeBatch, useGauzeMasters } from '@/hooks/useGauzeProduction
 import { useRawMaterials, useSuppliers, useStorageLocations } from '@/hooks/useRawMaterials';
 import { useToast } from '@/components/ui/toast';
 
-export default function CreateGauzeBatchPage() {
+function CreateGauzeBatchContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const executorType = searchParams.get('executorType');
+  const workerNames = searchParams.get('workerNames');
+  const companyName = searchParams.get('companyName');
+  const companyId = searchParams.get('companyId');
   const { toast } = useToast();
   const createBatchMutation = useCreateGauzeBatch();
 
@@ -47,6 +53,15 @@ export default function CreateGauzeBatchPage() {
   const [expectedCompletionDate, setExpectedCompletionDate] = useState('');
   const [warehouseId, setWarehouseId] = useState('');
   const [notes, setNotes] = useState('');
+
+  // Auto-populate notes if dispatched from Job Work
+  useEffect(() => {
+    if (workerNames && !notes) {
+      setNotes(`Assigned In-House Workforce: ${workerNames}`);
+    } else if (companyName && !notes) {
+      setNotes(`Assigned Jobworking Vendor: ${companyName}`);
+    }
+  }, [workerNames, companyName, notes]);
 
   // When product is selected, auto-populate supplier if present
   const handleProductChange = (id: string) => {
@@ -110,6 +125,46 @@ export default function CreateGauzeBatchPage() {
 
         </div>
       </div>
+
+      {/* Job Work Hub Assignment Banner */}
+      {executorType && (
+        <div
+          className={`p-4 rounded-xl border flex items-center justify-between gap-3 ${
+            executorType === 'WORKERS'
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300'
+              : 'bg-blue-500/10 border-blue-500/30 text-blue-800 dark:text-blue-300'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                executorType === 'WORKERS'
+                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
+              }`}
+            >
+              {executorType === 'WORKERS' ? (
+                <Users className="h-5 w-5" />
+              ) : (
+                <Building2 className="h-5 w-5" />
+              )}
+            </div>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider block opacity-80">
+                {executorType === 'WORKERS'
+                  ? 'Assigned In-House Workforce (Job Work Hub)'
+                  : 'Assigned Jobworking Company (Job Work Hub)'}
+              </span>
+              <span className="text-sm font-bold text-foreground">
+                {executorType === 'WORKERS' ? workerNames : companyName}
+              </span>
+            </div>
+          </div>
+          <span className="px-2.5 py-1 rounded-md text-[10px] font-mono font-bold bg-background/90 border border-border shadow-2xs">
+            Pre-assigned
+          </span>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Step 1: Raw Material & Specification */}
@@ -266,5 +321,13 @@ export default function CreateGauzeBatchPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function CreateGauzeBatchPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-xs text-muted-foreground">Loading production batch setup...</div>}>
+      <CreateGauzeBatchContent />
+    </Suspense>
   );
 }

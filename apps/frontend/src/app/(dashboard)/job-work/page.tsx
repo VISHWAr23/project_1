@@ -1,367 +1,918 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Truck,
-  Plus,
-  FileText,
-  CheckCircle2,
-  Clock,
-  RefreshCw,
-  Scale,
-  Search,
-  Filter,
-  LayoutGrid,
-  List,
-  Layers,
-  ArrowRight,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { Table, Column } from '@/components/ui/table';
-import { JobWorkStatusBadge } from '@/components/job-work/job-work-status-badge';
-import { JobWorkSDLCCard, SDLC_STAGES, getStageIndex } from '@/components/job-work/job-work-sdlc-card';
-import { JobWorkWorkflowModal } from '@/components/job-work/job-work-workflow-modal';
-import { JobWorkEditModal } from '@/components/job-work/job-work-edit-modal';
-import { JobWorkDeleteModal } from '@/components/job-work/job-work-delete-modal';
-import { useJobWorkOrders } from '@/hooks/useJobWork';
-import { JobWorkOrder, JobWorkStatus } from '@/types/job-work.types';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Edit3, Trash2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import {
+  Factory,
+  Scroll,
+  ArrowRight,
+  Users,
+  Building2,
+  Clock,
+  Layers,
+  Sparkles,
+  Scissors,
+  Box,
+  Truck,
+  CheckCircle2,
+  AlertCircle,
+  TrendingUp,
+  FileText,
+  Calendar,
+  ExternalLink,
+  Sun,
+  Coins,
+} from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { SkeletonLoader } from '@/components/ui/skeleton-loader';
+import {
+  ProductionAssignmentModal,
+  ProductionType,
+} from '@/components/job-work/production-assignment-modal';
+import { useGauzeDashboard, useGauzeBatches } from '@/hooks/useGauzeProduction';
+import { useGamjeeDashboard, useGamjeeBatches } from '@/hooks/useGamjeeProduction';
+import { useMopingPadBatches } from '@/hooks/useMopingPadProduction';
+import { useGauzePadPinningBatches } from '@/hooks/useGauzePadPinning';
+import { useDryingBatches } from '@/hooks/useDrying';
+import { useJobWorkCompanies } from '@/hooks/useJobWork';
+import { useEmployees } from '@/hooks/useEmployees';
+import { formatDate } from '@/lib/date-utils';
 
-export default function JobWorkMainPage() {
-  const router = useRouter();
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [viewMode, setViewMode] = useState<'board' | 'table'>('board');
-  const [editingOrder, setEditingOrder] = useState<JobWorkOrder | null>(null);
-  const [deletingOrder, setDeletingOrder] = useState<JobWorkOrder | null>(null);
+export default function JobWorkProductionHubPage() {
+  const [selectedProduction, setSelectedProduction] = useState<ProductionType | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<
+    'all' | 'gauze' | 'gamjee' | 'moping-pad' | 'gauze-pad-pinning' | 'drying'
+  >('all');
 
-  const { data, isLoading, refetch } = useJobWorkOrders({
-    search: search || undefined,
-    status: statusFilter !== 'ALL' ? statusFilter : undefined,
-  });
+  // Queries
+  const { data: gauzeStats, isLoading: loadingGauzeStats } = useGauzeDashboard();
+  const { data: gauzeBatchesData, isLoading: loadingGauzeBatches } = useGauzeBatches({ limit: 6 });
+  const { data: gamjeeStats, isLoading: loadingGamjeeStats } = useGamjeeDashboard();
+  const { data: gamjeeBatchesData, isLoading: loadingGamjeeBatches } = useGamjeeBatches({ limit: 6 });
+  const { data: mopingBatchesData } = useMopingPadBatches();
+  const { data: gauzePadBatchesData } = useGauzePadPinningBatches();
+  const { data: dryingBatchesData } = useDryingBatches();
+  const { data: companies = [] } = useJobWorkCompanies();
+  const { data: employeesData } = useEmployees({ status: 'ACTIVE', limit: 100 });
 
-  const orders = data?.items || [];
-  const stats = data?.stats;
+  const activeEmployeesCount = employeesData?.items?.length || 0;
+  const activeGauzeBatches = gauzeBatchesData?.items?.filter((b: any) => b.status !== 'COMPLETED' && b.status !== 'CANCELLED') || [];
+  const activeGamjeeBatches = gamjeeBatchesData?.items?.filter((b: any) => b.status !== 'COMPLETED' && b.status !== 'CANCELLED') || [];
+  const activeMopingBatches = mopingBatchesData?.items?.filter((b) => b.status === 'IN_PROGRESS' || b.status === 'DRAFT') || [];
+  const activeGauzePadBatches = gauzePadBatchesData?.items?.filter((b) => b.status === 'IN_PROGRESS' || b.status === 'DRAFT') || [];
+  const activeDryingBatches = dryingBatchesData?.items?.filter((b) => b.status === 'IN_PROGRESS' || b.status === 'DRAFT') || [];
 
-  // Table Columns fallback definition
-  const columns: Column<JobWorkOrder>[] = [
-    {
-      key: 'jobWorkNumber',
-      header: 'Job Work Order No',
-      sortable: true,
-      width: '180px',
-      render: (row) => (
-        <div>
-          <Link
-            href={`/job-work/${row.id}`}
-            className="font-mono font-bold text-blue-600 dark:text-blue-400 hover:underline block text-left"
-          >
-            {row.jobWorkNumber}
-          </Link>
-          {row.challanNumber && (
-            <span className="text-[11px] font-mono text-muted-foreground">DC: {row.challanNumber}</span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'jobWorkCompany',
-      header: 'Job Working Vendor',
-      render: (row) => (
-        <div>
-          <span className="font-medium text-foreground block">{row.jobWorkCompany?.companyName}</span>
-          <span className="text-[11px] text-muted-foreground">{row.jobWorkCompany?.contactPerson || 'Subcontractor'}</span>
-        </div>
-      ),
-    },
-    {
-      key: 'rawMaterial',
-      header: 'Material Issued',
-      render: (row) => (
-        <div>
-          <span className="text-foreground font-medium block">{row.rawMaterial?.name}</span>
-          <span className="text-[11px] text-muted-foreground font-mono">SKU: {row.rawMaterial?.sku}</span>
-        </div>
-      ),
-    },
-    {
-      key: 'totalIssuedWeight',
-      header: 'Issued Weight',
-      align: 'right',
-      render: (row) => (
-        <span className="font-mono text-foreground font-semibold">
-          {Number(row.totalIssuedWeight).toFixed(2)} Kg
-        </span>
-      ),
-    },
-    {
-      key: 'totalReturnedWeight',
-      header: 'Returned Weight',
-      align: 'right',
-      render: (row) => (
-        <div className="text-right">
-          <span className="font-mono text-emerald-400 block font-semibold">
-            {Number(row.totalReturnedWeight).toFixed(2)} Kg
-          </span>
-          {Number(row.totalWastageWeight) > 0 && (
-            <span className="text-[11px] font-mono text-amber-400">Waste: {Number(row.totalWastageWeight).toFixed(2)} Kg</span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'status',
-      header: 'SDLC Pipeline Stage',
-      align: 'center',
-      render: (row) => <JobWorkStatusBadge status={row.status} />,
-    },
-    {
-      key: 'actions',
-      header: 'Actions',
-      align: 'right',
-      width: '160px',
-      render: (row) => (
-        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-          {row.status !== 'CLOSED' && (
-            <button
-              onClick={() => setEditingOrder(row)}
-              title="Edit Job Work"
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-            >
-              <Edit3 className="h-3.5 w-3.5" />
-            </button>
-          )}
+  const totalActiveRuns =
+    activeGauzeBatches.length +
+    activeGamjeeBatches.length +
+    activeMopingBatches.length +
+    activeGauzePadBatches.length +
+    activeDryingBatches.length;
 
-          {row.status !== 'CLOSED' && Number(row.totalReturnedWeight) === 0 && (
-            <button
-              onClick={() => setDeletingOrder(row)}
-              title="Delete or Cancel Job Work"
-              className="p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          )}
-
-          <Link
-            href={`/job-work/${row.id}`}
-            className="px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 text-xs font-mono font-semibold rounded-md transition-colors inline-flex items-center gap-1"
-          >
-            <span>View</span>
-            <ArrowRight className="h-3 w-3" />
-          </Link>
-        </div>
-      ),
-    },
-  ];
+  const handleOpenAssignment = (type: ProductionType) => {
+    setSelectedProduction(type);
+    setIsModalOpen(true);
+  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="space-y-6 pb-12"
-    >
-      {/* Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/80 pb-5">
+    <div className="space-y-8 pb-12">
+      {/* Top Banner / Breadcrumb & Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div>
-          <div className="flex items-center gap-2.5">
-            <div className="bg-[#3ECF8E]/10 p-2 rounded-xl text-[#3ECF8E]">
-              <Truck className="h-6 w-6" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
-                Job Work & Material Issue Pipeline
-              </h1>
-            </div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              Job Work & Production Operations
+            </h1>
+            <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              Operations Hub
+            </span>
           </div>
+          <p className="text-xs text-muted-foreground mt-1 max-w-2xl">
+            Select a production line below to assign manufacturing jobs to our internal factory workers or partner jobworking companies.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          <Link href="/job-work/returns">
-            <Button variant="outline" size="sm" leftIcon={<RefreshCw className="h-3.5 w-3.5" />}>
-              Digital Return Register
+        <div className="flex items-center gap-2">
+          <Link href="/employees">
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs">
+              <Users className="h-4 w-4 text-emerald-600" />
+              <span>Staff ({activeEmployeesCount})</span>
             </Button>
           </Link>
-          <Link href="/job-work/new">
-            <Button variant="primary" size="sm" leftIcon={<Plus className="h-3.5 w-3.5" />}>
-              Create Job Work Order
+          <Link href="/settings">
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs">
+              <Building2 className="h-4 w-4 text-blue-600" />
+              <span>Vendors ({companies.length})</span>
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* Guided Subcontracting Pipeline Step Header */}
-      <div className="bg-card border border-border/80 rounded-2xl p-4 space-y-3 shadow-xs">
-        <div className="flex items-center justify-between text-xs font-mono">
-          <span className="text-muted-foreground font-medium uppercase tracking-wider text-[11px]">
-            Subcontracting Workflow Stages
+      {/* Metric Highlights Strip */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+        {/* KPI 1 */}
+        <Card className="p-3 sm:p-4 bg-card border-border hover:border-border/80 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">Total Active Runs</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+              <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-1.5">
+            <span className="text-xl sm:text-2xl font-bold font-mono text-foreground">
+              {totalActiveRuns}
+            </span>
+            <span className="text-[10px] sm:text-[11px] text-muted-foreground font-mono">WIP Batches</span>
+          </div>
+        </Card>
+
+        {/* KPI 2 */}
+        <Card className="p-3 sm:p-4 bg-card border-border hover:border-border/80 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">Gauze WIP</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+              <Factory className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-1.5">
+            <span className="text-xl sm:text-2xl font-bold font-mono text-foreground">
+              {activeGauzeBatches.length}
+            </span>
+            <span className="text-[10px] sm:text-[11px] text-muted-foreground font-mono">Batches</span>
+          </div>
+        </Card>
+
+        {/* KPI 3 */}
+        <Card className="p-3 sm:p-4 bg-card border-border hover:border-border/80 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">Gamjee WIP</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <Scroll className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-1.5">
+            <span className="text-xl sm:text-2xl font-bold font-mono text-foreground">
+              {activeGamjeeBatches.length}
+            </span>
+            <span className="text-[10px] sm:text-[11px] text-muted-foreground font-mono">Batches</span>
+          </div>
+        </Card>
+
+        {/* KPI 4 */}
+        <Card className="p-3 sm:p-4 bg-card border-border hover:border-border/80 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">Moping Pad WIP</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-1.5">
+            <span className="text-xl sm:text-2xl font-bold font-mono text-foreground">
+              {activeMopingBatches.length}
+            </span>
+            <span className="text-[10px] sm:text-[11px] text-muted-foreground font-mono">Batches</span>
+          </div>
+        </Card>
+
+        {/* KPI 5 */}
+        <Card className="p-3 sm:p-4 bg-card border-border hover:border-border/80 transition-colors col-span-2 md:col-span-1">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">Pinning & Drying</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
+              <Scissors className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-1.5">
+            <span className="text-xl sm:text-2xl font-bold font-mono text-foreground">
+              {activeGauzePadBatches.length + activeDryingBatches.length}
+            </span>
+            <span className="text-[10px] sm:text-[11px] text-muted-foreground font-mono">Runs</span>
+          </div>
+        </Card>
+      </div>
+
+      {/* Primary Section: 5 Production Cards */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-foreground tracking-tight">
+              Production Work Assignment
+            </h2>
+            <p className="text-[11px] text-muted-foreground">
+              Choose a production line to assign workforce and commence manufacturing operations.
+            </p>
+          </div>
+          <span className="text-[11px] font-mono text-muted-foreground hidden sm:inline-block">
+            5 Active Lines
           </span>
-          <span className="text-[#3ECF8E] font-bold">5 Stages</span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
-          {SDLC_STAGES.map((stage) => (
-            <button
-              key={stage.key}
-              onClick={() => setStatusFilter(stage.key)}
-              className={`p-2.5 rounded-xl border text-left font-mono transition-all ${
-                statusFilter === stage.key
-                  ? 'bg-[#3ECF8E]/15 border-[#3ECF8E] text-[#3ECF8E] shadow-sm'
-                  : 'bg-secondary/40 border-border/60 hover:bg-secondary text-muted-foreground'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] opacity-70 font-bold">STAGE 0{stage.stepNumber}</span>
-                {statusFilter === stage.key && <CheckCircle2 className="h-3 w-3 text-[#3ECF8E]" />}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Card 1: Gauze Production */}
+          <motion.div
+            whileHover={{ y: -2 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            onClick={() => handleOpenAssignment('GAUZE')}
+            className="group cursor-pointer"
+          >
+            <Card className="relative overflow-hidden p-4 sm:p-5 h-full flex flex-col justify-between border border-border hover:border-blue-500/60 hover:shadow-md transition-all bg-gradient-to-br from-card via-card to-blue-500/5">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-600" />
+
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-2xs shrink-0">
+                      <Factory className="h-4.5 w-4.5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        Gauze Production
+                      </h3>
+                      <span className="text-[11px] text-muted-foreground block">
+                        Bleaching mill subcontract, cutting & sterile pack
+                      </span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 shrink-0">
+                    Surgical Gauze
+                  </span>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    {activeGauzeBatches.length} WIP Batches
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    Mill Bleaching
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    Cutting & Folding
+                  </span>
+                </div>
               </div>
-              <p className="font-bold text-xs text-foreground truncate mt-1">{stage.shortLabel}</p>
-            </button>
-          ))}
+
+              <div className="mt-4 pt-3 border-t border-border/70 flex items-center justify-between">
+                <Link
+                  href="/gauze-production"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2.5 text-xs gap-1.5 border-border hover:border-blue-500/50 hover:bg-blue-500/5 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <span>Go to Production</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </Link>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 px-3 text-xs gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-2xs group-hover:shadow-xs transition-all"
+                >
+                  <span>Assign & Start</span>
+                  <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Card 2: Gamjee Production */}
+          <motion.div
+            whileHover={{ y: -2 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            onClick={() => handleOpenAssignment('GAMJEE')}
+            className="group cursor-pointer"
+          >
+            <Card className="relative overflow-hidden p-4 sm:p-5 h-full flex flex-col justify-between border border-border hover:border-emerald-500/60 hover:shadow-md transition-all bg-gradient-to-br from-card via-card to-emerald-500/5">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-600" />
+
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-2xs shrink-0">
+                      <Scroll className="h-4.5 w-4.5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                        Gamjee Production
+                      </h3>
+                      <span className="text-[11px] text-muted-foreground block">
+                        Cotton roll + gauze layering & machine rolling
+                      </span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shrink-0">
+                    Gamjee Rolls
+                  </span>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    {activeGamjeeBatches.length} WIP Batches
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    Fabric + Cotton Spec
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    Rolling Machine
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-border/70 flex items-center justify-between">
+                <Link
+                  href="/gamjee-production"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2.5 text-xs gap-1.5 border-border hover:border-emerald-500/50 hover:bg-emerald-500/5 text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                  >
+                    <span>Go to Production</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </Link>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 px-3 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs group-hover:shadow-xs transition-all"
+                >
+                  <span>Assign & Start</span>
+                  <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Card 3: Moping Pad Production */}
+          <motion.div
+            whileHover={{ y: -2 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            onClick={() => handleOpenAssignment('MOPING_PAD')}
+            className="group cursor-pointer"
+          >
+            <Card className="relative overflow-hidden p-4 sm:p-5 h-full flex flex-col justify-between border border-border hover:border-amber-500/60 hover:shadow-md transition-all bg-gradient-to-br from-card via-card to-amber-500/5">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-orange-600" />
+
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-all shadow-2xs shrink-0">
+                      <Layers className="h-4.5 w-4.5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                        Moping Pad Production
+                      </h3>
+                      <span className="text-[11px] text-muted-foreground block">
+                        Roll or pieces raw fabric intake, pinning & pad sizing
+                      </span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 shrink-0">
+                    Moping Pads
+                  </span>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    {activeMopingBatches.length} WIP Batches
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    Roll / Pieces Intake
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    Pinning Sizing
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-border/70 flex items-center justify-between">
+                <Link
+                  href="/moping-pad-production"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2.5 text-xs gap-1.5 border-border hover:border-amber-500/50 hover:bg-amber-500/5 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+                  >
+                    <span>Go to Production</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </Link>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 px-3 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white shadow-2xs group-hover:shadow-xs transition-all"
+                >
+                  <span>Assign & Start</span>
+                  <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Card 4: Gauze Pad Pinning */}
+          <motion.div
+            whileHover={{ y: -2 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            onClick={() => handleOpenAssignment('GAUZE_PAD_PINNING')}
+            className="group cursor-pointer"
+          >
+            <Card className="relative overflow-hidden p-4 sm:p-5 h-full flex flex-col justify-between border border-border hover:border-cyan-500/60 hover:shadow-md transition-all bg-gradient-to-br from-card via-card to-cyan-500/5">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 to-blue-600" />
+
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center group-hover:bg-cyan-600 group-hover:text-white transition-all shadow-2xs shrink-0">
+                      <Scissors className="h-4.5 w-4.5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+                        Gauze Pad Pinning
+                      </h3>
+                      <span className="text-[11px] text-muted-foreground block">
+                        Dual division sizing (Pinning ÷ Cutting) & worker salary
+                      </span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-500/20 shrink-0">
+                    Dual Division
+                  </span>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    {activeGauzePadBatches.length} WIP Batches
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    Roll / Pieces Intake
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    Equal Salary Split
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-border/70 flex items-center justify-between">
+                <Link
+                  href="/gauze-pad-pinning"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2.5 text-xs gap-1.5 border-border hover:border-cyan-500/50 hover:bg-cyan-500/5 text-muted-foreground hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
+                  >
+                    <span>Go to Production</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </Link>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 px-3 text-xs gap-1.5 bg-cyan-600 hover:bg-cyan-700 text-white shadow-2xs group-hover:shadow-xs transition-all"
+                >
+                  <span>Assign & Start</span>
+                  <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Card 5: Drying Process */}
+          <motion.div
+            whileHover={{ y: -2 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            onClick={() => handleOpenAssignment('DRYING')}
+            className="group cursor-pointer"
+          >
+            <Card className="relative overflow-hidden p-4 sm:p-5 h-full flex flex-col justify-between border border-border hover:border-orange-500/60 hover:shadow-md transition-all bg-gradient-to-br from-card via-card to-orange-500/5">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-amber-600" />
+
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center group-hover:bg-orange-600 group-hover:text-white transition-all shadow-2xs shrink-0">
+                      <Sun className="h-4.5 w-4.5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+                        Drying Process
+                      </h3>
+                      <span className="text-[11px] text-muted-foreground block">
+                        Pieces progress logging & linear meter salary engine
+                      </span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-500/10 text-orange-700 dark:text-orange-300 border border-orange-500/20 shrink-0">
+                    Piece Progress
+                  </span>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    {activeDryingBatches.length} WIP Batches
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    Pieces Only Intake
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    ₹/m Meter Salary
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-border/70 flex items-center justify-between">
+                <Link
+                  href="/drying"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2.5 text-xs gap-1.5 border-border hover:border-orange-500/50 hover:bg-orange-500/5 text-muted-foreground hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+                  >
+                    <span>Go to Production</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </Link>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 px-3 text-xs gap-1.5 bg-orange-600 hover:bg-orange-700 text-white shadow-2xs group-hover:shadow-xs transition-all"
+                >
+                  <span>Assign & Start</span>
+                  <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
         </div>
       </div>
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <Card hoverElevation className="p-4 bg-card border-border/80">
-          <p className="text-xs font-medium text-muted-foreground font-mono">Total Subcontractors</p>
-          <h3 className="text-2xl font-bold text-foreground font-mono mt-1">
-            {stats?.activeVendorsCount || 3} Active
-          </h3>
-        </Card>
+      {/* Live Active Production Register Section */}
+      <div className="space-y-4 pt-4 border-t border-border">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold text-foreground">
+              Current Active Production Batches
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Quick view of batches currently running across all 5 manufacturing lines.
+            </p>
+          </div>
 
-        <Card hoverElevation className="p-4 bg-card border-border/80">
-          <p className="text-xs font-medium text-muted-foreground font-mono">Stage 2: Issued (Outward)</p>
-          <h3 className="text-2xl font-bold text-[#3ECF8E] font-mono mt-1 flex items-center gap-1">
-            <Scale className="h-5 w-5" />
-            {stats?.materialsIssued || 1} Active
-          </h3>
-        </Card>
-
-        <Card hoverElevation className="p-4 bg-card border-border/80">
-          <p className="text-xs font-medium text-muted-foreground font-mono">Stage 4: Return Pending</p>
-          <h3 className="text-2xl font-bold text-amber-400 font-mono mt-1">
-            {stats?.partialReturn || 1} Orders
-          </h3>
-        </Card>
-
-        <Card hoverElevation className="p-4 bg-card border-border/80">
-          <p className="text-xs font-medium text-muted-foreground font-mono">Stage 5: Fully Reconciled</p>
-          <h3 className="text-2xl font-bold text-emerald-400 font-mono mt-1">
-            {stats?.closed || 1} Closed
-          </h3>
-        </Card>
-      </div>
-
-      {/* Controls Bar: Search, SDLC Filter & View Mode Switcher */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-3 rounded-2xl border border-border/80 shadow-xs">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search Order No, Vendor, Material, Challan..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 text-xs font-mono"
-          />
-        </div>
-
-        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-          <Select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            options={[
-              { label: 'All Pipeline Stages', value: 'ALL' },
-              ...SDLC_STAGES.map((s) => ({ label: `Stage 0${s.stepNumber}: ${s.label}`, value: s.key })),
-            ]}
-            className="text-xs font-mono"
-          />
-
-          {/* Board vs Table Switcher */}
-          <div className="flex items-center bg-secondary/50 p-1 rounded-xl border border-border/60">
+          {/* Filter Tabs */}
+          <div className="flex items-center flex-wrap gap-1 bg-secondary/50 p-1 rounded-lg border border-border/60 text-xs">
             <button
-              onClick={() => setViewMode('board')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${
-                viewMode === 'board'
-                  ? 'bg-card text-[#3ECF8E] shadow-xs font-bold'
+              type="button"
+              onClick={() => setActiveTab('all')}
+              className={`px-2.5 py-1 rounded-md transition-colors ${
+                activeTab === 'all'
+                  ? 'bg-background font-semibold text-foreground shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
-              title="SDLC Pipeline Board View"
             >
-              <LayoutGrid className="h-4 w-4" />
-              <span className="hidden sm:inline">Board</span>
+              All ({totalActiveRuns})
             </button>
             <button
-              onClick={() => setViewMode('table')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${
-                viewMode === 'table'
-                  ? 'bg-card text-[#3ECF8E] shadow-xs font-bold'
+              type="button"
+              onClick={() => setActiveTab('gauze')}
+              className={`px-2.5 py-1 rounded-md transition-colors ${
+                activeTab === 'gauze'
+                  ? 'bg-background font-semibold text-blue-600 dark:text-blue-400 shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
-              title="Table Register View"
             >
-              <List className="h-4 w-4" />
-              <span className="hidden sm:inline">Table</span>
+              Gauze ({activeGauzeBatches.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('gamjee')}
+              className={`px-2.5 py-1 rounded-md transition-colors ${
+                activeTab === 'gamjee'
+                  ? 'bg-background font-semibold text-emerald-600 dark:text-emerald-400 shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Gamjee ({activeGamjeeBatches.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('moping-pad')}
+              className={`px-2.5 py-1 rounded-md transition-colors ${
+                activeTab === 'moping-pad'
+                  ? 'bg-background font-semibold text-amber-600 dark:text-amber-400 shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Moping Pad ({activeMopingBatches.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('gauze-pad-pinning')}
+              className={`px-2.5 py-1 rounded-md transition-colors ${
+                activeTab === 'gauze-pad-pinning'
+                  ? 'bg-background font-semibold text-cyan-600 dark:text-cyan-400 shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Pinning ({activeGauzePadBatches.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('drying')}
+              className={`px-2.5 py-1 rounded-md transition-colors ${
+                activeTab === 'drying'
+                  ? 'bg-background font-semibold text-orange-600 dark:text-orange-400 shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Drying ({activeDryingBatches.length})
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Main View Display */}
-      {viewMode === 'board' ? (
-        <div className="space-y-4">
-          {isLoading ? (
-            <div className="p-12 text-center text-muted-foreground font-mono bg-card border border-border/80 rounded-2xl">
-              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-blue-600 dark:text-blue-400" />
-              Loading SDLC Job Work Board...
-            </div>
-          ) : orders.length === 0 ? (
-            <div className="p-12 text-center text-muted-foreground font-mono bg-card border border-border/80 rounded-2xl">
-              No Job Work orders match the selected SDLC pipeline stage.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {orders.map((order) => (
-                <JobWorkSDLCCard
-                  key={order.id}
-                  order={order}
-                  onSelect={(ord) => router.push(`/job-work/${ord.id}`)}
-                  onEdit={(ord) => setEditingOrder(ord)}
-                  onDelete={(ord) => setDeletingOrder(ord)}
-                />
-              ))}
+        {/* Batches Grid / Table */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Gauze Batches */}
+          {(activeTab === 'all' || activeTab === 'gauze') &&
+            activeGauzeBatches.slice(0, activeTab === 'all' ? 2 : 6).map((batch: any) => (
+              <Card
+                key={batch.id}
+                className="p-4 border border-border/80 hover:border-blue-500/50 transition-colors flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
+                      {batch.batchNumber}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
+                      Gauze
+                    </span>
+                  </div>
+
+                  <p className="text-xs font-medium text-foreground mt-2 truncate">
+                    {batch.product?.name || 'Bleached Gauze'}
+                  </p>
+
+                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Input: <strong className="text-foreground font-mono">{Number(batch.inputQuantity).toFixed(0)} {batch.inputUom}</strong></span>
+                    <span className="px-2 py-0.5 rounded bg-secondary text-[10px] font-mono">
+                      {batch.status}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
+                  <span className="text-[11px] text-muted-foreground">
+                    {formatDate(batch.productionStartDate || batch.createdAt)}
+                  </span>
+                  <Link
+                    href={`/gauze-production/batches/${batch.id}`}
+                    className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium text-xs"
+                  >
+                    <span>Manage</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </div>
+              </Card>
+            ))}
+
+          {/* Gamjee Batches */}
+          {(activeTab === 'all' || activeTab === 'gamjee') &&
+            activeGamjeeBatches.slice(0, activeTab === 'all' ? 2 : 6).map((batch: any) => (
+              <Card
+                key={batch.id}
+                className="p-4 border border-border/80 hover:border-emerald-500/50 transition-colors flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      {batch.batchNumber}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                      Gamjee
+                    </span>
+                  </div>
+
+                  <p className="text-xs font-medium text-foreground mt-2 truncate">
+                    {batch.finishedProduct?.name || 'Gamjee Roll'}
+                  </p>
+
+                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Target: <strong className="text-foreground font-mono">{Number(batch.productionQuantity || 0).toFixed(0)} Rolls</strong></span>
+                    <span className="px-2 py-0.5 rounded bg-secondary text-[10px] font-mono">
+                      {batch.status}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
+                  <span className="text-[11px] text-muted-foreground">
+                    {formatDate(batch.createdAt)}
+                  </span>
+                  <Link
+                    href={`/gamjee-production/batches/${batch.id}`}
+                    className="text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-medium text-xs"
+                  >
+                    <span>Manage</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </div>
+              </Card>
+            ))}
+
+          {/* Moping Pad Batches */}
+          {(activeTab === 'all' || activeTab === 'moping-pad') &&
+            activeMopingBatches.slice(0, activeTab === 'all' ? 2 : 6).map((batch: any) => (
+              <Card
+                key={batch.id}
+                className="p-4 border border-border/80 hover:border-amber-500/50 transition-colors flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
+                      {batch.batchNumber}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                      Moping Pad
+                    </span>
+                  </div>
+
+                  <p className="text-xs font-medium text-foreground mt-2 truncate">
+                    {batch.productName}
+                  </p>
+
+                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      Progress: <strong className="text-foreground font-mono">{batch.completedQuantity || 0} / {batch.outputQuantity} pads</strong>
+                    </span>
+                    <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
+                      {batch.completionPercentage || 0}%
+                    </span>
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground bg-secondary/40 px-2 py-1 rounded">
+                    <span>{batch.materialType === 'ROLL' ? 'Roll' : 'Pieces'}: {batch.totalLength}m</span>
+                    <span className="font-semibold text-amber-600 dark:text-amber-400 font-mono">
+                      {batch.pendingQuantity ?? Math.max(0, batch.outputQuantity - (batch.completedQuantity || 0))} pending
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
+                  <span className="text-[11px] text-muted-foreground">
+                    {formatDate(batch.startDate || batch.createdAt)}
+                  </span>
+                  <Link
+                    href="/moping-pad-production"
+                    className="text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 font-medium text-xs"
+                  >
+                    <span>Manage</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </div>
+              </Card>
+            ))}
+
+          {/* Gauze Pad Pinning Batches */}
+          {(activeTab === 'all' || activeTab === 'gauze-pad-pinning') &&
+            activeGauzePadBatches.slice(0, activeTab === 'all' ? 2 : 6).map((batch) => (
+              <Card
+                key={batch.id}
+                className="p-4 border border-border/80 hover:border-cyan-500/50 transition-colors flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400">
+                      {batch.batchNumber}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-500/20">
+                      Pad Pinning
+                    </span>
+                  </div>
+
+                  <p className="text-xs font-medium text-foreground mt-2 truncate">
+                    {batch.productName}
+                  </p>
+
+                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      {batch.materialType === 'ROLL' ? 'Roll' : 'Pieces'}:{' '}
+                      <strong className="text-foreground font-mono">{batch.totalLength}m</strong>
+                    </span>
+                    <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400">
+                      {batch.outputQuantity} Pads
+                    </span>
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground bg-secondary/40 px-2 py-1 rounded">
+                    <span>Rate: ₹{batch.salaryRatePerPiece.toFixed(2)}/pad</span>
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
+                      ₹{batch.totalSalary.toFixed(0)} Salary
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
+                  <span className="text-[11px] text-muted-foreground">
+                    {formatDate(batch.startDate || batch.createdAt)}
+                  </span>
+                  <Link
+                    href="/gauze-pad-pinning"
+                    className="text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 font-medium text-xs"
+                  >
+                    <span>Manage</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </div>
+              </Card>
+            ))}
+
+          {/* Drying Batches */}
+          {(activeTab === 'all' || activeTab === 'drying') &&
+            activeDryingBatches.slice(0, activeTab === 'all' ? 2 : 6).map((batch) => (
+              <Card
+                key={batch.id}
+                className="p-4 border border-border/80 hover:border-orange-500/50 transition-colors flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-mono font-bold text-orange-600 dark:text-orange-400">
+                      {batch.batchNumber}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500/10 text-orange-700 dark:text-orange-300 border border-orange-500/20">
+                      Drying
+                    </span>
+                  </div>
+
+                  <p className="text-xs font-medium text-foreground mt-2 truncate">
+                    {batch.productName}
+                  </p>
+
+                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      Progress: <strong className="text-foreground font-mono">{batch.completedPieces} / {batch.totalPieces} pcs</strong>
+                    </span>
+                    <span className="font-mono font-bold text-orange-600 dark:text-orange-400">
+                      {batch.completionPercentage}%
+                    </span>
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground bg-secondary/40 px-2 py-1 rounded">
+                    <span>{batch.completedLength.toFixed(0)}m / {batch.totalLength}m</span>
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
+                      ₹{batch.totalSalary.toFixed(0)} Salary
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
+                  <span className="text-[11px] text-muted-foreground">
+                    {formatDate(batch.startDate || batch.createdAt)}
+                  </span>
+                  <Link
+                    href="/drying"
+                    className="text-orange-600 dark:text-orange-400 hover:underline flex items-center gap-1 font-medium text-xs"
+                  >
+                    <span>Manage</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </div>
+              </Card>
+            ))}
+
+          {totalActiveRuns === 0 && (
+            <div className="col-span-full p-8 text-center border border-dashed border-border rounded-xl bg-card">
+              <p className="text-xs text-muted-foreground">
+                No active batches running currently. Select a Production Line above to assign and launch a new manufacturing run.
+              </p>
             </div>
           )}
         </div>
-      ) : (
-        <Table
-          columns={columns}
-          data={orders}
-          keyExtractor={(row) => row.id}
-          isLoading={isLoading}
-          onRowClick={(row) => router.push(`/job-work/${row.id}`)}
-        />
-      )}
+      </div>
 
-      {/* Edit Job Work Order Modal */}
-      <JobWorkEditModal
-        order={editingOrder}
-        isOpen={Boolean(editingOrder)}
-        onClose={() => setEditingOrder(null)}
-        onSuccess={() => refetch()}
+      {/* Assignment Modal Trigger */}
+      <ProductionAssignmentModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        productionType={selectedProduction}
       />
-
-      {/* Delete / Cancel Job Work Order Modal */}
-      <JobWorkDeleteModal
-        order={deletingOrder}
-        isOpen={Boolean(deletingOrder)}
-        onClose={() => setDeletingOrder(null)}
-        onSuccess={() => refetch()}
-      />
-    </motion.div>
+    </div>
   );
 }
