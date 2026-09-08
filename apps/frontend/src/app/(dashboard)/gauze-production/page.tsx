@@ -214,9 +214,6 @@ export default function GauzeProductionDashboardPage() {
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
               Gauze Production Tracking
             </h1>
-            <p className="text-xs text-muted-foreground">
-              Simple 4-step production workflow from raw unbleached cloth to finished surgical packs.
-            </p>
           </div>
         </div>
 

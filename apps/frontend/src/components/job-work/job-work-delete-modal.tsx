@@ -39,7 +39,7 @@ export function JobWorkDeleteModal({
       toast(
         isIssued ? 'Order Cancelled & Stock Restored' : 'Order Deleted',
         isIssued
-          ? `Job Work ${order.jobWorkNumber} cancelled and ${Number(order.totalIssuedWeight).toFixed(2)} kg restored to warehouse inventory.`
+          ? `Job Work ${order.jobWorkNumber} cancelled and ${Number(order.totalIssuedWeight).toFixed(2)} kg restored to material inventory.`
           : `Job Work ${order.jobWorkNumber} has been permanently deleted.`,
         'success'
       );
@@ -84,7 +84,7 @@ export function JobWorkDeleteModal({
             <div className="p-2.5 bg-background/60 rounded-lg border border-red-500/20 text-foreground flex items-center gap-2">
               <RotateCcw className="h-4 w-4 text-emerald-400 shrink-0" />
               <span>
-                Cancelling will automatically restore <strong>{Number(order.totalIssuedWeight).toFixed(2)} Kg</strong> back into your warehouse inventory.
+                Cancelling will automatically restore <strong>{Number(order.totalIssuedWeight).toFixed(2)} Kg</strong> back into your material inventory.
               </span>
             </div>
           </div>

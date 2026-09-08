@@ -42,12 +42,19 @@ export interface GauzePadPinningBatch {
   workerNames?: string;
   companyId?: string;
   companyName?: string;
+  deliveryPerson?: string;
+  vehicleNumber?: string;
+
+  // Job Work Notebook Parameters
+  dcNo?: string;
+  dcDate?: string;
+  ends?: string;
+  itemType?: string;
 
   status: GauzePadPinningStatus;
   startDate: string;
   targetDate?: string;
   completionDate?: string;
-  warehouseLocation?: string;
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -80,10 +87,17 @@ export interface CreateGauzePadPinningInput {
   workerNames?: string;
   companyId?: string;
   companyName?: string;
+  deliveryPerson?: string;
+  vehicleNumber?: string;
+
+  // Job Work Notebook Parameters
+  dcNo?: string;
+  dcDate?: string;
+  ends?: string;
+  itemType?: string;
 
   startDate?: string;
   targetDate?: string;
-  warehouseLocation?: string;
   notes?: string;
 }
 
@@ -120,6 +134,10 @@ const DEFAULT_BATCHES: GauzePadPinningBatch[] = [
     executorType: 'WORKERS',
     workerIds: ['emp-1', 'emp-2'],
     workerNames: 'Anitha Sharma, Rajesh Kumar',
+    dcNo: 'DC-05',
+    dcDate: '2026-09-06',
+    ends: '1140',
+    itemType: '22x14',
     status: 'IN_PROGRESS',
     startDate: '2026-09-05',
     targetDate: '2026-09-08',
@@ -149,6 +167,10 @@ const DEFAULT_BATCHES: GauzePadPinningBatch[] = [
     executorType: 'WORKERS',
     workerIds: ['emp-3'],
     workerNames: 'Venkatesh Murugan',
+    dcNo: 'DC-04',
+    dcDate: '2026-09-04',
+    ends: '1140',
+    itemType: '22x16',
     status: 'COMPLETED',
     startDate: '2026-09-02',
     completionDate: '2026-09-04',
@@ -268,6 +290,17 @@ class GauzePadPinningService {
       );
     }
 
+    // Sort newest-first
+    batches.sort((a, b) => {
+      const tA = new Date(a.createdAt || a.startDate || 0).getTime() || 0;
+      const tB = new Date(b.createdAt || b.startDate || 0).getTime() || 0;
+      if (tB !== tA) return tB - tA;
+      return (b.batchNumber || b.id).localeCompare(a.batchNumber || a.id, undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      });
+    });
+
     return { items: batches, total: batches.length };
   }
 
@@ -341,11 +374,17 @@ class GauzePadPinningService {
       workerNames: input.workerNames,
       companyId: input.companyId,
       companyName: input.companyName,
+      deliveryPerson: input.deliveryPerson,
+      vehicleNumber: input.vehicleNumber,
+
+      dcNo: input.dcNo,
+      dcDate: input.dcDate,
+      ends: input.ends,
+      itemType: input.itemType,
 
       status: 'IN_PROGRESS',
       startDate: input.startDate || now.toISOString().split('T')[0],
       targetDate: input.targetDate,
-      warehouseLocation: input.warehouseLocation,
       notes: input.notes,
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),

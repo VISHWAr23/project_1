@@ -373,10 +373,6 @@ export default function MaterialDetailPage() {
                   <span className="text-muted-foreground">Primary Supplier:</span>
                   <span className="font-semibold text-foreground">{material.supplier?.name || 'Unassigned'}</span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-border/50">
-                  <span className="text-muted-foreground">Warehouse Storage:</span>
-                  <span className="font-semibold text-foreground">{material.storageLocation?.name || 'Main Warehouse'}</span>
-                </div>
               </div>
             </div>
           </div>

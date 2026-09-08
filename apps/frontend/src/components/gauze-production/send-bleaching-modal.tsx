@@ -84,7 +84,7 @@ export function SendBleachingModal({ batch, isOpen, onClose, onSuccess }: SendBl
       isOpen={isOpen}
       onClose={onClose}
       title="Send Material to External Bleaching / Job Work"
-      description={`Batch ${batch.batchNumber} — Available in Warehouse: ${availableQty} ${batch.currentUom}`}
+      description={`Batch ${batch.batchNumber} — Available in Stock: ${availableQty} ${batch.currentUom}`}
       maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">

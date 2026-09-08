@@ -13,8 +13,11 @@ import { NotificationDropdown } from './NotificationDropdown';
 const ROUTE_LABELS: Record<string, string> = {
   '/dashboard': 'Executive Dashboard',
   '/raw-materials': 'Materials & Products Master',
+  '/fabric-costing': 'Fabric Production & Bleaching Costing',
+  '/customer-orders': 'Customer Orders',
   '/job-work': 'Job Work Pipeline',
   '/job-work/vendors': 'Job Work Vendors & Processing Mills',
+  '/vendors': 'Job Work Vendors & Processing Mills',
   '/employees': 'Employee Directory',
   '/attendance': 'Daily Attendance & Shifts',
   '/salary': 'Salary & Payroll Engine',

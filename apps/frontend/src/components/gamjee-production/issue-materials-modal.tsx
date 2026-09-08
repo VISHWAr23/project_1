@@ -153,7 +153,7 @@ export function IssueMaterialsModal({ isOpen, onClose, batch }: IssueMaterialsMo
               </select>
               {selectedFabric && (
                 <p className="text-[11px] text-muted-foreground mt-1 font-mono">
-                  Available in Warehouse: <strong className="text-foreground">{selectedFabric.currentStockBalance}</strong> {selectedFabric.unit?.abbreviation || 'm'}
+                  Available in Stock: <strong className="text-foreground">{selectedFabric.currentStockBalance}</strong> {selectedFabric.unit?.abbreviation || 'm'}
                 </p>
               )}
             </div>
@@ -180,7 +180,7 @@ export function IssueMaterialsModal({ isOpen, onClose, batch }: IssueMaterialsMo
             {isFabricOverstock && (
               <div className="flex items-center gap-1 text-[11px] text-rose-500 font-medium">
                 <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                <span>Exceeds warehouse balance ({fabricStock})</span>
+                <span>Exceeds available stock ({fabricStock})</span>
               </div>
             )}
           </div>
@@ -220,7 +220,7 @@ export function IssueMaterialsModal({ isOpen, onClose, batch }: IssueMaterialsMo
               </select>
               {selectedCotton && (
                 <p className="text-[11px] text-muted-foreground mt-1 font-mono">
-                  Available in Warehouse: <strong className="text-foreground">{selectedCotton.currentStockBalance}</strong> {selectedCotton.unit?.abbreviation || 'kg'}
+                  Available in Stock: <strong className="text-foreground">{selectedCotton.currentStockBalance}</strong> {selectedCotton.unit?.abbreviation || 'kg'}
                 </p>
               )}
             </div>
@@ -247,7 +247,7 @@ export function IssueMaterialsModal({ isOpen, onClose, batch }: IssueMaterialsMo
             {isCottonOverstock && (
               <div className="flex items-center gap-1 text-[11px] text-rose-500 font-medium">
                 <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                <span>Exceeds warehouse balance ({cottonStock})</span>
+                <span>Exceeds available stock ({cottonStock})</span>
               </div>
             )}
           </div>

@@ -110,9 +110,6 @@ export default function MopingPadProductionPage() {
                 Operations Line
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Slitting, roll/pieces intake, and pinning calculation engine for surgical and heavy-duty moping pads.
-            </p>
           </div>
         </div>
 
@@ -242,13 +239,14 @@ export default function MopingPadProductionPage() {
           <table className="w-full text-left text-xs">
             <thead className="bg-secondary/40 border-b border-border/70 text-muted-foreground">
               <tr>
-                <th className="py-3 px-4 font-semibold">Batch & Product</th>
+                <th className="py-3 px-4 font-semibold">Batch & Challan</th>
+                <th className="py-3 px-4 font-semibold">Specs & Item Type</th>
                 <th className="py-3 px-4 font-semibold">Intake Form</th>
                 <th className="py-3 px-4 font-semibold">Dimensions & Count</th>
                 <th className="py-3 px-4 font-semibold">Total Length</th>
                 <th className="py-3 px-4 font-semibold">Pinning Size</th>
-                <th className="py-3 px-4 font-semibold min-w-[180px]">Output & Progress</th>
-                <th className="py-3 px-4 font-semibold">Handler</th>
+                <th className="py-3 px-4 font-semibold min-w-[170px]">Output & Progress</th>
+                <th className="py-3 px-4 font-semibold">Handler & Carrier</th>
                 <th className="py-3 px-4 font-semibold">Status</th>
                 <th className="py-3 px-4 font-semibold text-center">Action</th>
               </tr>
@@ -256,21 +254,41 @@ export default function MopingPadProductionPage() {
             <tbody className="divide-y divide-border/60">
               {batches.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-muted-foreground text-xs">
+                  <td colSpan={10} className="py-8 text-center text-muted-foreground text-xs">
                     No moping pad batches found matching your filters.
                   </td>
                 </tr>
               ) : (
                 batches.map((batch) => (
                   <tr key={batch.id} className="hover:bg-secondary/20 transition-colors">
-                    {/* Batch Number & Product */}
+                    {/* Batch Number, Product & DC */}
                     <td className="py-3.5 px-4">
                       <span className="font-mono font-bold text-amber-600 dark:text-amber-400 block">
                         {batch.batchNumber}
                       </span>
-                      <span className="text-[11px] text-muted-foreground font-medium truncate max-w-[200px] block">
+                      <span className="text-[11px] text-muted-foreground font-medium truncate max-w-[180px] block">
                         {batch.productName}
                       </span>
+                      {batch.dcNo && (
+                        <span className="inline-block mt-1 text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                          {batch.dcNo}
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Specs & Construction (Ends, Item Type, Output Width) */}
+                    <td className="py-3.5 px-4 space-y-0.5">
+                      <div className="text-[11px]">
+                        <span className="text-muted-foreground text-[10px]">Ends: </span>
+                        <strong className="font-mono text-foreground">{batch.ends ? `${batch.ends} E` : '1140 E'}</strong>
+                      </div>
+                      <div className="text-[11px]">
+                        <span className="text-muted-foreground text-[10px]">Item: </span>
+                        <strong className="font-mono text-foreground">{batch.itemType || '22x14'}</strong>
+                      </div>
+                      <div className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 truncate max-w-[140px]">
+                        {batch.outputProductWidth || '30cm x 30cm - 8 ply'}
+                      </div>
                     </td>
 
                     {/* Intake Form */}
@@ -336,7 +354,7 @@ export default function MopingPadProductionPage() {
                       </div>
                     </td>
 
-                    {/* Handler */}
+                    {/* Handler & Carrier */}
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-1.5 text-[11px]">
                         {batch.executorType === 'WORKERS' ? (
@@ -350,6 +368,20 @@ export default function MopingPadProductionPage() {
                             : batch.companyName || 'Jobworker'}
                         </span>
                       </div>
+                      {batch.executorType === 'COMPANY' && (batch.deliveryPerson || batch.vehicleNumber) && (
+                        <div className="mt-1 text-[10px] text-muted-foreground font-mono space-y-0.5">
+                          {batch.deliveryPerson && (
+                            <span className="block truncate max-w-[140px]">
+                              Carrier: {batch.deliveryPerson}
+                            </span>
+                          )}
+                          {batch.vehicleNumber && (
+                            <span className="block font-bold text-foreground">
+                              {batch.vehicleNumber}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </td>
 
                     {/* Status */}

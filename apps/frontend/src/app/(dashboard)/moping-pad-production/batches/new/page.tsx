@@ -7,8 +7,9 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCreateMopingPadBatch } from '@/hooks/useMopingPadProduction';
-import { useStorageLocations, useRawMaterials } from '@/hooks/useRawMaterials';
+import { useRawMaterials } from '@/hooks/useRawMaterials';
 import { useToast } from '@/components/ui/toast';
+import { MasterEntityDropdown } from '@/components/ui/master-entity-dropdown';
 import {
   ArrowLeft,
   Sparkles,
@@ -24,26 +25,32 @@ import {
   Clock,
   MapPin,
   HelpCircle,
+  Truck,
+  FileText,
+  BadgeCheck,
 } from 'lucide-react';
 
 const STANDARD_MOPING_PAD_PRODUCTS = [
   'Heavy-Duty Surgical Moping Pad 40cm',
   'Moping Pad - 30cm x 30cm (12 ply)',
+  'Moping Pad - 30cm x 30cm (8 ply)',
+  'Moping Pad - 30cm x 30cm (6 ply)',
   'Moping Pad - 25cm x 25cm (8 ply)',
+  'Moping Pad - 25cm x 25cm (12 ply)',
   'Standard Cleanroom Mop Pad 30cm',
   'Microfiber Absorbent Mop Pad 35cm',
   'Sterile Laparotomy Sponge / Moping Pad with Loop',
   'X-Ray Detectable Abdominal Mop Pad 30x30cm',
 ];
 
-const STANDARD_WAREHOUSE_LOCATIONS = [
-  'Cutting & Pinning Section (Floor 1)',
-  'Main Warehouse - Raw Storage',
-  'Finished Goods Warehouse (Bay A)',
-  'Finished Goods Warehouse (Bay B)',
-  'Bleaching Yard & Drying Floor',
-  'Packaging & Sterile Bay',
-  'Transit & Dispatch Storage',
+const ITEM_TYPE_PRESETS = ['22x16', '23x17', '28x27', '22x14'];
+
+const OUTPUT_PRODUCT_WIDTH_PRESETS = [
+  '30cm x 30cm - 6 ply',
+  '30cm x 30cm - 8 ply',
+  '30cm x 30cm - 12 ply',
+  '25cm x 25cm - 8 ply',
+  '25cm x 25cm - 12 ply',
 ];
 
 function CreateMopingPadBatchContent() {
@@ -57,7 +64,6 @@ function CreateMopingPadBatchContent() {
 
   const { toast } = useToast();
   const createBatchMutation = useCreateMopingPadBatch();
-  const { data: storageLocationsData = [] } = useStorageLocations();
   const { data: rawMaterialsData } = useRawMaterials({ limit: 100 });
 
   // Finished products from materials inventory
@@ -70,22 +76,23 @@ function CreateMopingPadBatchContent() {
     );
   }, [rawMaterialsData]);
 
-  // Combined warehouse locations list
-  const allWarehouseLocations = useMemo(() => {
-    const fromApi = storageLocationsData.map((l: any) => l.name);
-    const combined = Array.from(new Set([...STANDARD_WAREHOUSE_LOCATIONS, ...fromApi]));
-    return combined;
-  }, [storageLocationsData]);
-
   // Batch General Information
   const [batchNumber, setBatchNumber] = useState('');
-  const [productName, setProductName] = useState(STANDARD_MOPING_PAD_PRODUCTS[0]);
-  const [isCustomProduct, setIsCustomProduct] = useState(false);
+  const [productName, setProductName] = useState(STANDARD_MOPING_PAD_PRODUCTS[2]); // Default 30cm x 30cm (8 ply)
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [targetDate, setTargetDate] = useState('');
-  const [warehouseLocation, setWarehouseLocation] = useState(STANDARD_WAREHOUSE_LOCATIONS[0]);
-  const [isCustomLocation, setIsCustomLocation] = useState(false);
   const [notes, setNotes] = useState('');
+
+  // Top 4 Notebook Parameters (When rolls or pieces are used)
+  const [dcNo, setDcNo] = useState('D.C. No. 05');
+  const [dcDate, setDcDate] = useState(new Date().toISOString().split('T')[0]);
+  const [ends, setEnds] = useState<number | ''>(1140);
+  const [itemType, setItemType] = useState('22x14');
+  const [outputProductWidth, setOutputProductWidth] = useState('30cm x 30cm - 8 ply');
+
+  // Delivery carrier info if Jobworking Company
+  const [deliveryPerson, setDeliveryPerson] = useState(searchParams.get('deliveryPerson') || '');
+  const [vehicleNumber, setVehicleNumber] = useState(searchParams.get('vehicleNumber') || '');
 
   // Raw Material Intake State: 'ROLL' vs 'PIECES'
   const [materialType, setMaterialType] = useState<'ROLL' | 'PIECES'>('ROLL');
@@ -188,6 +195,11 @@ function CreateMopingPadBatchContent() {
         batchNumber: batchNumber.trim() || undefined,
         productName: productName.trim(),
         materialType,
+        dcNo: dcNo.trim() || undefined,
+        dcDate: dcDate || undefined,
+        ends: ends === '' ? undefined : Number(ends),
+        itemType: itemType.trim() || undefined,
+        outputProductWidth: outputProductWidth.trim() || undefined,
         rollWidth: rollWidth === '' ? undefined : Number(rollWidth),
         rollWidthUom,
         rollLength: rollLength === '' ? undefined : Number(rollLength),
@@ -204,9 +216,10 @@ function CreateMopingPadBatchContent() {
         workerNames: workerNames || undefined,
         companyId: companyId || undefined,
         companyName: companyName || undefined,
+        deliveryPerson: deliveryPerson.trim() || undefined,
+        vehicleNumber: vehicleNumber.trim() || undefined,
         startDate,
         targetDate: targetDate || undefined,
-        warehouseLocation: warehouseLocation || undefined,
         notes: notes || undefined,
       });
 
@@ -236,9 +249,6 @@ function CreateMopingPadBatchContent() {
                 New Manufacturing Run
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Dual-mode raw material intake (Roll or Pieces) with automated pinning size output calculation.
-            </p>
           </div>
         </div>
 
@@ -307,6 +317,37 @@ function CreateMopingPadBatchContent() {
             </Button>
           </Link>
         </div>
+
+        {executorType === 'COMPANY' && (
+          <div className="mt-3 pt-3 border-t border-border/60 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-semibold text-foreground flex items-center gap-1.5 mb-1">
+                <Truck className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                Delivery Person / Driver Name
+              </label>
+              <Input
+                type="text"
+                placeholder="e.g. Ramesh Kumar"
+                value={deliveryPerson}
+                onChange={(e) => setDeliveryPerson(e.target.value)}
+                className="h-8 text-xs"
+              />
+            </div>
+            <div>
+              <label className="text-[11px] font-semibold text-foreground flex items-center gap-1.5 mb-1">
+                <Truck className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                Transport Vehicle No
+              </label>
+              <Input
+                type="text"
+                placeholder="e.g. TN-67-AB-1234"
+                value={vehicleNumber}
+                onChange={(e) => setVehicleNumber(e.target.value)}
+                className="h-8 text-xs font-mono uppercase"
+              />
+            </div>
+          </div>
+        )}
       </Card>
 
       <form id="moping-pad-form" onSubmit={handleSubmit} className="space-y-6">
@@ -335,53 +376,21 @@ function CreateMopingPadBatchContent() {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-foreground block mb-1.5">
-                Product Specification <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={isCustomProduct ? '__CUSTOM__' : productName}
-                onChange={(e) => {
-                  if (e.target.value === '__CUSTOM__') {
-                    setIsCustomProduct(true);
-                    setProductName('');
-                  } else {
-                    setIsCustomProduct(false);
-                    setProductName(e.target.value);
-                  }
-                }}
-                className="w-full h-9 px-3 text-xs rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500"
-              >
-                <option value="" disabled>Select Finished Product Specification...</option>
-                <optgroup label="Standard Finished Products">
-                  {STANDARD_MOPING_PAD_PRODUCTS.map((prod) => (
-                    <option key={prod} value={prod}>
-                      {prod}
-                    </option>
-                  ))}
-                </optgroup>
-                {inventoryFinishedProducts.length > 0 && (
-                  <optgroup label="Inventory Finished Goods">
-                    {inventoryFinishedProducts.map((p: any) => (
-                      <option key={p.id} value={p.name}>
-                        {p.name} ({p.sku})
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-                <option value="__CUSTOM__">➕ Enter Custom Specification...</option>
-              </select>
-
-              {isCustomProduct && (
-                <Input
-                  type="text"
-                  value={productName}
-                  onChange={(e) => setProductName(e.target.value)}
-                  placeholder="Enter custom product specification..."
-                  className="h-8 text-xs mt-1.5"
-                  required
-                  autoFocus
-                />
-              )}
+              <MasterEntityDropdown
+                label="Product Specification"
+                value={productName}
+                onChange={setProductName}
+                storageKey="moping_pad_products"
+                options={[
+                  ...STANDARD_MOPING_PAD_PRODUCTS.map((prod) => ({ value: prod, label: prod })),
+                  ...inventoryFinishedProducts.map((p: any) => ({
+                    value: p.name,
+                    label: `${p.name} (${p.sku})`,
+                  })),
+                ]}
+                placeholder="Select Finished Product Specification..."
+                required
+              />
             </div>
 
             <div>
@@ -406,6 +415,101 @@ function CreateMopingPadBatchContent() {
                 value={targetDate}
                 onChange={(e) => setTargetDate(e.target.value)}
                 className="h-9 text-xs"
+              />
+            </div>
+          </div>
+        </Card>
+
+        {/* Top 4 Red Circle Parameters (From Notebook Specifications) */}
+        <Card className="p-5 border-border bg-card space-y-4 ring-1 ring-amber-500/20">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-border/60">
+            <div className="flex items-center gap-2">
+              <BadgeCheck className="h-4.5 w-4.5 text-amber-600 dark:text-amber-400" />
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                  Jobwork Parameters
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 normal-case">
+                    Required for Rolls & Pieces
+                  </span>
+                </h2>
+              </div>
+            </div>
+            <span className="text-[11px] text-muted-foreground font-mono">
+              DC No • Ends • Item Type • Width of Output Product
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* 1. DC No & Date */}
+            <div>
+              <label className="text-xs font-medium text-foreground block mb-1.5">
+                1. Delivery Challan (D.C.) No. <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="text"
+                value={dcNo}
+                onChange={(e) => setDcNo(e.target.value)}
+                placeholder="e.g. D.C. No. 05"
+                className="h-9 font-mono text-xs"
+                required
+              />
+              <div className="mt-1.5">
+                <Input
+                  type="date"
+                  value={dcDate}
+                  onChange={(e) => setDcDate(e.target.value)}
+                  className="h-7 text-[11px]"
+                  title="Challan Date"
+                />
+              </div>
+              <span className="text-[10px] text-muted-foreground mt-1 block">
+                Challan tracking identifier & date
+              </span>
+            </div>
+
+            {/* 2. Ends */}
+            <div>
+              <label className="text-xs font-medium text-foreground block mb-1.5">
+                2. Ends (Yarn Count) <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="number"
+                value={ends}
+                onChange={(e) => setEnds(e.target.value === '' ? '' : Number(e.target.value))}
+                placeholder="e.g. 1140"
+                className="h-9 font-mono text-xs"
+                required
+              />
+              <span className="text-[10px] text-muted-foreground mt-1 block">
+                Standard spec: 1140 Ends (1140 E)
+              </span>
+            </div>
+
+            {/* 3. Item Type */}
+            <div>
+              <MasterEntityDropdown
+                label="3. Item Type (Mesh / Construction)"
+                value={itemType}
+                onChange={setItemType}
+                storageKey="jobwork_item_types"
+                options={ITEM_TYPE_PRESETS.map((t) => ({ value: t, label: t }))}
+                placeholder="Select Construction / Mesh..."
+                hint="Fabric: 22x16, 23x17, 28x27, 22x14"
+                required
+              />
+            </div>
+
+            {/* 4. Width of the Output Product (Only for Moping Pad) */}
+            <div>
+              <MasterEntityDropdown
+                label="4. Output Product Width / Size"
+                value={outputProductWidth}
+                onChange={setOutputProductWidth}
+                storageKey="moping_pad_output_widths"
+                options={OUTPUT_PRODUCT_WIDTH_PRESETS.map((p) => ({ value: p, label: p }))}
+                placeholder="Select Output Size & Ply..."
+                hint="Target finished dimensions & ply"
+                required
               />
             </div>
           </div>
@@ -795,60 +899,18 @@ function CreateMopingPadBatchContent() {
           </div>
         </Card>
 
-        {/* Additional Logistics / Notes */}
-        <Card className="p-5 border-border bg-card space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-medium text-foreground block mb-1.5">
-                Warehouse / Storage Location
-              </label>
-              <select
-                value={isCustomLocation ? '__CUSTOM__' : warehouseLocation}
-                onChange={(e) => {
-                  if (e.target.value === '__CUSTOM__') {
-                    setIsCustomLocation(true);
-                    setWarehouseLocation('');
-                  } else {
-                    setIsCustomLocation(false);
-                    setWarehouseLocation(e.target.value);
-                  }
-                }}
-                className="w-full h-9 px-3 text-xs rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500"
-              >
-                <option value="" disabled>Select Warehouse Storage Location...</option>
-                {allWarehouseLocations.map((loc) => (
-                  <option key={loc} value={loc}>
-                    {loc}
-                  </option>
-                ))}
-                <option value="__CUSTOM__">➕ Enter Custom Location...</option>
-              </select>
-
-              {isCustomLocation && (
-                <Input
-                  type="text"
-                  value={warehouseLocation}
-                  onChange={(e) => setWarehouseLocation(e.target.value)}
-                  placeholder="Enter custom warehouse location..."
-                  className="h-8 text-xs mt-1.5"
-                  autoFocus
-                />
-              )}
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-foreground block mb-1.5">
-                Operational Notes & Instructions
-              </label>
-              <Input
-                type="text"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add special pinning or quality instructions..."
-                className="h-9 text-xs"
-              />
-            </div>
-          </div>
+        {/* Operational Notes & Instructions */}
+        <Card className="p-5 border-border bg-card space-y-2">
+          <label className="text-xs font-medium text-foreground block">
+            Operational Notes & Special Instructions
+          </label>
+          <Input
+            type="text"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="e.g. 30cm x 30cm - 8L X-Ray, stitching with tape/string..."
+            className="h-9 text-xs"
+          />
         </Card>
 
         {/* Submit Bottom Bar */}

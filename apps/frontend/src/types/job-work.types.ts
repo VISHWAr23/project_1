@@ -102,6 +102,12 @@ export interface JobWorkOrder {
   pendingQty: number;
   vehicleNumber?: string;
   driverName?: string;
+  deliveryPerson?: string;
+  dcNo?: string;
+  dcDate?: string;
+  ends?: string;
+  itemType?: string;
+  outputProductWidth?: string;
   remarks?: string;
   closedAt?: string;
   jobWorkCompanyId: string;
@@ -140,6 +146,12 @@ export interface CreateJobWorkOrderPayload {
 export interface IssueMaterialsPayload {
   vehicleNumber: string;
   driverName: string;
+  deliveryPerson?: string;
+  dcNo?: string;
+  dcDate?: string;
+  ends?: string;
+  itemType?: string;
+  outputProductWidth?: string;
   remarks?: string;
   items: {
     rollNumber: string;

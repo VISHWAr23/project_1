@@ -19,6 +19,23 @@ export function DeliveryChallanPDF({ order }: DeliveryChallanPDFProps) {
   const dispatchDate = order.updatedAt ? new Date(order.updatedAt).toLocaleDateString() : new Date().toLocaleDateString();
   const returnDate = order.expectedReturnDate ? new Date(order.expectedReturnDate).toLocaleDateString() : '-';
 
+  // Retrieve notebook parameters from order or localStorage
+  let meta: any = {};
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(`ims_job_work_meta_${order.id}`);
+      if (raw) meta = JSON.parse(raw);
+    } catch (e) {}
+  }
+
+  const dcNo = (order as any).dcNo || meta.dcNo || '05';
+  const dcDate = (order as any).dcDate || meta.dcDate || dispatchDate;
+  const ends = (order as any).ends || meta.ends || '1140';
+  const itemType = (order as any).itemType || meta.itemType || '22x14';
+  const outputProductWidth = (order as any).outputProductWidth || meta.outputProductWidth || '30cm x 30cm - 8 ply';
+  const deliveryPerson = (order as any).deliveryPerson || order.driverName || meta.deliveryPerson || 'Ramesh Kumar';
+  const vehicleNumber = order.vehicleNumber || meta.vehicleNumber || 'TN-38-BZ-4412';
+
   // SVG Barcode representation generator
   const renderBarcodeSVG = (text: string) => {
     return (
@@ -126,6 +143,40 @@ export function DeliveryChallanPDF({ order }: DeliveryChallanPDFProps) {
           </div>
         </div>
 
+        {/* Notebook Jobwork Parameters (Top 4 Red Circle Data) */}
+        <div className="my-4 p-3.5 bg-amber-50/70 border-2 border-amber-300 rounded-lg">
+          <div className="flex items-center justify-between border-b border-amber-200 pb-1.5 mb-2.5">
+            <h3 className="font-bold text-amber-950 uppercase text-[11px] tracking-wider flex items-center gap-1.5">
+              <span>Job Work Parameters (Notebook Specifications)</span>
+            </h3>
+            <span className="text-[11px] font-mono font-bold bg-amber-200 px-2 py-0.5 rounded text-amber-900 border border-amber-300">
+              D.C. No. {dcNo}, dt: {dcDate}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div className="p-2.5 bg-white rounded border border-amber-200 shadow-2xs">
+              <span className="text-[10px] text-gray-500 font-bold block uppercase tracking-wider">1. D.C. No. & Date</span>
+              <span className="font-mono font-bold text-gray-900 text-sm">D.C. #{dcNo}</span>
+              <span className="block text-[10px] text-gray-600 font-mono mt-0.5">{dcDate}</span>
+            </div>
+            <div className="p-2.5 bg-white rounded border border-amber-200 shadow-2xs">
+              <span className="text-[10px] text-gray-500 font-bold block uppercase tracking-wider">2. Ends</span>
+              <span className="font-mono font-bold text-gray-900 text-sm">{ends} Ends</span>
+              <span className="block text-[10px] text-gray-500 mt-0.5">Warp thread count</span>
+            </div>
+            <div className="p-2.5 bg-white rounded border border-amber-200 shadow-2xs">
+              <span className="text-[10px] text-gray-500 font-bold block uppercase tracking-wider">3. Item Type</span>
+              <span className="font-mono font-bold text-gray-900 text-sm">{itemType}</span>
+              <span className="block text-[10px] text-gray-500 mt-0.5">Mesh weave construction</span>
+            </div>
+            <div className="p-2.5 bg-white rounded border border-amber-300 shadow-2xs bg-amber-50/40">
+              <span className="text-[10px] text-amber-800 font-bold block uppercase tracking-wider">4. Width (Moping Pad)</span>
+              <span className="font-mono font-bold text-amber-900 text-xs">{outputProductWidth}</span>
+              <span className="block text-[10px] text-amber-700 mt-0.5 font-medium">Finished output width</span>
+            </div>
+          </div>
+        </div>
+
         {/* Vendor & Vehicle Information Box */}
         <div className="grid grid-cols-2 gap-4 my-4">
           {/* Vendor Details */}
@@ -143,14 +194,14 @@ export function DeliveryChallanPDF({ order }: DeliveryChallanPDFProps) {
           {/* Transport & Carrier Details */}
           <div className="border border-gray-300 p-3 rounded space-y-1">
             <h3 className="font-bold text-gray-900 border-b border-gray-200 pb-1 mb-1 text-[11px] uppercase tracking-wider">
-              Transport & Dispatch Particulars
+              Transport & Dispatch Particulars (Job Working Carrier)
             </h3>
-            <p><span className="font-semibold text-gray-700">Vehicle Number:</span> <span className="font-mono font-bold text-gray-900">{order.vehicleNumber || 'MH-04-EK-9821'}</span></p>
-            <p><span className="font-semibold text-gray-700">Driver Name:</span> {order.driverName || 'Ramesh Kumar'}</p>
+            <p><span className="font-semibold text-gray-700">Delivery Person:</span> <span className="font-bold text-gray-900">{deliveryPerson}</span></p>
+            <p><span className="font-semibold text-gray-700">Vehicle Number:</span> <span className="font-mono font-bold text-gray-900">{vehicleNumber}</span></p>
             <p><span className="font-semibold text-gray-700">Dispatch Purpose:</span> Job Work Process (Outsourcing)</p>
             <p><span className="font-semibold text-gray-700">E-Way Bill No:</span> EWB-8899-2026-1122</p>
             <div className="pt-2 flex items-center justify-end">
-              {renderQRCodeSVG(JSON.stringify({ challanNo, orderNo: order.jobWorkNumber, company: order.jobWorkCompany?.companyName }))}
+              {renderQRCodeSVG(JSON.stringify({ challanNo, orderNo: order.jobWorkNumber, company: order.jobWorkCompany?.companyName, deliveryPerson, vehicleNumber }))}
             </div>
           </div>
         </div>

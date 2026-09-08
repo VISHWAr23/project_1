@@ -477,13 +477,13 @@ export default function EditRawMaterialPage() {
           </div>
         </div>
 
-        {/* Section 3: Supplier & Storage Location */}
+        {/* Section 3: Primary Vendor */}
         <div className="bg-secondary/20 border border-border rounded-xl p-5 space-y-4">
           <h2 className="text-sm font-bold text-foreground tracking-tight border-b border-border pb-2">
-            3. Primary Vendor & Storage Location Assignment
+            3. Primary Vendor Assignment
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
             <MasterEntityDropdown
               label="Primary Supplier"
               entityType="supplier"
@@ -491,15 +491,6 @@ export default function EditRawMaterialPage() {
               options={suppliers?.map((s) => ({ label: `${s.name} (${s.code})`, value: s.id, raw: s })) || []}
               value={formData.supplierId}
               onChange={(val) => setFormData({ ...formData, supplierId: val })}
-            />
-
-            <MasterEntityDropdown
-              label="Warehouse Storage Location"
-              entityType="location"
-              placeholder="Select Warehouse Location..."
-              options={locations?.map((l) => ({ label: `${l.name} (${l.code})`, value: l.id, raw: l })) || []}
-              value={formData.storageLocationId}
-              onChange={(val) => setFormData({ ...formData, storageLocationId: val })}
             />
           </div>
         </div>

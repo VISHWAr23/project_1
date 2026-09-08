@@ -79,7 +79,7 @@ export function TraceabilityView({ data }: TraceabilityViewProps) {
                     Step 1: Raw Material Supplier
                   </span>
                   <h4 className="text-sm font-bold text-foreground">
-                    {forwardTraceability.supplier?.name || 'In-House Material Warehouse'}
+                    {forwardTraceability.supplier?.name || 'In-House Material Stores'}
                   </h4>
                   {forwardTraceability.supplier?.code && (
                     <span className="text-xs font-mono text-muted-foreground">
@@ -228,7 +228,7 @@ export function TraceabilityView({ data }: TraceabilityViewProps) {
               </div>
               <div>
                 <span className="text-[10px] uppercase font-mono tracking-wider font-semibold text-emerald-600 dark:text-emerald-400">
-                  Step 5: Finished Goods Packing & Warehouse
+                  Step 5: Finished Goods Packing & Storage
                 </span>
                 <h4 className="text-sm font-bold text-foreground">
                   {forwardTraceability.packingEntries.length > 0
@@ -306,7 +306,7 @@ export function TraceabilityView({ data }: TraceabilityViewProps) {
                   <div className="relative pl-4">
                     <span className="font-bold text-foreground block">Derived From External Bleaching Job:</span>
                     <p className="text-muted-foreground mt-0.5">
-                      {fg.derivedFromBleaching.length > 0 ? fg.derivedFromBleaching.join(', ') : 'Direct warehouse stock'}
+                      {fg.derivedFromBleaching.length > 0 ? fg.derivedFromBleaching.join(', ') : 'Direct inventory stock'}
                     </p>
                   </div>
 

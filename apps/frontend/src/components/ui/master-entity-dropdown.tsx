@@ -1,8 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { Select } from '@/components/ui/select';
+import { Modal } from '@/components/ui/modal';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
 import { MasterEntityModal, MasterEntityType } from './master-entity-modal';
 import {
@@ -27,7 +30,7 @@ export interface MasterEntityDropdownProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  options: DropdownOption[];
+  options?: (DropdownOption | string)[];
   entityType?: MasterEntityType;
   placeholder?: string;
   required?: boolean;
@@ -39,6 +42,9 @@ export interface MasterEntityDropdownProps {
   onAddNewCustom?: () => void;
   onEditCustom?: (selectedId: string) => void;
   onDeleteCustom?: (selectedId: string) => void;
+  storageKey?: string;
+  onOptionsChange?: (options: DropdownOption[]) => void;
+  hint?: string;
   error?: string;
 }
 
@@ -58,13 +64,96 @@ export function MasterEntityDropdown({
   onAddNewCustom,
   onEditCustom,
   onDeleteCustom,
+  storageKey,
+  onOptionsChange,
+  hint,
   error,
 }: MasterEntityDropdownProps) {
   const { toast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalInitialData, setModalInitialData] = useState<any>(null);
 
-  // Deletion mutations
+  // Generic custom options modal states
+  const [isGenericModalOpen, setIsGenericModalOpen] = useState(false);
+  const [genericModalMode, setGenericModalMode] = useState<'add' | 'edit'>('add');
+  const [genericInputValue, setGenericInputValue] = useState('');
+
+  // Normalize incoming options prop
+  const normalizedPassedOptions = useMemo<DropdownOption[]>(() => {
+    return (options || []).map((opt) =>
+      typeof opt === 'string' ? { value: opt, label: opt } : opt
+    );
+  }, [options]);
+
+  // Internal options list for generic/custom dropdowns
+  const [internalList, setInternalList] = useState<DropdownOption[]>(() => {
+    if (typeof window !== 'undefined' && storageKey) {
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      } catch (e) {
+        // ignore localStorage error
+      }
+    }
+    return normalizedPassedOptions;
+  });
+
+  // Sync internalList with incoming options or localStorage updates
+  useEffect(() => {
+    if (entityType) return;
+
+    if (typeof window !== 'undefined' && storageKey) {
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          const parsed: DropdownOption[] = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            const merged = [...parsed];
+            for (const opt of normalizedPassedOptions) {
+              if (opt.value && !merged.some((m) => m.value === opt.value)) {
+                merged.push(opt);
+              }
+            }
+            setInternalList(merged);
+            return;
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    if (normalizedPassedOptions.length > 0) {
+      setInternalList((prev) => {
+        const combined = [...normalizedPassedOptions];
+        for (const p of prev) {
+          if (p.value && !combined.some((c) => c.value === p.value)) {
+            combined.push(p);
+          }
+        }
+        return combined;
+      });
+    }
+  }, [entityType, storageKey, JSON.stringify(normalizedPassedOptions.map((o) => o.value))]);
+
+  const saveGenericOptions = (newList: DropdownOption[]) => {
+    setInternalList(newList);
+    if (typeof window !== 'undefined' && storageKey) {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(newList));
+      } catch (e) {
+        // ignore
+      }
+    }
+    onOptionsChange?.(newList);
+  };
+
+  // Deletion mutations for backend entity types
   const deleteCategory = useDeleteCategory();
   const deleteSupplier = useDeleteSupplier();
   const deleteLocation = useDeleteStorageLocation();
@@ -73,16 +162,30 @@ export function MasterEntityDropdown({
   const deleteCompany = useDeleteJobWorkCompany();
   const { deleteType, deleteSize, deleteBleaching, deleteOperation } = useManageGauzeMasters();
 
-  // Find the currently selected option to pass its data to Edit Modal
-  const selectedOption = options.find((opt) => opt.value === value);
+  // Effective list of options
+  const currentOptions: DropdownOption[] = entityType
+    ? normalizedPassedOptions
+    : internalList.length > 0
+    ? internalList
+    : normalizedPassedOptions;
+
+  // Find the currently selected option
+  const selectedOption = currentOptions.find((opt) => opt.value === value);
 
   const handleOpenAdd = () => {
     if (onAddNewCustom) {
       onAddNewCustom();
       return;
     }
-    setModalInitialData(null);
-    setIsModalOpen(true);
+    if (entityType) {
+      setModalInitialData(null);
+      setIsModalOpen(true);
+      return;
+    }
+    // Generic Add
+    setGenericModalMode('add');
+    setGenericInputValue('');
+    setIsGenericModalOpen(true);
   };
 
   const handleOpenEdit = () => {
@@ -91,19 +194,25 @@ export function MasterEntityDropdown({
       onEditCustom(value);
       return;
     }
-    // Prepare initial data from option
-    const rawData = selectedOption?.raw || {
-      id: value,
-      name: selectedOption?.label || '',
-      companyName: selectedOption?.label || '',
-    };
-    setModalInitialData(rawData);
-    setIsModalOpen(true);
+    if (entityType) {
+      const rawData = selectedOption?.raw || {
+        id: value,
+        name: selectedOption?.label || '',
+        companyName: selectedOption?.label || '',
+      };
+      setModalInitialData(rawData);
+      setIsModalOpen(true);
+      return;
+    }
+    // Generic Edit
+    setGenericModalMode('edit');
+    setGenericInputValue(selectedOption?.label || value);
+    setIsGenericModalOpen(true);
   };
 
   const handleDeleteInline = async () => {
     if (!value) return;
-    const itemName = selectedOption?.label || label;
+    const itemName = selectedOption?.label || value || label;
     const confirmDelete = window.confirm(`Are you sure you want to delete "${itemName}"?`);
     if (!confirmDelete) return;
 
@@ -113,46 +222,82 @@ export function MasterEntityDropdown({
       return;
     }
 
-    if (!entityType) return;
-
-    try {
-      switch (entityType) {
-        case 'category':
-          await deleteCategory.mutateAsync(value);
-          break;
-        case 'supplier':
-          await deleteSupplier.mutateAsync(value);
-          break;
-        case 'location':
-          await deleteLocation.mutateAsync(value);
-          break;
-        case 'jobWorkCompany':
-          await deleteCompany.mutateAsync(value);
-          break;
-        case 'department':
-          await deleteDepartment.mutateAsync(value);
-          break;
-        case 'designation':
-          await deleteDesignation.mutateAsync(value);
-          break;
-        case 'gauzeType':
-          await deleteType.mutateAsync(value);
-          break;
-        case 'gauzeSize':
-          await deleteSize.mutateAsync(value);
-          break;
-        case 'bleachingType':
-          await deleteBleaching.mutateAsync(value);
-          break;
-        case 'operationType':
-          await deleteOperation.mutateAsync(value);
-          break;
+    if (entityType) {
+      try {
+        switch (entityType) {
+          case 'category':
+            await deleteCategory.mutateAsync(value);
+            break;
+          case 'supplier':
+            await deleteSupplier.mutateAsync(value);
+            break;
+          case 'location':
+            await deleteLocation.mutateAsync(value);
+            break;
+          case 'jobWorkCompany':
+            await deleteCompany.mutateAsync(value);
+            break;
+          case 'department':
+            await deleteDepartment.mutateAsync(value);
+            break;
+          case 'designation':
+            await deleteDesignation.mutateAsync(value);
+            break;
+          case 'gauzeType':
+            await deleteType.mutateAsync(value);
+            break;
+          case 'gauzeSize':
+            await deleteSize.mutateAsync(value);
+            break;
+          case 'bleachingType':
+            await deleteBleaching.mutateAsync(value);
+            break;
+          case 'operationType':
+            await deleteOperation.mutateAsync(value);
+            break;
+        }
+        onChange('');
+        toast('Deleted', `"${itemName}" deleted successfully`, 'success');
+      } catch (err: any) {
+        toast('Error', err?.message || 'Failed to delete record', 'error');
       }
-      onChange('');
-      toast('Deleted', `"${itemName}" deleted successfully`, 'success');
-    } catch (err: any) {
-      toast('Error', err?.message || 'Failed to delete record', 'error');
+      return;
     }
+
+    // Generic Delete
+    const updated = currentOptions.filter((o) => o.value !== value);
+    saveGenericOptions(updated);
+    onChange('');
+    toast('Deleted', `"${itemName}" deleted successfully`, 'success');
+  };
+
+  const handleSaveGeneric = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = genericInputValue.trim();
+    if (!trimmed) {
+      toast('Required', 'Please enter a valid title/name', 'warning');
+      return;
+    }
+
+    if (genericModalMode === 'add') {
+      const newOption: DropdownOption = { value: trimmed, label: trimmed };
+      const updated = [...currentOptions.filter((o) => o.value !== trimmed), newOption];
+      saveGenericOptions(updated);
+      onChange(trimmed);
+      toast('Success', `"${trimmed}" added successfully`, 'success');
+    } else {
+      const oldVal = value;
+      const updated = currentOptions.map((o) =>
+        o.value === oldVal ? { ...o, value: trimmed, label: trimmed } : o
+      );
+      if (!updated.some((o) => o.value === trimmed)) {
+        updated.push({ value: trimmed, label: trimmed });
+      }
+      saveGenericOptions(updated);
+      onChange(trimmed);
+      toast('Success', `"${trimmed}" updated successfully`, 'success');
+    }
+    setIsGenericModalOpen(false);
   };
 
   const handleModalSuccess = (savedItem: any) => {
@@ -179,67 +324,78 @@ export function MasterEntityDropdown({
 
   return (
     <div className={`space-y-1.5 ${className}`}>
-      {/* Label and Inline Action Controls */}
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-semibold text-foreground flex items-center gap-1">
-          {label}
-          {required && <span className="text-destructive">*</span>}
-        </label>
-
-        <div className="flex items-center gap-1.5">
-          {/* Edit Current Item Button (Only shown when an item is selected) */}
-          {allowEdit && value && (entityType || onEditCustom) && (
-            <button
-              type="button"
-              onClick={handleOpenEdit}
-              title={`Edit selected ${label}`}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-amber-400 hover:text-amber-300 hover:bg-amber-900/30 transition-colors"
-            >
-              <Edit2 className="h-3 w-3 stroke-[2.5]" />
-              <span>Edit</span>
-            </button>
-          )}
-
-          {/* Delete Current Item Button (Only shown when an item is selected) */}
-          {allowDelete && value && (entityType || onDeleteCustom) && (
-            <button
-              type="button"
-              onClick={handleDeleteInline}
-              disabled={isDeleting}
-              title={`Delete selected ${label}`}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-900/30 transition-colors disabled:opacity-50"
-            >
-              <Trash2 className="h-3 w-3 stroke-[2.5]" />
-              <span>Delete</span>
-            </button>
-          )}
-
-          {/* Add New Item Button */}
-          {allowAdd && (entityType || onAddNewCustom) && (
-            <button
-              type="button"
-              onClick={handleOpenAdd}
-              title={`Add new ${label}`}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/30 transition-colors"
-            >
-              <Plus className="h-3 w-3 stroke-[2.5]" />
-              <span>Add New</span>
-            </button>
-          )}
-        </div>
-      </div>
+      {/* Label */}
+      <label className="text-xs font-semibold text-foreground flex items-center gap-1 block">
+        {label}
+        {required && <span className="text-destructive">*</span>}
+      </label>
 
       {/* Select Element */}
       <Select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        options={[{ value: '', label: placeholder }, ...options]}
+        options={[{ value: '', label: placeholder }, ...currentOptions]}
         required={required}
         disabled={disabled}
         error={error}
       />
 
-      {/* Embedded Master Entity Modal */}
+      {/* Action Controls & Hint Under the Input Box */}
+      {(allowAdd || allowEdit || allowDelete || hint) && (
+        <div className="flex items-center justify-between gap-1.5 pt-0.5 min-h-[22px]">
+          {hint ? (
+            <span className="text-[10px] text-muted-foreground truncate" title={hint}>
+              {hint}
+            </span>
+          ) : (
+            <span />
+          )}
+
+          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+            {/* Edit Current Item Button (Only shown when an item is selected) */}
+            {allowEdit && Boolean(value) && (
+              <button
+                type="button"
+                onClick={handleOpenEdit}
+                title={`Edit selected ${label}`}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-500/10 dark:hover:bg-amber-900/30 transition-colors"
+              >
+                <Edit2 className="h-3 w-3 stroke-[2.5]" />
+                <span>Edit</span>
+              </button>
+            )}
+
+            {/* Delete Current Item Button (Only shown when an item is selected) */}
+            {allowDelete && Boolean(value) && (
+              <button
+                type="button"
+                onClick={handleDeleteInline}
+                disabled={isDeleting}
+                title={`Delete selected ${label}`}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-500/10 dark:hover:bg-rose-900/30 transition-colors disabled:opacity-50"
+              >
+                <Trash2 className="h-3 w-3 stroke-[2.5]" />
+                <span>Delete</span>
+              </button>
+            )}
+
+            {/* Add New Item Button */}
+            {allowAdd && (
+              <button
+                type="button"
+                onClick={handleOpenAdd}
+                title={`Add new ${label}`}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-500/10 dark:hover:bg-emerald-900/30 transition-colors"
+              >
+                <Plus className="h-3 w-3 stroke-[2.5]" />
+                <span>Add New</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Embedded Master Entity Modal for backend entity types */}
       {entityType && (
         <MasterEntityModal
           isOpen={isModalOpen}
@@ -248,6 +404,46 @@ export function MasterEntityDropdown({
           initialData={modalInitialData}
           onSuccess={handleModalSuccess}
         />
+      )}
+
+      {/* Generic Modal for custom dropdown options */}
+      {!entityType && (
+        <Modal
+          isOpen={isGenericModalOpen}
+          onClose={() => setIsGenericModalOpen(false)}
+          title={genericModalMode === 'add' ? `Add New ${label}` : `Edit ${label}`}
+          maxWidth="sm"
+        >
+          <form onSubmit={handleSaveGeneric} className="space-y-4 text-xs font-mono">
+            <Input
+              label={`${label} Name / Specification *`}
+              value={genericInputValue}
+              onChange={(e) => setGenericInputValue(e.target.value)}
+              placeholder={`Enter ${label.toLowerCase()}...`}
+              required
+              autoFocus
+            />
+
+            <div className="pt-3 border-t border-border flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsGenericModalOpen(false)}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {genericModalMode === 'add' ? 'Add Option' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );

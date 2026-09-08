@@ -33,18 +33,26 @@ export interface MopingPadBatch {
   pendingQuantity: number; // outputQuantity - completedQuantity
   completionPercentage: number; // (completedQuantity / outputQuantity) * 100
 
+  // Top 4 Notebook / Job Work Parameters
+  dcNo?: string;
+  dcDate?: string;
+  ends?: number | string;
+  itemType?: string;
+  outputProductWidth?: string;
+
   // Workforce / Vendor Assignment
   executorType: 'WORKERS' | 'COMPANY';
   workerIds?: string[];
   workerNames?: string;
   companyId?: string;
   companyName?: string;
+  deliveryPerson?: string;
+  vehicleNumber?: string;
 
   status: MopingPadBatchStatus;
   startDate: string;
   targetDate?: string;
   completionDate?: string;
-  warehouseLocation?: string;
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -54,6 +62,13 @@ export interface CreateMopingPadBatchInput {
   batchNumber?: string;
   productName: string;
   materialType: MopingPadRawMaterialType;
+
+  // Top 4 Notebook / Job Work Parameters
+  dcNo?: string;
+  dcDate?: string;
+  ends?: number | string;
+  itemType?: string;
+  outputProductWidth?: string;
 
   rollWidth?: number;
   rollWidthUom?: string;
@@ -76,10 +91,11 @@ export interface CreateMopingPadBatchInput {
   workerNames?: string;
   companyId?: string;
   companyName?: string;
+  deliveryPerson?: string;
+  vehicleNumber?: string;
 
   startDate?: string;
   targetDate?: string;
-  warehouseLocation?: string;
   notes?: string;
 }
 
@@ -106,6 +122,11 @@ const DEFAULT_BATCHES: MopingPadBatch[] = [
     batchNumber: 'MPP-2026-001',
     productName: 'Heavy-Duty Surgical Moping Pad 40cm',
     materialType: 'ROLL',
+    dcNo: 'D.C. No. 05',
+    dcDate: '2026-09-06',
+    ends: 1140,
+    itemType: '22x14',
+    outputProductWidth: '30cm x 30cm - 8 ply',
     rollWidth: 100,
     rollWidthUom: 'cm',
     rollLength: 150,
@@ -124,7 +145,6 @@ const DEFAULT_BATCHES: MopingPadBatch[] = [
     status: 'IN_PROGRESS',
     startDate: '2026-09-05',
     targetDate: '2026-09-08',
-    warehouseLocation: 'Cutting & Pinning Section (Floor 1)',
     notes: 'Floor hospital sterile mop pads - batch 1',
     createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
     updatedAt: new Date(Date.now() - 86400000).toISOString(),
@@ -134,6 +154,13 @@ const DEFAULT_BATCHES: MopingPadBatch[] = [
     batchNumber: 'MPP-2026-002',
     productName: 'Standard Cleanroom Mop Pad 30cm',
     materialType: 'PIECES',
+    dcNo: 'D.C. No. 04',
+    dcDate: '2026-09-01',
+    ends: 1140,
+    itemType: '23x17',
+    outputProductWidth: '30cm x 30cm - 6 ply',
+    deliveryPerson: 'Ramesh Kumar',
+    vehicleNumber: 'TN-67-AB-1234',
     pieceLength: 2.5,
     pieceLengthUom: 'm',
     pieceWidth: 50,
@@ -153,7 +180,6 @@ const DEFAULT_BATCHES: MopingPadBatch[] = [
     status: 'IN_PROGRESS',
     startDate: '2026-09-06',
     targetDate: '2026-09-09',
-    warehouseLocation: 'Main Warehouse - Raw Storage',
     notes: 'Subcontracted slitting & pinning jobwork',
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     updatedAt: new Date().toISOString(),
@@ -163,6 +189,11 @@ const DEFAULT_BATCHES: MopingPadBatch[] = [
     batchNumber: 'MPP-2026-003',
     productName: 'Microfiber Absorbent Mop Pad 35cm',
     materialType: 'ROLL',
+    dcNo: 'D.C. No. 03',
+    dcDate: '2026-08-28',
+    ends: 1140,
+    itemType: '28x27',
+    outputProductWidth: '25cm x 25cm - 8 ply',
     rollWidth: 90,
     rollWidthUom: 'cm',
     rollLength: 200,
@@ -181,7 +212,6 @@ const DEFAULT_BATCHES: MopingPadBatch[] = [
     status: 'COMPLETED',
     startDate: '2026-09-01',
     completionDate: '2026-09-04',
-    warehouseLocation: 'Finished Goods Warehouse (Bay A)',
     notes: 'Quality checked and sterile packed',
     createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
     updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
@@ -280,6 +310,17 @@ class MopingPadProductionService {
       );
     }
 
+    // Sort newest-first
+    batches.sort((a, b) => {
+      const tA = new Date(a.createdAt || a.startDate || 0).getTime() || 0;
+      const tB = new Date(b.createdAt || b.startDate || 0).getTime() || 0;
+      if (tB !== tA) return tB - tA;
+      return (b.batchNumber || b.id).localeCompare(a.batchNumber || a.id, undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      });
+    });
+
     return { items: batches, total: batches.length };
   }
 
@@ -342,16 +383,24 @@ class MopingPadProductionService {
           ? Number((((input.completedQuantity || 0) / outputQuantity) * 100).toFixed(1))
           : 0,
 
+      // Top 4 Notebook / Job Work Parameters
+      dcNo: input.dcNo,
+      dcDate: input.dcDate,
+      ends: input.ends,
+      itemType: input.itemType,
+      outputProductWidth: input.outputProductWidth,
+
       executorType: input.executorType,
       workerIds: input.workerIds,
       workerNames: input.workerNames,
       companyId: input.companyId,
       companyName: input.companyName,
+      deliveryPerson: input.deliveryPerson,
+      vehicleNumber: input.vehicleNumber,
 
       status: 'IN_PROGRESS',
       startDate: input.startDate || now.toISOString().split('T')[0],
       targetDate: input.targetDate,
-      warehouseLocation: input.warehouseLocation,
       notes: input.notes,
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),

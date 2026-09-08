@@ -47,9 +47,6 @@ export default function GamjeeProductionDashboardPage() {
               Active Module
             </span>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Track and simplify complete Gamjee Roll production from bleached fabric and cotton roll to finished goods.
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

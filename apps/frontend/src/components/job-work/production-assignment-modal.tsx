@@ -25,6 +25,8 @@ import {
   Layers,
   Scissors,
   Sun,
+  Truck,
+  Bed,
 } from 'lucide-react';
 
 export type ProductionType =
@@ -32,7 +34,8 @@ export type ProductionType =
   | 'GAMJEE'
   | 'MOPING_PAD'
   | 'GAUZE_PAD_PINNING'
-  | 'DRYING';
+  | 'DRYING'
+  | 'PILLOW_BEDSHEET';
 
 interface ProductionAssignmentModalProps {
   isOpen: boolean;
@@ -51,6 +54,8 @@ export function ProductionAssignmentModal({
   const [executorType, setExecutorType] = useState<'WORKERS' | 'COMPANY'>('WORKERS');
   const [selectedWorkerIds, setSelectedWorkerIds] = useState<string[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const [deliveryPerson, setDeliveryPerson] = useState('');
+  const [vehicleNumber, setVehicleNumber] = useState('');
   const [workerSearch, setWorkerSearch] = useState('');
 
   // Queries
@@ -123,6 +128,12 @@ export function ProductionAssignmentModal({
       if (selectedCompany) {
         queryParams.set('companyName', selectedCompany.companyName);
       }
+      if (deliveryPerson.trim()) {
+        queryParams.set('deliveryPerson', deliveryPerson.trim());
+      }
+      if (vehicleNumber.trim()) {
+        queryParams.set('vehicleNumber', vehicleNumber.trim());
+      }
     }
 
     const basePath =
@@ -134,6 +145,8 @@ export function ProductionAssignmentModal({
         ? '/moping-pad-production'
         : productionType === 'GAUZE_PAD_PINNING'
         ? '/gauze-pad-pinning'
+        : productionType === 'PILLOW_BEDSHEET'
+        ? '/pillow-bedsheet-production'
         : '/drying';
 
     const targetUrl = `${basePath}/batches/new?${queryParams.toString()}`;
@@ -147,6 +160,7 @@ export function ProductionAssignmentModal({
   const isMopingPad = productionType === 'MOPING_PAD';
   const isGauzePadPinning = productionType === 'GAUZE_PAD_PINNING';
   const isDrying = productionType === 'DRYING';
+  const isPillowBedsheet = productionType === 'PILLOW_BEDSHEET';
 
   const titleText = isGauze
     ? 'Gauze Production'
@@ -156,6 +170,8 @@ export function ProductionAssignmentModal({
     ? 'Moping Pad Production'
     : isGauzePadPinning
     ? 'Gauze Pad Pinning'
+    : isPillowBedsheet
+    ? 'Pillow Cover & Bed Sheet Production'
     : 'Drying Process';
 
   const badgeText = isGauze
@@ -166,6 +182,8 @@ export function ProductionAssignmentModal({
     ? 'Floor & Surgical Moping Pads'
     : isGauzePadPinning
     ? 'Pad Sizing, Dual Division & Salary'
+    : isPillowBedsheet
+    ? 'Roll Weight, GSM & Piece Salary'
     : 'Pieces Drying, Progress & Meter Salary';
 
   return (
@@ -188,6 +206,8 @@ export function ProductionAssignmentModal({
               ? 'bg-amber-500/5 border-amber-500/20 text-amber-700 dark:text-amber-300'
               : isGauzePadPinning
               ? 'bg-cyan-500/5 border-cyan-500/20 text-cyan-700 dark:text-cyan-300'
+              : isPillowBedsheet
+              ? 'bg-purple-500/5 border-purple-500/20 text-purple-700 dark:text-purple-300'
               : 'bg-orange-500/5 border-orange-500/20 text-orange-700 dark:text-orange-300'
           }`}
         >
@@ -201,6 +221,8 @@ export function ProductionAssignmentModal({
                 ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
                 : isGauzePadPinning
                 ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400'
+                : isPillowBedsheet
+                ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400'
                 : 'bg-orange-500/15 text-orange-600 dark:text-orange-400'
             }`}
           >
@@ -212,6 +234,8 @@ export function ProductionAssignmentModal({
               <Layers className="h-4 w-4" />
             ) : isGauzePadPinning ? (
               <Scissors className="h-4 w-4" />
+            ) : isPillowBedsheet ? (
+              <Bed className="h-4 w-4" />
             ) : (
               <Sun className="h-4 w-4" />
             )}
@@ -487,6 +511,46 @@ export function ProductionAssignmentModal({
                     </div>
                   </div>
                 )}
+
+                {/* Delivery Person & Vehicle Number Inputs */}
+                <div className="p-3 rounded-xl bg-secondary/30 border border-border/80 space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <Truck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <span className="text-xs font-bold text-foreground">
+                      Transport & Dispatch Carrier Details
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-medium">
+                      (Required for Jobwork Company dispatch)
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-semibold text-foreground block mb-1">
+                        Delivery Person / Driver Name
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder="e.g. Ramesh Kumar"
+                        value={deliveryPerson}
+                        onChange={(e) => setDeliveryPerson(e.target.value)}
+                        className="h-8.5 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-foreground block mb-1">
+                        Vehicle Number
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder="e.g. TN-67-AB-1234"
+                        value={vehicleNumber}
+                        onChange={(e) => setVehicleNumber(e.target.value)}
+                        className="h-8.5 text-xs font-mono uppercase"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>

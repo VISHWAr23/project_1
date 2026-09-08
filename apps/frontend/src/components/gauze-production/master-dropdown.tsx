@@ -118,23 +118,32 @@ export function MasterDropdown({
 
   return (
     <div className={`space-y-1.5 ${className || ''}`}>
-      {/* Label and Quick Actions Header */}
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-medium text-slate-300 flex items-center gap-1">
-          {label}
-          {required && <span className="text-rose-500">*</span>}
-        </label>
+      {/* Label */}
+      <label className="text-xs font-semibold text-foreground flex items-center gap-1 block">
+        {label}
+        {required && <span className="text-destructive">*</span>}
+      </label>
 
-        {/* Quick inline Add / Edit / Delete micro-buttons */}
-        <div className="flex items-center gap-1.5">
+      {/* Select Box */}
+      <Select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        options={[{ value: '', label: placeholder }, ...options]}
+        required={required}
+        disabled={disabled}
+      />
+
+      {/* Quick inline Add / Edit / Delete micro-buttons under the Select box */}
+      {(allowAdd || allowEdit || allowDelete) && (
+        <div className="flex items-center justify-end gap-1.5 pt-0.5 min-h-[22px]">
           {allowEdit && value && (type || onEditCustom) && (
             <button
               type="button"
               onClick={handleOpenEdit}
               title={`Edit selected ${label}`}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-blue-400 hover:text-blue-300 hover:bg-blue-900/30 transition-colors"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-500/10 dark:hover:bg-amber-900/30 transition-colors"
             >
-              <Edit2 className="h-2.5 w-2.5" />
+              <Edit2 className="h-3 w-3 stroke-[2.5]" />
               <span>Edit</span>
             </button>
           )}
@@ -145,9 +154,9 @@ export function MasterDropdown({
               onClick={handleDeleteInline}
               disabled={isDeleting}
               title={`Delete selected ${label}`}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-900/30 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-500/10 dark:hover:bg-rose-900/30 transition-colors disabled:opacity-50"
             >
-              <Trash2 className="h-2.5 w-2.5" />
+              <Trash2 className="h-3 w-3 stroke-[2.5]" />
               <span>Delete</span>
             </button>
           )}
@@ -157,23 +166,14 @@ export function MasterDropdown({
               type="button"
               onClick={handleOpenAdd}
               title={`Add new ${label}`}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/30 transition-colors"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-500/10 dark:hover:bg-emerald-900/30 transition-colors"
             >
               <Plus className="h-3 w-3 stroke-[2.5]" />
               <span>Add New</span>
             </button>
           )}
         </div>
-      </div>
-
-      {/* Select Box */}
-      <Select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        options={[{ value: '', label: placeholder }, ...options]}
-        required={required}
-        disabled={disabled}
-      />
+      )}
 
       {/* Master Modal for inline Add / Edit */}
       {type && (

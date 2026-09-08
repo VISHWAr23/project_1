@@ -202,7 +202,7 @@ export function JobWorkEditModal({
 
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-foreground">
-              Driver Name
+              Delivery Person / Driver Name
             </label>
             <Input
               placeholder="e.g. Muthu Kumar"

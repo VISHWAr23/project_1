@@ -22,6 +22,8 @@ import {
   LogOut,
   X,
   Scroll,
+  Building2,
+  Calculator,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Avatar } from '@/components/ui/avatar';
@@ -37,8 +39,10 @@ interface NavItem {
 export const navItems: NavItem[] = [
   { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { title: 'Materials', href: '/raw-materials', icon: Package },
+  { title: 'Fabric Costing', href: '/fabric-costing', icon: Calculator },
   { title: 'Customer Orders', href: '/customer-orders', icon: ShoppingCart },
   { title: 'Job Work', href: '/job-work', icon: Truck },
+  { title: 'Vendors', href: '/job-work/vendors', icon: Building2 },
   { title: 'Employees', href: '/employees', icon: Users },
   { title: 'Attendance', href: '/attendance', icon: CalendarCheck },
   { title: 'Salary & Payroll', href: '/salary', icon: CircleDollarSign },
@@ -121,9 +125,17 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           )}
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive =
-              pathname === item.href ||
-              (item.href !== '/dashboard' && pathname?.startsWith(`${item.href}`));
+            const isExact = pathname === item.href;
+            const isSubPath =
+              item.href !== '/dashboard' &&
+              pathname?.startsWith(`${item.href}/`);
+            const hasMoreSpecificMatch = navItems.some(
+              (other) =>
+                other.href !== item.href &&
+                other.href.startsWith(item.href) &&
+                (pathname === other.href || pathname?.startsWith(`${other.href}/`))
+            );
+            const isActive = (isExact || isSubPath) && !hasMoreSpecificMatch;
 
             return (
               <Link

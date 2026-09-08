@@ -7,8 +7,9 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCreateGauzePadPinningBatch } from '@/hooks/useGauzePadPinning';
-import { useStorageLocations, useRawMaterials } from '@/hooks/useRawMaterials';
+import { useRawMaterials } from '@/hooks/useRawMaterials';
 import { useToast } from '@/components/ui/toast';
+import { MasterEntityDropdown } from '@/components/ui/master-entity-dropdown';
 import {
   ArrowLeft,
   Scissors,
@@ -22,6 +23,10 @@ import {
   Coins,
   DollarSign,
   UserCheck,
+  FileText,
+  Calendar,
+  Truck,
+  User,
 } from 'lucide-react';
 
 const STANDARD_GAUZE_PAD_PRODUCTS = [
@@ -33,14 +38,7 @@ const STANDARD_GAUZE_PAD_PRODUCTS = [
   'Sterile Gauze Packing Strip (5cm x 5m)',
 ];
 
-const STANDARD_GAUZE_PAD_LOCATIONS = [
-  'Warehouse Floor B - Gauze Pad Section',
-  'Main Warehouse - Raw Storage',
-  'Cutting & Pinning Section (Floor 1)',
-  'Finished Goods Warehouse (Bay A)',
-  'Finished Goods Warehouse (Bay B)',
-  'Packaging & Sterile Bay',
-];
+const STANDARD_ITEM_TYPES = ['22x16', '23x17', '28x27', '22x14'];
 
 function CreateGauzePadPinningBatchContent() {
   const router = useRouter();
@@ -50,10 +48,11 @@ function CreateGauzePadPinningBatchContent() {
   const workerIds = searchParams.get('workerIds') ? searchParams.get('workerIds')!.split(',') : [];
   const companyName = searchParams.get('companyName') || '';
   const companyId = searchParams.get('companyId') || '';
+  const initialDeliveryPerson = searchParams.get('deliveryPerson') || '';
+  const initialVehicleNumber = searchParams.get('vehicleNumber') || '';
 
   const { toast } = useToast();
   const createBatchMutation = useCreateGauzePadPinningBatch();
-  const { data: storageLocationsData = [] } = useStorageLocations();
   const { data: rawMaterialsData } = useRawMaterials({ limit: 100 });
 
   // Finished products from materials inventory
@@ -66,22 +65,22 @@ function CreateGauzePadPinningBatchContent() {
     );
   }, [rawMaterialsData]);
 
-  // Combined warehouse locations list
-  const allWarehouseLocations = useMemo(() => {
-    const fromApi = storageLocationsData.map((l: any) => l.name);
-    const combined = Array.from(new Set([...STANDARD_GAUZE_PAD_LOCATIONS, ...fromApi]));
-    return combined;
-  }, [storageLocationsData]);
-
   // Batch General Information
   const [batchNumber, setBatchNumber] = useState('');
   const [productName, setProductName] = useState(STANDARD_GAUZE_PAD_PRODUCTS[0]);
-  const [isCustomProduct, setIsCustomProduct] = useState(false);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [targetDate, setTargetDate] = useState('');
-  const [warehouseLocation, setWarehouseLocation] = useState(STANDARD_GAUZE_PAD_LOCATIONS[0]);
-  const [isCustomLocation, setIsCustomLocation] = useState(false);
   const [notes, setNotes] = useState('');
+
+  // Jobwork / Notebook Parameters
+  const [dcNo, setDcNo] = useState('05');
+  const [dcDate, setDcDate] = useState(new Date().toISOString().split('T')[0]);
+  const [ends, setEnds] = useState('1140');
+  const [itemType, setItemType] = useState('22x14');
+
+  // Company Logistics
+  const [deliveryPerson, setDeliveryPerson] = useState(initialDeliveryPerson);
+  const [vehicleNumber, setVehicleNumber] = useState(initialVehicleNumber);
 
   // Raw Material Intake State: 'ROLL' vs 'PIECES'
   const [materialType, setMaterialType] = useState<'ROLL' | 'PIECES'>('ROLL');
@@ -219,9 +218,14 @@ function CreateGauzePadPinningBatchContent() {
         workerNames: workerNames || undefined,
         companyId: companyId || undefined,
         companyName: companyName || undefined,
+        deliveryPerson: deliveryPerson.trim() || undefined,
+        vehicleNumber: vehicleNumber.trim() || undefined,
+        dcNo: dcNo.trim() || undefined,
+        dcDate: dcDate || undefined,
+        ends: ends.trim() || undefined,
+        itemType: itemType.trim() || undefined,
         startDate,
         targetDate: targetDate || undefined,
-        warehouseLocation: warehouseLocation || undefined,
         notes: notes || undefined,
       });
 
@@ -251,9 +255,6 @@ function CreateGauzePadPinningBatchContent() {
                 Pad Pinning & Sizing
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Dual division operation (Total Length ÷ Pinning Size ÷ Cutting Size) with real-time salary per output piece and worker split.
-            </p>
           </div>
         </div>
 
@@ -277,7 +278,7 @@ function CreateGauzePadPinningBatchContent() {
       </div>
 
       {/* Pre-Assigned Workforce / Vendor Banner */}
-      <Card className="p-3.5 bg-card border-border/80 shadow-2xs">
+      <Card className="p-4 bg-card border-border/80 shadow-2xs space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div
@@ -322,6 +323,121 @@ function CreateGauzePadPinningBatchContent() {
             </Button>
           </Link>
         </div>
+
+        {/* Carrier Details if Outsourced to Job Working Company */}
+        {executorType === 'COMPANY' && (
+          <div className="pt-3 border-t border-border/60 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-blue-500/5 p-3 rounded-md border border-blue-500/15">
+            <div>
+              <label className="text-xs font-medium text-foreground flex items-center gap-1.5 mb-1">
+                <User className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                Delivery Person
+              </label>
+              <Input
+                type="text"
+                placeholder="e.g. Ramesh / Suresh"
+                value={deliveryPerson}
+                onChange={(e) => setDeliveryPerson(e.target.value)}
+                className="h-8 text-xs bg-background"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-foreground flex items-center gap-1.5 mb-1">
+                <Truck className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                Vehicle Number
+              </label>
+              <Input
+                type="text"
+                placeholder="e.g. TN-38-BZ-4412"
+                value={vehicleNumber}
+                onChange={(e) => setVehicleNumber(e.target.value)}
+                className="h-8 text-xs font-mono uppercase bg-background"
+              />
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Notebook Jobwork Parameters (Top 4 Red Circle Data) */}
+      <Card className="p-5 border-border bg-card space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-border/60">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-cyan-600" />
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Jobwork Notebook Parameters (DC, Ends & Item Type)
+            </h2>
+          </div>
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-600 border border-cyan-500/20">
+            Notebook Specs
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 1. DC Number */}
+          <div>
+            <label className="text-xs font-medium text-foreground block mb-1.5">
+              D.C. No. <span className="text-red-500">*</span>
+            </label>
+            <Input
+              type="text"
+              value={dcNo}
+              onChange={(e) => setDcNo(e.target.value)}
+              placeholder="05"
+              className="h-9 font-mono text-xs"
+              required
+            />
+            <span className="text-[10px] text-muted-foreground mt-1 block">
+              Challan Reference (e.g. D.C. No. 05)
+            </span>
+          </div>
+
+          {/* DC Date */}
+          <div>
+            <label className="text-xs font-medium text-foreground block mb-1.5">
+              D.C. Date
+            </label>
+            <Input
+              type="date"
+              value={dcDate}
+              onChange={(e) => setDcDate(e.target.value)}
+              className="h-9 text-xs"
+            />
+            <span className="text-[10px] text-muted-foreground mt-1 block">
+              Challan issue / dispatch date
+            </span>
+          </div>
+
+          {/* 2. Ends */}
+          <div>
+            <label className="text-xs font-medium text-foreground block mb-1.5">
+              Ends <span className="text-red-500">*</span>
+            </label>
+            <Input
+              type="text"
+              value={ends}
+              onChange={(e) => setEnds(e.target.value)}
+              placeholder="1140"
+              className="h-9 font-mono text-xs font-semibold"
+              required
+            />
+            <span className="text-[10px] text-muted-foreground mt-1 block">
+              e.g. 1140 or 1140 E
+            </span>
+          </div>
+
+          {/* 3. Item Type */}
+          <div>
+            <MasterEntityDropdown
+              label="3. Item Type (Mesh / Construction)"
+              value={itemType}
+              onChange={setItemType}
+              storageKey="jobwork_item_types"
+              options={STANDARD_ITEM_TYPES.map((t) => ({ value: t, label: t }))}
+              placeholder="Select Construction / Mesh..."
+              hint="Weave construction / mesh density"
+              required
+            />
+          </div>
+        </div>
       </Card>
 
       <form id="gauze-pad-pinning-form" onSubmit={handleSubmit} className="space-y-6">
@@ -350,53 +466,21 @@ function CreateGauzePadPinningBatchContent() {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-foreground block mb-1.5">
-                Product Specification <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={isCustomProduct ? '__CUSTOM__' : productName}
-                onChange={(e) => {
-                  if (e.target.value === '__CUSTOM__') {
-                    setIsCustomProduct(true);
-                    setProductName('');
-                  } else {
-                    setIsCustomProduct(false);
-                    setProductName(e.target.value);
-                  }
-                }}
-                className="w-full h-9 px-3 text-xs rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-cyan-500"
-              >
-                <option value="" disabled>Select Finished Product Specification...</option>
-                <optgroup label="Standard Finished Products">
-                  {STANDARD_GAUZE_PAD_PRODUCTS.map((prod) => (
-                    <option key={prod} value={prod}>
-                      {prod}
-                    </option>
-                  ))}
-                </optgroup>
-                {inventoryFinishedProducts.length > 0 && (
-                  <optgroup label="Inventory Finished Goods">
-                    {inventoryFinishedProducts.map((p: any) => (
-                      <option key={p.id} value={p.name}>
-                        {p.name} ({p.sku})
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-                <option value="__CUSTOM__">➕ Enter Custom Specification...</option>
-              </select>
-
-              {isCustomProduct && (
-                <Input
-                  type="text"
-                  value={productName}
-                  onChange={(e) => setProductName(e.target.value)}
-                  placeholder="Enter custom product specification..."
-                  className="h-8 text-xs mt-1.5"
-                  required
-                  autoFocus
-                />
-              )}
+              <MasterEntityDropdown
+                label="Product Specification"
+                value={productName}
+                onChange={setProductName}
+                storageKey="gauze_pad_products"
+                options={[
+                  ...STANDARD_GAUZE_PAD_PRODUCTS.map((prod) => ({ value: prod, label: prod })),
+                  ...inventoryFinishedProducts.map((p: any) => ({
+                    value: p.name,
+                    label: `${p.name} (${p.sku})`,
+                  })),
+                ]}
+                placeholder="Select Finished Product Specification..."
+                required
+              />
             </div>
 
             <div>
@@ -722,17 +806,14 @@ function CreateGauzePadPinningBatchContent() {
               </span>
             </div>
 
-            {/* Live Dual Division Formula Card */}
+            {/* Output Yield Card */}
             <div className="p-3.5 rounded-lg bg-cyan-500/5 border border-cyan-500/20 flex flex-col justify-between sm:col-span-2 lg:col-span-1">
               <div>
                 <span className="text-[10px] font-bold uppercase text-cyan-700 dark:text-cyan-300">
-                  Dual Division Formula
+                  Calculated Output Yield
                 </span>
-                <div className="text-xs font-mono text-foreground mt-1">
-                  ({calculatedTotalLength.toFixed(2)}m ÷ {pinningSize || 0}m) ÷ {cuttingSize || 1}
-                </div>
-                <div className="text-[11px] text-muted-foreground mt-0.5">
-                  = {piecesAfterPinning} pcs ÷ {cuttingSize || 1} cuts
+                <div className="text-xs text-muted-foreground mt-1">
+                  Single pieces: <strong className="font-mono text-foreground">{piecesAfterPinning} pcs</strong>
                 </div>
               </div>
               <div className="mt-2 pt-1 border-t border-cyan-500/15 flex items-baseline justify-between">
@@ -845,59 +926,19 @@ function CreateGauzePadPinningBatchContent() {
           )}
         </Card>
 
-        {/* Additional Logistics / Notes */}
+        {/* Operational Notes */}
         <Card className="p-5 border-border bg-card space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-medium text-foreground block mb-1.5">
-                Warehouse / Storage Location
-              </label>
-              <select
-                value={isCustomLocation ? '__CUSTOM__' : warehouseLocation}
-                onChange={(e) => {
-                  if (e.target.value === '__CUSTOM__') {
-                    setIsCustomLocation(true);
-                    setWarehouseLocation('');
-                  } else {
-                    setIsCustomLocation(false);
-                    setWarehouseLocation(e.target.value);
-                  }
-                }}
-                className="w-full h-9 px-3 text-xs rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-cyan-500"
-              >
-                <option value="" disabled>Select Warehouse Storage Location...</option>
-                {allWarehouseLocations.map((loc) => (
-                  <option key={loc} value={loc}>
-                    {loc}
-                  </option>
-                ))}
-                <option value="__CUSTOM__">➕ Enter Custom Location...</option>
-              </select>
-
-              {isCustomLocation && (
-                <Input
-                  type="text"
-                  value={warehouseLocation}
-                  onChange={(e) => setWarehouseLocation(e.target.value)}
-                  placeholder="Enter custom warehouse location..."
-                  className="h-8 text-xs mt-1.5"
-                  autoFocus
-                />
-              )}
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-foreground block mb-1.5">
-                Operational Notes & Instructions
-              </label>
-              <Input
-                type="text"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add instructions..."
-                className="h-9 text-xs"
-              />
-            </div>
+          <div>
+            <label className="text-xs font-medium text-foreground block mb-1.5">
+              Operational Notes & Instructions
+            </label>
+            <Input
+              type="text"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add cutting/pinning instructions or special quality parameters..."
+              className="h-9 text-xs"
+            />
           </div>
         </Card>
 

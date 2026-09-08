@@ -251,11 +251,11 @@ export default function RawMaterialsPage() {
     },
     {
       key: 'supplier',
-      header: 'Supplier & Location',
+      header: 'Supplier',
       render: (row) => (
         <div className="text-xs text-muted-foreground">
-          <span className="block truncate max-w-[120px] text-foreground">{row.supplier?.name || 'No Supplier'}</span>
-          <span className="block text-[10px] truncate max-w-[120px]">{row.storageLocation?.name || 'Main Warehouse'}</span>
+          <span className="block truncate max-w-[140px] text-foreground font-medium">{row.supplier?.name || 'In-House / Direct'}</span>
+          {row.supplier?.phone && <span className="block text-[10px] truncate max-w-[140px] font-mono">{row.supplier.phone}</span>}
         </div>
       ),
     },

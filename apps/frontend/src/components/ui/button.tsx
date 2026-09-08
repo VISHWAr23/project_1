@@ -43,13 +43,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       primary:
         'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold shadow-sm border border-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500',
       secondary:
-        'bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100 border border-slate-700/60 dark:border-slate-700',
+        'bg-secondary text-secondary-foreground hover:bg-secondary/80 active:bg-secondary border border-border shadow-xs dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100 dark:border-slate-700',
       ghost:
-        'bg-transparent hover:bg-slate-800/50 text-slate-400 hover:text-slate-100 dark:hover:bg-slate-800/60 dark:hover:text-slate-100',
+        'bg-transparent text-foreground/80 hover:text-foreground hover:bg-muted active:bg-muted/80 dark:bg-transparent dark:text-slate-300 dark:hover:text-slate-100 dark:hover:bg-slate-800/60',
       outline:
-        'bg-transparent hover:bg-slate-800/40 text-slate-300 border border-slate-700/80 hover:border-slate-600 dark:border-[#2A2F3A] dark:hover:border-slate-600',
+        'bg-card text-foreground border border-border hover:bg-muted hover:text-foreground shadow-2xs dark:bg-transparent dark:text-slate-200 dark:border-slate-700/80 dark:hover:bg-slate-800/60 dark:hover:text-white dark:hover:border-slate-600',
       danger:
-        'bg-rose-600/90 hover:bg-rose-500 text-white shadow-sm border border-rose-500/50',
+        'bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-semibold shadow-sm border border-rose-600',
     };
 
     const widthStyle = fullWidth ? 'w-full' : '';
@@ -67,7 +67,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ) : (
           leftIcon
         )}
-        <span className="inline-flex items-center gap-1.5 whitespace-nowrap leading-none">{children}</span>
+        <span className="inline-flex items-center gap-1.5 whitespace-nowrap leading-none text-inherit">{children}</span>
         {!isLoading && rightIcon}
       </motion.button>
     );

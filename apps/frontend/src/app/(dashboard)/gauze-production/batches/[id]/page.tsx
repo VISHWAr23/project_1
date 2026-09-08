@@ -231,7 +231,7 @@ export default function GauzeBatchDetailPage() {
                 </span>
                 <p className="text-xs text-muted-foreground">
                   {batch.status === 'RAW_MATERIAL_RECEIVED' || batch.status === 'DRAFT' || batch.status === 'READY_FOR_BLEACHING'
-                    ? 'Grey cloth is stored in warehouse. Dispatch material to external bleaching mill.'
+                    ? 'Grey cloth is ready in inventory. Dispatch material to external bleaching mill.'
                     : batch.status === 'SENT_TO_BLEACHING'
                     ? 'Fabric is currently at external bleaching mill. Record returned bleached fabric when delivered.'
                     : batch.status === 'BLEACHING_RECEIVED' || batch.status === 'IN_PROCESSING'
@@ -658,9 +658,9 @@ export default function GauzeBatchDetailPage() {
                       </strong>
                     </div>
                     <div>
-                      <span className="text-[10px] text-muted-foreground block font-sans">Storage Warehouse</span>
+                      <span className="text-[10px] text-muted-foreground block font-sans">Storage Section</span>
                       <span className="font-sans text-foreground">
-                        {pk.finishedGoodsWarehouse?.name || 'Finished Goods Warehouse'}
+                        {pk.finishedGoodsWarehouse?.name || 'Finished Goods Bay'}
                       </span>
                     </div>
                   </div>

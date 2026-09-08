@@ -102,7 +102,7 @@ export function GamjeeProductionTimeline({ batch }: ProductionTimelineProps) {
         : batch.status === 'COMPLETED'
         ? `${batch.productionQuantity || 0} Rolls in Stock`
         : 'Pending Completion',
-      secondaryText: finishedRoll?.warehouse?.name || 'Finished Goods Warehouse',
+      secondaryText: finishedRoll?.warehouse?.name || 'Finished Goods Section',
       badge: batch.status === 'COMPLETED' ? 'In Stock' : undefined,
     },
   ];

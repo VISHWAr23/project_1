@@ -8,9 +8,20 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
+import { MasterEntityDropdown } from '@/components/ui/master-entity-dropdown';
 import { useJobWorkOrderDetail, useIssueJobWorkMaterials } from '@/hooks/useJobWork';
 import { MultiRollIssueTable, RollIssueRow } from '@/components/job-work/multi-roll-issue-table';
 import Link from 'next/link';
+
+const STANDARD_ITEM_TYPES = ['22x16', '23x17', '28x27', '22x14'];
+
+const STANDARD_OUTPUT_WIDTHS = [
+  '30cm x 30cm - 6 ply',
+  '30cm x 30cm - 8 ply',
+  '30cm x 30cm - 12 ply',
+  '25cm x 25cm - 8 ply',
+  '25cm x 25cm - 12 ply',
+];
 
 export default function IssueMaterialsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -20,9 +31,17 @@ export default function IssueMaterialsPage({ params }: { params: Promise<{ id: s
   const { data: order, isLoading } = useJobWorkOrderDetail(id);
   const issueMutation = useIssueJobWorkMaterials();
 
+  // Transport & Delivery
   const [vehicleNumber, setVehicleNumber] = useState('');
   const [driverName, setDriverName] = useState('');
   const [remarks, setRemarks] = useState('');
+
+  // Notebook Parameters (Top 4 Red Circle Data)
+  const [dcNo, setDcNo] = useState('05');
+  const [dcDate, setDcDate] = useState(new Date().toISOString().split('T')[0]);
+  const [ends, setEnds] = useState('1140');
+  const [itemType, setItemType] = useState('22x14');
+  const [outputProductWidth, setOutputProductWidth] = useState('30cm x 30cm - 8 ply');
 
   const [rows, setRows] = useState<RollIssueRow[]>([
     {
@@ -54,7 +73,7 @@ export default function IssueMaterialsPage({ params }: { params: Promise<{ id: s
     }
 
     if (!driverName) {
-      toast('Driver Required', 'Driver name is required for Delivery Challan', 'warning');
+      toast('Delivery Person Required', 'Delivery Person name is required for Delivery Challan', 'warning');
       return;
     }
 
@@ -64,12 +83,36 @@ export default function IssueMaterialsPage({ params }: { params: Promise<{ id: s
       return;
     }
 
+    const finalItemType = itemType;
+    const finalWidth = outputProductWidth;
+
     try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(
+          `ims_job_work_meta_${order.id}`,
+          JSON.stringify({
+            dcNo,
+            dcDate,
+            ends,
+            itemType: finalItemType,
+            outputProductWidth: finalWidth,
+            deliveryPerson: driverName,
+            vehicleNumber,
+          })
+        );
+      }
+
       const updated = await issueMutation.mutateAsync({
         id: order.id,
         payload: {
           vehicleNumber,
           driverName,
+          deliveryPerson: driverName,
+          dcNo,
+          dcDate,
+          ends,
+          itemType: finalItemType,
+          outputProductWidth: finalWidth,
           remarks,
           items: rows.map((r) => ({
             rollNumber: r.rollNumber,
@@ -130,25 +173,119 @@ export default function IssueMaterialsPage({ params }: { params: Promise<{ id: s
           </div>
         </Card>
 
+        {/* Notebook Parameters Card (Top 4 Red Circle Data) */}
+        <Card className="p-5 bg-card border-border space-y-4">
+          <div className="flex items-center justify-between border-b border-border pb-2">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" />
+              Jobwork Notebook Parameters (DC, Ends, Item Type & Output Width)
+            </h3>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+              Notebook Specs
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* 1. DC Number */}
+            <div>
+              <label className="text-xs font-medium text-foreground block mb-1.5">
+                D.C. No. <span className="text-red-500">*</span>
+              </label>
+              <Input
+                placeholder="e.g. 05"
+                value={dcNo}
+                onChange={(e) => setDcNo(e.target.value)}
+                required
+              />
+              <span className="text-[10px] text-muted-foreground mt-1 block">
+                Challan reference (e.g. D.C. No. 05)
+              </span>
+            </div>
+
+            {/* DC Date */}
+            <div>
+              <label className="text-xs font-medium text-foreground block mb-1.5">
+                D.C. Date <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="date"
+                value={dcDate}
+                onChange={(e) => setDcDate(e.target.value)}
+                required
+              />
+              <span className="text-[10px] text-muted-foreground mt-1 block">
+                Challan dispatch / issue date
+              </span>
+            </div>
+
+            {/* 2. Ends */}
+            <div>
+              <label className="text-xs font-medium text-foreground block mb-1.5">
+                Ends <span className="text-red-500">*</span>
+              </label>
+              <Input
+                placeholder="e.g. 1140"
+                value={ends}
+                onChange={(e) => setEnds(e.target.value)}
+                required
+              />
+              <span className="text-[10px] text-muted-foreground mt-1 block">
+                e.g. 1140 or 1140 E
+              </span>
+            </div>
+
+            {/* 3. Item Type */}
+            <div>
+              <MasterEntityDropdown
+                label="Item Type (Mesh / Construction)"
+                value={itemType}
+                onChange={setItemType}
+                storageKey="jobwork_item_types"
+                options={STANDARD_ITEM_TYPES.map((t) => ({ value: t, label: t }))}
+                placeholder="Select Construction / Mesh..."
+                hint="Weave construction (e.g. 22x14, 22x16)"
+                required
+              />
+            </div>
+          </div>
+
+          {/* 4. Width of output product (Only for Moping Pad) */}
+          <div className="pt-3 border-t border-border/60">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <MasterEntityDropdown
+                  label="Width of Output Product (Only for Moping Pad)"
+                  value={outputProductWidth}
+                  onChange={setOutputProductWidth}
+                  storageKey="moping_pad_output_widths"
+                  options={STANDARD_OUTPUT_WIDTHS.map((w) => ({ value: w, label: w }))}
+                  placeholder="Select Output Size & Ply..."
+                  hint="Notebook specification for moping pad conversion"
+                />
+              </div>
+            </div>
+          </div>
+        </Card>
+
         {/* Transport & Carrier Particulars Card */}
         <Card className="p-5 bg-card border-border space-y-4">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 border-b border-border pb-2">
-            <FileText className="h-4 w-4 text-primary" />
-            Transport & Delivery Particulars
+            <Truck className="h-4 w-4 text-primary" />
+            Transport & Delivery Particulars (Job Working Carrier)
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="Vehicle Registration Number *"
-              placeholder="e.g. MH-04-EK-9821"
-              value={vehicleNumber}
-              onChange={(e) => setVehicleNumber(e.target.value)}
-              required
-            />
-            <Input
-              label="Driver / Carrier Name *"
+              label="Delivery Person / Driver Name *"
               placeholder="e.g. Ramesh Kumar"
               value={driverName}
               onChange={(e) => setDriverName(e.target.value)}
+              required
+            />
+            <Input
+              label="Vehicle Registration Number *"
+              placeholder="e.g. TN-38-BZ-4412"
+              value={vehicleNumber}
+              onChange={(e) => setVehicleNumber(e.target.value)}
               required
             />
           </div>

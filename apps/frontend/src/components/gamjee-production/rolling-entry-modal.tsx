@@ -283,7 +283,7 @@ export function RollingEntryModal({ isOpen, onClose, batch }: RollingEntryModalP
             className="rounded border-input text-primary focus:ring-primary h-4 w-4"
           />
           <label htmlFor="markCompleted" className="text-xs text-foreground cursor-pointer select-none">
-            Mark Gamjee Production Batch as <strong>COMPLETED</strong> and move finished rolls into stock warehouse
+            Mark Gamjee Production Batch as <strong>COMPLETED</strong> and move finished rolls into finished stock inventory
           </label>
         </div>
 

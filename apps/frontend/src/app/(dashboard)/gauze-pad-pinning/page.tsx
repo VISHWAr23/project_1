@@ -16,6 +16,7 @@ import {
   Boxes,
   Coins,
   Check,
+  Truck,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -75,9 +76,6 @@ export default function GauzePadPinningPage() {
                 Operations Line
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Pinning size and cutting size dual division operation with automated workforce salary calculation.
-            </p>
           </div>
         </div>
 
@@ -224,12 +222,29 @@ export default function GauzePadPinningPage() {
                 batches.map((batch) => (
                   <tr key={batch.id} className="hover:bg-secondary/20 transition-colors">
                     <td className="py-3.5 px-4">
-                      <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400 block">
-                        {batch.batchNumber}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400">
+                          {batch.batchNumber}
+                        </span>
+                        {batch.dcNo && (
+                          <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-500/20">
+                            DC #{batch.dcNo}
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[11px] text-muted-foreground font-medium truncate max-w-[180px] block">
                         {batch.productName}
                       </span>
+                      {(batch.ends || batch.itemType) && (
+                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5">
+                          {batch.ends && <span className="font-mono font-medium">Ends: {batch.ends}</span>}
+                          {batch.itemType && (
+                            <span className="px-1 py-0.2 rounded bg-secondary font-mono">
+                              {batch.itemType}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </td>
 
                     <td className="py-3.5 px-4">
@@ -283,6 +298,14 @@ export default function GauzePadPinningPage() {
                             : batch.companyName || 'Vendor'}
                         </span>
                       </div>
+                      {(batch.deliveryPerson || batch.vehicleNumber) && (
+                        <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                          <Truck className="h-3 w-3 shrink-0 text-blue-500" />
+                          <span className="truncate max-w-[140px] font-mono">
+                            {[batch.deliveryPerson, batch.vehicleNumber].filter(Boolean).join(' • ')}
+                          </span>
+                        </div>
+                      )}
                     </td>
 
                     <td className="py-3.5 px-4">

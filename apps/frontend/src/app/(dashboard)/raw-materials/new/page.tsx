@@ -548,7 +548,7 @@ export default function NewRawMaterialPage() {
             4. Primary Vendor & Storage Location Assignment
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
             <MasterEntityDropdown
               label="Primary Supplier"
               entityType="supplier"
@@ -556,15 +556,6 @@ export default function NewRawMaterialPage() {
               options={suppliers?.map((s) => ({ label: `${s.name} (${s.code})`, value: s.id, raw: s })) || []}
               value={formData.supplierId}
               onChange={(val) => setFormData({ ...formData, supplierId: val })}
-            />
-
-            <MasterEntityDropdown
-              label="Warehouse Storage Location"
-              entityType="location"
-              placeholder="Select Warehouse Location..."
-              options={locations?.map((l) => ({ label: `${l.name} (${l.code})`, value: l.id, raw: l })) || []}
-              value={formData.storageLocationId}
-              onChange={(val) => setFormData({ ...formData, storageLocationId: val })}
             />
           </div>
         </div>

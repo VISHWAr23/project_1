@@ -14,6 +14,7 @@ import { GamjeeProductionModule } from './modules/gamjee-production/gamjee-produ
 import { CustomersModule } from './modules/customers/customers.module';
 import { CustomerOrdersModule } from './modules/customer-orders/customer-orders.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { FabricCostingModule } from './modules/fabric-costing/fabric-costing.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     GamjeeProductionModule,
     CustomersModule,
     CustomerOrdersModule,
+    FabricCostingModule,
   ],
 })
 export class AppModule {}

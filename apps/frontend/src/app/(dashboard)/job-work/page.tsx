@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -23,6 +23,7 @@ import {
   ExternalLink,
   Sun,
   Coins,
+  Bed,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,7 @@ import { useGamjeeDashboard, useGamjeeBatches } from '@/hooks/useGamjeeProductio
 import { useMopingPadBatches } from '@/hooks/useMopingPadProduction';
 import { useGauzePadPinningBatches } from '@/hooks/useGauzePadPinning';
 import { useDryingBatches } from '@/hooks/useDrying';
+import { usePillowBedsheetBatches } from '@/hooks/usePillowBedsheetProduction';
 import { useJobWorkCompanies } from '@/hooks/useJobWork';
 import { useEmployees } from '@/hooks/useEmployees';
 import { formatDate } from '@/lib/date-utils';
@@ -45,17 +47,18 @@ export default function JobWorkProductionHubPage() {
   const [selectedProduction, setSelectedProduction] = useState<ProductionType | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'all' | 'gauze' | 'gamjee' | 'moping-pad' | 'gauze-pad-pinning' | 'drying'
+    'all' | 'gauze' | 'gamjee' | 'moping-pad' | 'gauze-pad-pinning' | 'drying' | 'pillow-bedsheet'
   >('all');
 
   // Queries
   const { data: gauzeStats, isLoading: loadingGauzeStats } = useGauzeDashboard();
-  const { data: gauzeBatchesData, isLoading: loadingGauzeBatches } = useGauzeBatches({ limit: 6 });
+  const { data: gauzeBatchesData, isLoading: loadingGauzeBatches } = useGauzeBatches({ limit: 50 });
   const { data: gamjeeStats, isLoading: loadingGamjeeStats } = useGamjeeDashboard();
-  const { data: gamjeeBatchesData, isLoading: loadingGamjeeBatches } = useGamjeeBatches({ limit: 6 });
+  const { data: gamjeeBatchesData, isLoading: loadingGamjeeBatches } = useGamjeeBatches({ limit: 50 });
   const { data: mopingBatchesData } = useMopingPadBatches();
   const { data: gauzePadBatchesData } = useGauzePadPinningBatches();
   const { data: dryingBatchesData } = useDryingBatches();
+  const { data: pillowBatchesData } = usePillowBedsheetBatches();
   const { data: companies = [] } = useJobWorkCompanies();
   const { data: employeesData } = useEmployees({ status: 'ACTIVE', limit: 100 });
 
@@ -65,18 +68,253 @@ export default function JobWorkProductionHubPage() {
   const activeMopingBatches = mopingBatchesData?.items?.filter((b) => b.status === 'IN_PROGRESS' || b.status === 'DRAFT') || [];
   const activeGauzePadBatches = gauzePadBatchesData?.items?.filter((b) => b.status === 'IN_PROGRESS' || b.status === 'DRAFT') || [];
   const activeDryingBatches = dryingBatchesData?.items?.filter((b) => b.status === 'IN_PROGRESS' || b.status === 'DRAFT') || [];
+  const activePillowBatches = pillowBatchesData?.items?.filter((b) => b.status === 'IN_PROGRESS' || b.status === 'DRAFT') || [];
 
   const totalActiveRuns =
     activeGauzeBatches.length +
     activeGamjeeBatches.length +
     activeMopingBatches.length +
     activeGauzePadBatches.length +
-    activeDryingBatches.length;
+    activeDryingBatches.length +
+    activePillowBatches.length;
 
   const handleOpenAssignment = (type: ProductionType) => {
     setSelectedProduction(type);
     setIsModalOpen(true);
   };
+
+  // Normalize and sort all active production batches in newest-first order
+  const allUnifiedBatches = useMemo(() => {
+    const list: Array<{
+      id: string;
+      batchNumber: string;
+      categoryKey: string;
+      typeLabel: string;
+      badgeClasses: string;
+      textAccentClass: string;
+      borderHoverClass: string;
+      productName: string;
+      dateStr: string;
+      timestamp: number;
+      metricPrimary: React.ReactNode;
+      metricSecondary?: React.ReactNode;
+      manageUrl: string;
+    }> = [];
+
+    const resolveTimestamp = (b: any) => {
+      const candidates = [
+        b.createdAt,
+        b.updatedAt,
+        b.productionStartDate,
+        b.productionDate,
+        b.startDate,
+      ];
+      for (const c of candidates) {
+        if (c) {
+          const t = new Date(c).getTime();
+          if (!Number.isNaN(t) && t > 0) return t;
+        }
+      }
+      return 0;
+    };
+
+    const resolveDisplayDate = (b: any) => {
+      return (
+        b.startDate ||
+        b.productionStartDate ||
+        b.productionDate ||
+        b.createdAt ||
+        ''
+      );
+    };
+
+    // 1. Gauze
+    activeGauzeBatches.forEach((batch: any) => {
+      list.push({
+        id: `gauze-${batch.id}`,
+        batchNumber: batch.batchNumber,
+        categoryKey: 'gauze',
+        typeLabel: 'Gauze',
+        badgeClasses: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
+        textAccentClass: 'text-blue-600 dark:text-blue-400',
+        borderHoverClass: 'hover:border-blue-500/50',
+        productName: batch.product?.name || 'Bleached Gauze',
+        dateStr: resolveDisplayDate(batch),
+        timestamp: resolveTimestamp(batch),
+        metricPrimary: (
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Input: <strong className="text-foreground font-mono">{Number(batch.inputQuantity).toFixed(0)} {batch.inputUom}</strong></span>
+            <span className="px-2 py-0.5 rounded bg-secondary text-[10px] font-mono">{batch.status}</span>
+          </div>
+        ),
+        manageUrl: `/gauze-production/batches/${batch.id}`,
+      });
+    });
+
+    // 2. Gamjee
+    activeGamjeeBatches.forEach((batch: any) => {
+      list.push({
+        id: `gamjee-${batch.id}`,
+        batchNumber: batch.batchNumber,
+        categoryKey: 'gamjee',
+        typeLabel: 'Gamjee',
+        badgeClasses: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+        textAccentClass: 'text-emerald-600 dark:text-emerald-400',
+        borderHoverClass: 'hover:border-emerald-500/50',
+        productName: batch.finishedProduct?.name || 'Gamjee Roll',
+        dateStr: resolveDisplayDate(batch),
+        timestamp: resolveTimestamp(batch),
+        metricPrimary: (
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Target: <strong className="text-foreground font-mono">{Number(batch.productionQuantity || 0).toFixed(0)} Rolls</strong></span>
+            <span className="px-2 py-0.5 rounded bg-secondary text-[10px] font-mono">{batch.status}</span>
+          </div>
+        ),
+        manageUrl: `/gamjee-production/batches/${batch.id}`,
+      });
+    });
+
+    // 3. Moping Pad
+    activeMopingBatches.forEach((batch: any) => {
+      list.push({
+        id: `moping-${batch.id}`,
+        batchNumber: batch.batchNumber,
+        categoryKey: 'moping-pad',
+        typeLabel: 'Moping Pad',
+        badgeClasses: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20',
+        textAccentClass: 'text-amber-600 dark:text-amber-400',
+        borderHoverClass: 'hover:border-amber-500/50',
+        productName: batch.productName,
+        dateStr: resolveDisplayDate(batch),
+        timestamp: resolveTimestamp(batch),
+        metricPrimary: (
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Progress: <strong className="text-foreground font-mono">{batch.completedQuantity || 0} / {batch.outputQuantity} pads</strong></span>
+            <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{batch.completionPercentage || 0}%</span>
+          </div>
+        ),
+        metricSecondary: (
+          <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground bg-secondary/40 px-2 py-1 rounded">
+            <span>{batch.materialType === 'ROLL' ? 'Roll' : 'Pieces'}: {batch.totalLength}m</span>
+            <span className="font-semibold text-amber-600 dark:text-amber-400 font-mono">
+              {batch.pendingQuantity ?? Math.max(0, batch.outputQuantity - (batch.completedQuantity || 0))} pending
+            </span>
+          </div>
+        ),
+        manageUrl: '/moping-pad-production',
+      });
+    });
+
+    // 4. Gauze Pad Pinning
+    activeGauzePadBatches.forEach((batch: any) => {
+      list.push({
+        id: `pinning-${batch.id}`,
+        batchNumber: batch.batchNumber,
+        categoryKey: 'gauze-pad-pinning',
+        typeLabel: 'Pad Pinning',
+        badgeClasses: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/20',
+        textAccentClass: 'text-cyan-600 dark:text-cyan-400',
+        borderHoverClass: 'hover:border-cyan-500/50',
+        productName: batch.productName,
+        dateStr: resolveDisplayDate(batch),
+        timestamp: resolveTimestamp(batch),
+        metricPrimary: (
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{batch.materialType === 'ROLL' ? 'Roll' : 'Pieces'}: <strong className="text-foreground font-mono">{batch.totalLength}m</strong></span>
+            <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400">{batch.outputQuantity} Pads</span>
+          </div>
+        ),
+        metricSecondary: (
+          <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground bg-secondary/40 px-2 py-1 rounded">
+            <span>Rate: ₹{batch.salaryRatePerPiece.toFixed(2)}/pad</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">₹{batch.totalSalary.toFixed(0)} Salary</span>
+          </div>
+        ),
+        manageUrl: '/gauze-pad-pinning',
+      });
+    });
+
+    // 5. Drying
+    activeDryingBatches.forEach((batch: any) => {
+      list.push({
+        id: `drying-${batch.id}`,
+        batchNumber: batch.batchNumber,
+        categoryKey: 'drying',
+        typeLabel: 'Drying',
+        badgeClasses: 'bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/20',
+        textAccentClass: 'text-orange-600 dark:text-orange-400',
+        borderHoverClass: 'hover:border-orange-500/50',
+        productName: batch.productName,
+        dateStr: resolveDisplayDate(batch),
+        timestamp: resolveTimestamp(batch),
+        metricPrimary: (
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Progress: <strong className="text-foreground font-mono">{batch.completedPieces} / {batch.totalPieces} pcs</strong></span>
+            <span className="font-mono font-bold text-orange-600 dark:text-orange-400">{batch.completionPercentage}%</span>
+          </div>
+        ),
+        metricSecondary: (
+          <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground bg-secondary/40 px-2 py-1 rounded">
+            <span>{batch.completedLength.toFixed(0)}m / {batch.totalLength}m</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">₹{batch.totalSalary.toFixed(0)} Salary</span>
+          </div>
+        ),
+        manageUrl: '/drying',
+      });
+    });
+
+    // 6. Pillow & Bed Sheet
+    activePillowBatches.forEach((batch: any) => {
+      list.push({
+        id: `pillow-${batch.id}`,
+        batchNumber: batch.batchNumber,
+        categoryKey: 'pillow-bedsheet',
+        typeLabel: batch.productType === 'BED_SHEET' ? 'Bed Sheet' : 'Pillow Cover',
+        badgeClasses: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20',
+        textAccentClass: 'text-purple-600 dark:text-purple-400',
+        borderHoverClass: 'hover:border-purple-500/50',
+        productName: batch.productName,
+        dateStr: resolveDisplayDate(batch),
+        timestamp: resolveTimestamp(batch),
+        metricPrimary: (
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Target: <strong className="text-foreground font-mono">{batch.outputQuantity} pcs</strong></span>
+            <span className="font-mono font-bold text-purple-600 dark:text-purple-400">{batch.completionPercentage}%</span>
+          </div>
+        ),
+        metricSecondary: (
+          <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground bg-secondary/40 px-2 py-1 rounded">
+            <span>{batch.totalLength.toFixed(1)}m</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">₹{batch.totalSalary.toFixed(0)} Salary</span>
+          </div>
+        ),
+        manageUrl: `/pillow-bedsheet-production/batches/${batch.id}`,
+      });
+    });
+
+    // Sort descending by timestamp (newest first), with alphanumeric tie-breaker
+    return list.sort((a, b) => {
+      if (b.timestamp !== a.timestamp) {
+        return b.timestamp - a.timestamp;
+      }
+      return (b.batchNumber || b.id).localeCompare(a.batchNumber || a.id, undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      });
+    });
+  }, [
+    activeGauzeBatches,
+    activeGamjeeBatches,
+    activeMopingBatches,
+    activeGauzePadBatches,
+    activeDryingBatches,
+    activePillowBatches,
+  ]);
+
+  const displayedBatches = useMemo(() => {
+    if (activeTab === 'all') return allUnifiedBatches;
+    return allUnifiedBatches.filter((b) => b.categoryKey === activeTab);
+  }, [allUnifiedBatches, activeTab]);
 
   return (
     <div className="space-y-8 pb-12">
@@ -91,9 +329,6 @@ export default function JobWorkProductionHubPage() {
               Operations Hub
             </span>
           </div>
-          <p className="text-xs text-muted-foreground mt-1 max-w-2xl">
-            Select a production line below to assign manufacturing jobs to our internal factory workers or partner jobworking companies.
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -202,12 +437,9 @@ export default function JobWorkProductionHubPage() {
             <h2 className="text-sm font-bold text-foreground tracking-tight">
               Production Work Assignment
             </h2>
-            <p className="text-[11px] text-muted-foreground">
-              Choose a production line to assign workforce and commence manufacturing operations.
-            </p>
           </div>
           <span className="text-[11px] font-mono text-muted-foreground hidden sm:inline-block">
-            5 Active Lines
+            6 Active Lines
           </span>
         </div>
 
@@ -561,6 +793,76 @@ export default function JobWorkProductionHubPage() {
               </div>
             </Card>
           </motion.div>
+
+          {/* Card 6: Pillow Cover & Bed Sheet Production */}
+          <motion.div
+            whileHover={{ y: -2 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            onClick={() => handleOpenAssignment('PILLOW_BEDSHEET')}
+            className="group cursor-pointer"
+          >
+            <Card className="relative overflow-hidden p-4 sm:p-5 h-full flex flex-col justify-between border border-border hover:border-purple-500/60 hover:shadow-md transition-all bg-gradient-to-br from-card via-card to-purple-500/5">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-indigo-600" />
+
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-all shadow-2xs shrink-0">
+                      <Bed className="h-4.5 w-4.5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                        Pillow Cover & Bed Sheet
+                      </h3>
+                      <span className="text-[11px] text-muted-foreground block">
+                        Dual product cutting, sizing & piece wages
+                      </span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20 shrink-0">
+                    Bed & Pillow
+                  </span>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    {activePillowBatches.length} WIP Batches
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    Roll Intake
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    Piece Salary Engine
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-border/70 flex items-center justify-between">
+                <Link
+                  href="/pillow-bedsheet-production"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2.5 text-xs gap-1.5 border-border hover:border-purple-500/50 hover:bg-purple-500/5 text-muted-foreground hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+                  >
+                    <span>Go to Production</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </Link>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 px-3 text-xs gap-1.5 bg-purple-600 hover:bg-purple-700 text-white shadow-2xs group-hover:shadow-xs transition-all"
+                >
+                  <span>Assign & Start</span>
+                  <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
         </div>
       </div>
 
@@ -571,9 +873,6 @@ export default function JobWorkProductionHubPage() {
             <h2 className="text-sm font-bold text-foreground">
               Current Active Production Batches
             </h2>
-            <p className="text-xs text-muted-foreground">
-              Quick view of batches currently running across all 5 manufacturing lines.
-            </p>
           </div>
 
           {/* Filter Tabs */}
@@ -644,260 +943,64 @@ export default function JobWorkProductionHubPage() {
             >
               Drying ({activeDryingBatches.length})
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('pillow-bedsheet')}
+              className={`px-2.5 py-1 rounded-md transition-colors ${
+                activeTab === 'pillow-bedsheet'
+                  ? 'bg-background font-semibold text-purple-600 dark:text-purple-400 shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Pillow & Bed Sheet ({activePillowBatches.length})
+            </button>
           </div>
         </div>
 
-        {/* Batches Grid / Table */}
+        {/* Batches Grid / Table in Newest-First Order */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Gauze Batches */}
-          {(activeTab === 'all' || activeTab === 'gauze') &&
-            activeGauzeBatches.slice(0, activeTab === 'all' ? 2 : 6).map((batch: any) => (
-              <Card
-                key={batch.id}
-                className="p-4 border border-border/80 hover:border-blue-500/50 transition-colors flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
-                      {batch.batchNumber}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
-                      Gauze
-                    </span>
-                  </div>
-
-                  <p className="text-xs font-medium text-foreground mt-2 truncate">
-                    {batch.product?.name || 'Bleached Gauze'}
-                  </p>
-
-                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Input: <strong className="text-foreground font-mono">{Number(batch.inputQuantity).toFixed(0)} {batch.inputUom}</strong></span>
-                    <span className="px-2 py-0.5 rounded bg-secondary text-[10px] font-mono">
-                      {batch.status}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
-                  <span className="text-[11px] text-muted-foreground">
-                    {formatDate(batch.productionStartDate || batch.createdAt)}
+          {displayedBatches.map((batch) => (
+            <Card
+              key={batch.id}
+              className={`p-4 border border-border/80 ${batch.borderHoverClass} transition-colors flex flex-col justify-between`}
+            >
+              <div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className={`font-mono font-bold ${batch.textAccentClass}`}>
+                    {batch.batchNumber}
                   </span>
-                  <Link
-                    href={`/gauze-production/batches/${batch.id}`}
-                    className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium text-xs"
-                  >
-                    <span>Manage</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </Link>
-                </div>
-              </Card>
-            ))}
-
-          {/* Gamjee Batches */}
-          {(activeTab === 'all' || activeTab === 'gamjee') &&
-            activeGamjeeBatches.slice(0, activeTab === 'all' ? 2 : 6).map((batch: any) => (
-              <Card
-                key={batch.id}
-                className="p-4 border border-border/80 hover:border-emerald-500/50 transition-colors flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                      {batch.batchNumber}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
-                      Gamjee
-                    </span>
-                  </div>
-
-                  <p className="text-xs font-medium text-foreground mt-2 truncate">
-                    {batch.finishedProduct?.name || 'Gamjee Roll'}
-                  </p>
-
-                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Target: <strong className="text-foreground font-mono">{Number(batch.productionQuantity || 0).toFixed(0)} Rolls</strong></span>
-                    <span className="px-2 py-0.5 rounded bg-secondary text-[10px] font-mono">
-                      {batch.status}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
-                  <span className="text-[11px] text-muted-foreground">
-                    {formatDate(batch.createdAt)}
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${batch.badgeClasses}`}>
+                    {batch.typeLabel}
                   </span>
-                  <Link
-                    href={`/gamjee-production/batches/${batch.id}`}
-                    className="text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-medium text-xs"
-                  >
-                    <span>Manage</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </Link>
-                </div>
-              </Card>
-            ))}
-
-          {/* Moping Pad Batches */}
-          {(activeTab === 'all' || activeTab === 'moping-pad') &&
-            activeMopingBatches.slice(0, activeTab === 'all' ? 2 : 6).map((batch: any) => (
-              <Card
-                key={batch.id}
-                className="p-4 border border-border/80 hover:border-amber-500/50 transition-colors flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
-                      {batch.batchNumber}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
-                      Moping Pad
-                    </span>
-                  </div>
-
-                  <p className="text-xs font-medium text-foreground mt-2 truncate">
-                    {batch.productName}
-                  </p>
-
-                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>
-                      Progress: <strong className="text-foreground font-mono">{batch.completedQuantity || 0} / {batch.outputQuantity} pads</strong>
-                    </span>
-                    <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
-                      {batch.completionPercentage || 0}%
-                    </span>
-                  </div>
-
-                  <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground bg-secondary/40 px-2 py-1 rounded">
-                    <span>{batch.materialType === 'ROLL' ? 'Roll' : 'Pieces'}: {batch.totalLength}m</span>
-                    <span className="font-semibold text-amber-600 dark:text-amber-400 font-mono">
-                      {batch.pendingQuantity ?? Math.max(0, batch.outputQuantity - (batch.completedQuantity || 0))} pending
-                    </span>
-                  </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
-                  <span className="text-[11px] text-muted-foreground">
-                    {formatDate(batch.startDate || batch.createdAt)}
-                  </span>
-                  <Link
-                    href="/moping-pad-production"
-                    className="text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 font-medium text-xs"
-                  >
-                    <span>Manage</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </Link>
-                </div>
-              </Card>
-            ))}
+                <p className="text-xs font-medium text-foreground mt-2 truncate" title={batch.productName}>
+                  {batch.productName}
+                </p>
 
-          {/* Gauze Pad Pinning Batches */}
-          {(activeTab === 'all' || activeTab === 'gauze-pad-pinning') &&
-            activeGauzePadBatches.slice(0, activeTab === 'all' ? 2 : 6).map((batch) => (
-              <Card
-                key={batch.id}
-                className="p-4 border border-border/80 hover:border-cyan-500/50 transition-colors flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400">
-                      {batch.batchNumber}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-500/20">
-                      Pad Pinning
-                    </span>
-                  </div>
-
-                  <p className="text-xs font-medium text-foreground mt-2 truncate">
-                    {batch.productName}
-                  </p>
-
-                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>
-                      {batch.materialType === 'ROLL' ? 'Roll' : 'Pieces'}:{' '}
-                      <strong className="text-foreground font-mono">{batch.totalLength}m</strong>
-                    </span>
-                    <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400">
-                      {batch.outputQuantity} Pads
-                    </span>
-                  </div>
-
-                  <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground bg-secondary/40 px-2 py-1 rounded">
-                    <span>Rate: ₹{batch.salaryRatePerPiece.toFixed(2)}/pad</span>
-                    <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
-                      ₹{batch.totalSalary.toFixed(0)} Salary
-                    </span>
-                  </div>
+                <div className="mt-3">
+                  {batch.metricPrimary}
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
-                  <span className="text-[11px] text-muted-foreground">
-                    {formatDate(batch.startDate || batch.createdAt)}
-                  </span>
-                  <Link
-                    href="/gauze-pad-pinning"
-                    className="text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 font-medium text-xs"
-                  >
-                    <span>Manage</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </Link>
-                </div>
-              </Card>
-            ))}
+                {batch.metricSecondary}
+              </div>
 
-          {/* Drying Batches */}
-          {(activeTab === 'all' || activeTab === 'drying') &&
-            activeDryingBatches.slice(0, activeTab === 'all' ? 2 : 6).map((batch) => (
-              <Card
-                key={batch.id}
-                className="p-4 border border-border/80 hover:border-orange-500/50 transition-colors flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-mono font-bold text-orange-600 dark:text-orange-400">
-                      {batch.batchNumber}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500/10 text-orange-700 dark:text-orange-300 border border-orange-500/20">
-                      Drying
-                    </span>
-                  </div>
+              <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
+                <span className="text-[11px] text-muted-foreground">
+                  {formatDate(batch.dateStr)}
+                </span>
+                <Link
+                  href={batch.manageUrl}
+                  className={`${batch.textAccentClass} hover:underline flex items-center gap-1 font-medium text-xs`}
+                >
+                  <span>Manage</span>
+                  <ExternalLink className="h-3 w-3" />
+                </Link>
+              </div>
+            </Card>
+          ))}
 
-                  <p className="text-xs font-medium text-foreground mt-2 truncate">
-                    {batch.productName}
-                  </p>
-
-                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>
-                      Progress: <strong className="text-foreground font-mono">{batch.completedPieces} / {batch.totalPieces} pcs</strong>
-                    </span>
-                    <span className="font-mono font-bold text-orange-600 dark:text-orange-400">
-                      {batch.completionPercentage}%
-                    </span>
-                  </div>
-
-                  <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground bg-secondary/40 px-2 py-1 rounded">
-                    <span>{batch.completedLength.toFixed(0)}m / {batch.totalLength}m</span>
-                    <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
-                      ₹{batch.totalSalary.toFixed(0)} Salary
-                    </span>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
-                  <span className="text-[11px] text-muted-foreground">
-                    {formatDate(batch.startDate || batch.createdAt)}
-                  </span>
-                  <Link
-                    href="/drying"
-                    className="text-orange-600 dark:text-orange-400 hover:underline flex items-center gap-1 font-medium text-xs"
-                  >
-                    <span>Manage</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </Link>
-                </div>
-              </Card>
-            ))}
-
-          {totalActiveRuns === 0 && (
+          {displayedBatches.length === 0 && (
             <div className="col-span-full p-8 text-center border border-dashed border-border rounded-xl bg-card">
               <p className="text-xs text-muted-foreground">
                 No active batches running currently. Select a Production Line above to assign and launch a new manufacturing run.

@@ -111,7 +111,7 @@ export function StockAdjustmentDialog({ isOpen, onClose, material }: StockAdjust
                 { label: 'Issue to Work Order (-)', value: 'WORK_ORDER_ISSUE' },
                 { label: 'Job Work Dispatch (-)', value: 'JOB_WORK_DISPATCH' },
                 { label: 'Adjustment Subtract (-)', value: 'ADJUSTMENT_SUBTRACT' },
-                { label: 'Warehouse Transfer (-)', value: 'TRANSFER' },
+                { label: 'Stock Transfer (-)', value: 'TRANSFER' },
                 { label: 'Manual Correction', value: 'MANUAL_CORRECTION' },
               ]}
 

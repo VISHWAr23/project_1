@@ -225,6 +225,7 @@ model User {
   customerOrdersCreated       CustomerOrder[]
   customerOrderStatusChanges CustomerOrderStatusHistory[]
   notifications              Notification[]              @relation("UserNotifications")
+  fabricCostingsCreated      GreyFabricCosting[]
 
   @@index([email], map: "idx_users_email")
   @@index([role], map: "idx_users_role")
@@ -945,6 +946,10 @@ model JobWorkOrder {
 
   vehicleNumber String? @map("vehicle_number") @db.VarChar(50)
   driverName    String? @map("driver_name") @db.VarChar(100)
+  processType   String? @map("process_type") @db.VarChar(255)
+  handlerType   String? @map("handler_type") @db.VarChar(255)
+  assignedWorkerIds   String[] @default([]) @map("assigned_worker_ids")
+  assignedWorkerNames String[] @default([]) @map("assigned_worker_names")
   remarks       String? @db.Text
 
   closedAt DateTime? @map("closed_at")
@@ -1343,6 +1348,9 @@ model GauzeProductionBatch {
   productionStartDate    DateTime?             @map("production_start_date") @db.Date
   expectedCompletionDate DateTime?             @map("expected_completion_date") @db.Date
   completionDate         DateTime?             @map("completion_date") @db.Date
+  handlerType            String?               @map("handler_type") @db.VarChar(255)
+  assignedWorkerIds      String[]              @default([]) @map("assigned_worker_ids")
+  assignedWorkerNames    String[]              @default([]) @map("assigned_worker_names")
   notes                  String?               @db.Text
 
   createdById            String?               @map("created_by") @db.Uuid
@@ -1493,6 +1501,9 @@ model GauzeProductionOperation {
 
   machineId          String?              @map("machine_id") @db.VarChar(100)
   operationDate      DateTime             @map("operation_date") @db.Date
+  handlerType        String?              @map("handler_type") @db.VarChar(255)
+  assignedWorkerIds  String[]             @default([]) @map("assigned_worker_ids")
+  assignedWorkerNames String[]            @default([]) @map("assigned_worker_names")
   status             String               @default("COMPLETED") @db.VarChar(50)
   notes              String?              @db.Text
 
@@ -1812,6 +1823,9 @@ model GamjeeProductionBatch {
   cottonTypeName         String?                @map("cotton_type_name") @db.VarChar(150)
   plannedFabricMeters    Decimal?               @map("planned_fabric_meters") @db.Decimal(10, 2)
   plannedCottonKg        Decimal?               @map("planned_cotton_kg") @db.Decimal(10, 3)
+  handlerType            String?                @map("handler_type") @db.VarChar(255)
+  assignedWorkerIds      String[]               @default([]) @map("assigned_worker_ids")
+  assignedWorkerNames    String[]               @default([]) @map("assigned_worker_names")
 
   notes                  String?                @db.Text
   createdById            String?                @map("created_by") @db.Uuid
@@ -1878,6 +1892,9 @@ model GamjeeProductionOperation {
   employee          Employee?              @relation(fields: [employeeId], references: [id], onDelete: SetNull)
   machineId         String?                @map("machine_id") @db.VarChar(100)
   operationDate     DateTime               @default(now()) @map("operation_date") @db.Date
+  handlerType       String?                @map("handler_type") @db.VarChar(255)
+  assignedWorkerIds String[]               @default([]) @map("assigned_worker_ids")
+  assignedWorkerNames String[]             @default([]) @map("assigned_worker_names")
   status            String                 @default("COMPLETED") @db.VarChar(50)
   notes             String?                @db.Text
   createdById       String?                @map("created_by") @db.Uuid
@@ -1911,6 +1928,9 @@ model GamjeeRollingEntry {
   employee             Employee?              @relation(fields: [employeeId], references: [id], onDelete: SetNull)
   machineId            String?                @map("machine_id") @db.VarChar(100)
   rollingDate          DateTime               @default(now()) @map("rolling_date") @db.Date
+  handlerType          String?                @map("handler_type") @db.VarChar(255)
+  assignedWorkerIds    String[]               @default([]) @map("assigned_worker_ids")
+  assignedWorkerNames  String[]               @default([]) @map("assigned_worker_names")
   status               String                 @default("COMPLETED") @db.VarChar(50)
   notes                String?                @db.Text
   createdById          String?                @map("created_by") @db.Uuid
@@ -2033,4 +2053,66 @@ model Notification {
   @@index([type], map: "idx_notifications_type")
   @@index([createdAt], map: "idx_notifications_created")
   @@map("notifications")
+}
+
+// ==========================================
+// GREY FABRIC & BLEACHING COSTING
+// ==========================================
+
+model GreyFabricCosting {
+  id                    String    @id @default(uuid()) @db.Uuid
+  qualityName           String    @map("quality_name") @db.VarChar(255)
+  notes                 String?   @db.Text
+
+  // Primary Specification Inputs
+  ends                  Int       // Total ends (e.g. 780)
+  reed                  Int       // Reed count (e.g. 16)
+  pick                  Int       // Picks per inch (e.g. 13)
+  totalLengthMeters     Float     @map("total_length_meters") // (e.g. 1000)
+  totalLengthYards      Float     @map("total_length_yards")  // (e.g. 1120)
+  warpCount             Float     @map("warp_count")          // (e.g. 41)
+  weftCount             Float     @map("weft_count")          // (e.g. 40)
+
+  // Pricing / Wages Inputs
+  warpPricePerKg        Float     @map("warp_price_per_kg")   // ₹/kg (e.g. 315)
+  weftPricePerKg        Float     @map("weft_price_per_kg")   // ₹/kg (e.g. 300)
+  sizingRatePerKg       Float     @map("sizing_rate_per_kg")  // ₹/kg (e.g. 38.60)
+  weavingRatePerMeter   Float     @map("weaving_rate_per_meter") // ₹/meter base (e.g. 2.015)
+  bleachingRatePerKg    Float     @map("bleaching_rate_per_kg")  // ₹/kg (e.g. 57.00)
+
+  // Circled Constants (saved for auditability & precision)
+  yarnConstant          Float     @default(0.54) @map("yarn_constant") // 0.54
+  conversionDivisor     Float     @default(1000) @map("conversion_divisor") // 1000
+  endsDeduction         Int       @default(24) @map("ends_deduction") // 24
+  meterToYardFactor     Float     @default(1.12) @map("meter_to_yard_factor") // 1.12
+  baseReedPicks         Int       @default(16) @map("base_reed_picks") // 16
+
+  // Computed Physical Values
+  reedSpaceInches       Float     @map("reed_space_inches")   // (Ends - 24) / Reed (e.g. 47.25)
+  warpWeightKg          Float     @map("warp_weight_kg")      // (e.g. 11.506 kg)
+  weftWeightKg          Float     @map("weft_weight_kg")      // (e.g. 9.287 kg)
+  totalWeightKg         Float     @map("total_weight_kg")     // (e.g. 20.793 kg)
+  weightPerMeterKg      Float     @map("weight_per_meter_kg") // (e.g. 0.020793 kg)
+  weightPerMeterGram    Float     @map("weight_per_meter_gram") // (e.g. 20.793 g)
+
+  // Computed Financial Breakdowns
+  warpTotalPrice        Float     @map("warp_total_price")    // (e.g. ₹3624.39)
+  weftTotalPrice        Float     @map("weft_total_price")    // (e.g. ₹2786.10)
+  sizingTotalWages      Float     @map("sizing_total_wages")  // (e.g. ₹444.13)
+  weavingTotalWages     Float     @map("weaving_total_wages") // (e.g. ₹1637.19)
+  bleachingTotalCharges Float     @map("bleaching_total_charges") // (e.g. ₹1185.20)
+
+  // Final Results
+  totalProductionCost   Float     @map("total_production_cost") // (e.g. ₹9677.01)
+  costPerMeter          Float     @map("cost_per_meter")        // (e.g. ₹9.68)
+
+  // Audit Fields
+  createdById           String?   @map("created_by_id") @db.Uuid
+  createdBy             User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@index([qualityName], map: "idx_fabric_costing_quality")
+  @@index([createdAt], map: "idx_fabric_costing_created_at")
+  @@map("grey_fabric_costings")
 }

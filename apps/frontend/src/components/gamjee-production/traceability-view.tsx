@@ -208,7 +208,7 @@ export function GamjeeTraceabilityView({ data }: TraceabilityViewProps) {
                     <p>Finished Batch: <strong>{fg.rollBatchNumber}</strong></p>
                     <p>Rolls in Stock: <strong>{fg.rollCount} Rolls</strong></p>
                     <p>Total Length: <strong>{fg.totalLength} m</strong></p>
-                    <p>Destination: <strong>{fg.warehouse}</strong></p>
+                    <p>Storage: <strong>{fg.warehouse}</strong></p>
                   </div>
                 ))}
               </div>
