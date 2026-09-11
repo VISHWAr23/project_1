@@ -147,7 +147,7 @@ export function DeliveryChallanPDF({ order }: DeliveryChallanPDFProps) {
         <div className="my-4 p-3.5 bg-amber-50/70 border-2 border-amber-300 rounded-lg">
           <div className="flex items-center justify-between border-b border-amber-200 pb-1.5 mb-2.5">
             <h3 className="font-bold text-amber-950 uppercase text-[11px] tracking-wider flex items-center gap-1.5">
-              <span>Job Work Parameters (Notebook Specifications)</span>
+              <span>Job Work Technical Specifications</span>
             </h3>
             <span className="text-[11px] font-mono font-bold bg-amber-200 px-2 py-0.5 rounded text-amber-900 border border-amber-300">
               D.C. No. {dcNo}, dt: {dcDate}

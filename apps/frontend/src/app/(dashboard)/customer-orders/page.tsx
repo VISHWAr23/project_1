@@ -606,20 +606,20 @@ export default function CustomerOrdersPage() {
       className="space-y-6 pb-12 w-full"
     >
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-border pb-4 sm:pb-5">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
-            <ShoppingCart className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-            Customer Orders & Sales Fulfillment
+          <h1 className="text-lg sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
+            <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400 shrink-0" />
+            <span>Customer Orders & Sales Fulfillment</span>
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             Manage customer orders, partial & full delivery dispatches, and payment settlement terms
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Link href="/raw-materials/customers">
-            <Button variant="outline" size="sm" leftIcon={<Building className="h-3.5 w-3.5" />}>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Link href="/raw-materials/customers" className="flex-1 sm:flex-initial">
+            <Button variant="outline" size="sm" fullWidth leftIcon={<Building className="h-3.5 w-3.5" />} className="min-h-[36px]">
               Customers Master
             </Button>
           </Link>
@@ -628,68 +628,69 @@ export default function CustomerOrdersPage() {
             size="sm"
             onClick={() => setIsCreateOpen(true)}
             leftIcon={<Plus className="h-3.5 w-3.5" />}
+            className="flex-1 sm:flex-initial min-h-[36px]"
           >
-            Create New Order
+            Create Order
           </Button>
         </div>
       </div>
 
-      {/* KPI Metrics Dashboard */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-secondary/30 border border-border rounded-xl p-4 flex items-center justify-between">
-          <div>
-            <span className="text-xs text-muted-foreground block font-medium">Total Orders Value</span>
-            <span className="text-2xl font-bold text-emerald-500 font-mono mt-1 block">
+      {/* KPI Metrics Dashboard - 2 Columns on Mobile */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="bg-secondary/30 border border-border rounded-xl p-3 sm:p-4 flex items-center justify-between">
+          <div className="min-w-0">
+            <span className="text-[10px] sm:text-xs text-muted-foreground block font-medium truncate">Total Orders Value</span>
+            <span className="text-lg sm:text-2xl font-bold text-emerald-500 font-mono mt-0.5 sm:mt-1 block truncate">
               ₹ {(stats?.totalOrdersValue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
             </span>
           </div>
-          <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-lg">
-            <DollarSign className="h-5 w-5" />
+          <div className="p-2 sm:p-3 bg-emerald-500/10 text-emerald-500 rounded-lg shrink-0">
+            <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
         </div>
 
-        <div className="bg-secondary/30 border border-border rounded-xl p-4 flex items-center justify-between">
-          <div>
-            <span className="text-xs text-muted-foreground block font-medium">Confirmed Orders</span>
-            <span className="text-2xl font-bold text-blue-500 font-mono mt-1 block">
+        <div className="bg-secondary/30 border border-border rounded-xl p-3 sm:p-4 flex items-center justify-between">
+          <div className="min-w-0">
+            <span className="text-[10px] sm:text-xs text-muted-foreground block font-medium truncate">Confirmed Orders</span>
+            <span className="text-lg sm:text-2xl font-bold text-blue-500 font-mono mt-0.5 sm:mt-1 block truncate">
               {stats?.confirmedCount || 0}
             </span>
           </div>
-          <div className="p-3 bg-blue-500/10 text-blue-500 rounded-lg">
-            <Clock className="h-5 w-5" />
+          <div className="p-2 sm:p-3 bg-blue-500/10 text-blue-500 rounded-lg shrink-0">
+            <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
         </div>
 
-        <div className="bg-secondary/30 border border-border rounded-xl p-4 flex items-center justify-between">
-          <div>
-            <span className="text-xs text-muted-foreground block font-medium">Partially Dispatched</span>
-            <span className="text-2xl font-bold text-amber-500 font-mono mt-1 block">
+        <div className="bg-secondary/30 border border-border rounded-xl p-3 sm:p-4 flex items-center justify-between">
+          <div className="min-w-0">
+            <span className="text-[10px] sm:text-xs text-muted-foreground block font-medium truncate">Partially Dispatched</span>
+            <span className="text-lg sm:text-2xl font-bold text-amber-500 font-mono mt-0.5 sm:mt-1 block truncate">
               {stats?.partiallyDispatchedCount || 0}
             </span>
           </div>
-          <div className="p-3 bg-amber-500/10 text-amber-500 rounded-lg">
-            <RotateCcw className="h-5 w-5" />
+          <div className="p-2 sm:p-3 bg-amber-500/10 text-amber-500 rounded-lg shrink-0">
+            <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
         </div>
 
-        <div className="bg-secondary/30 border border-border rounded-xl p-4 flex items-center justify-between">
-          <div>
-            <span className="text-xs text-muted-foreground block font-medium">Dispatched & Fulfilled</span>
-            <span className="text-2xl font-bold text-emerald-500 font-mono mt-1 block">
+        <div className="bg-secondary/30 border border-border rounded-xl p-3 sm:p-4 flex items-center justify-between">
+          <div className="min-w-0">
+            <span className="text-[10px] sm:text-xs text-muted-foreground block font-medium truncate">Fulfilled</span>
+            <span className="text-lg sm:text-2xl font-bold text-emerald-500 font-mono mt-0.5 sm:mt-1 block truncate">
               {stats?.dispatchedCount || 0}
             </span>
           </div>
-          <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-lg">
-            <PackageCheck className="h-5 w-5" />
+          <div className="p-2 sm:p-3 bg-emerald-500/10 text-emerald-500 rounded-lg shrink-0">
+            <PackageCheck className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
         </div>
       </div>
 
       {/* Simplified Status Tabs */}
-      <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto">
+      <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto touch-scroll no-scrollbar py-0.5">
         {[
           { id: 'ALL', label: 'All Orders' },
-          { id: 'CONFIRMED', label: 'Confirmed (Pending Dispatch)' },
+          { id: 'CONFIRMED', label: 'Confirmed' },
           { id: 'PARTIALLY_DISPATCHED', label: 'Partially Dispatched' },
           { id: 'DISPATCHED', label: 'Dispatched' },
           { id: 'CANCELLED', label: 'Cancelled' },
@@ -700,9 +701,9 @@ export default function CustomerOrdersPage() {
               setSelectedStatus(tab.id);
               setCurrentPage(1);
             }}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0 min-h-[36px] ${
               selectedStatus === tab.id
-                ? 'bg-blue-600 text-white shadow-xs'
+                ? 'bg-blue-600 text-white shadow-sm'
                 : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
             }`}
           >

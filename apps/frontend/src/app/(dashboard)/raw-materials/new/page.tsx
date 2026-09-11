@@ -29,6 +29,7 @@ export default function NewRawMaterialPage() {
   const { data: locations } = useStorageLocations();
 
   const [itemType, setItemType] = useState<'RM' | 'PM' | 'FG'>('RM');
+  const [itemSource, setItemSource] = useState<'MANUFACTURED' | 'TRADED'>('MANUFACTURED');
   const [hasDualUnit, setHasDualUnit] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -119,6 +120,7 @@ export default function NewRawMaterialPage() {
         unitCost: Number(formData.unitCost) || 0,
         remarks: formData.remarks || undefined,
         isActive: true,
+        itemSource: itemType === 'FG' ? itemSource : 'MANUFACTURED',
         brand: formData.brand || undefined,
         variantType: formData.variantType || undefined,
         size: formData.size || undefined,
@@ -211,10 +213,55 @@ export default function NewRawMaterialPage() {
             >
               <span className="block font-bold text-xs">Finished Good (FG)</span>
               <span className="text-[10px] text-muted-foreground block mt-0.5">
-                Sterile Gauze swabs, roller bandages, gamjee pads
+                Sterile Gauze swabs, gamjee rolls, adult pullups, wipes
               </span>
             </button>
           </div>
+
+          {/* Sourcing & Procurement Selector (When Finished Goods Selected) */}
+          {itemType === 'FG' && (
+            <div className="mt-4 pt-3 border-t border-emerald-500/20">
+              <label className="block text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                Finished Goods Sourcing Model
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setItemSource('MANUFACTURED')}
+                  className={`p-3 rounded-lg border text-left transition-all ${
+                    itemSource === 'MANUFACTURED'
+                      ? 'border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500'
+                      : 'border-border bg-secondary/40 text-muted-foreground hover:bg-secondary'
+                  }`}
+                >
+                  <span className="font-bold text-xs flex items-center gap-1.5">
+                    🏭 In-House Plant Manufactured
+                  </span>
+                  <span className="text-[10px] text-muted-foreground block mt-0.5">
+                    Manufactured internally across Bleaching, Gauze, Gamjee, Stitching, or Job Work subcontracting
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setItemSource('TRADED')}
+                  className={`p-3 rounded-lg border text-left transition-all ${
+                    itemSource === 'TRADED'
+                      ? 'border-indigo-500 bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-500'
+                      : 'border-border bg-secondary/40 text-muted-foreground hover:bg-secondary'
+                  }`}
+                >
+                  <span className="font-bold text-xs flex items-center gap-1.5">
+                    🛒 Direct Buy & Sell (Traded Product)
+                  </span>
+                  <span className="text-[10px] text-muted-foreground block mt-0.5">
+                    Procured complete from vendors and directly resold to hospitals, clinics & distributors without plant processing
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Section 1: Basic Material Specs */}

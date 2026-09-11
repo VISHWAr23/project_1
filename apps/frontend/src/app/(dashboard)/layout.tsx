@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Sidebar from '@/components/layout/sidebar';
 import Header from '@/components/layout/header';
+import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
 
 export default function DashboardLayout({
   children,
@@ -16,7 +17,8 @@ export default function DashboardLayout({
       <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
         <Header onMobileMenuOpen={() => setMobileOpen(true)} />
-        <main className="p-3 sm:p-5 md:p-6 flex-1 overflow-y-auto min-w-0">{children}</main>
+        <main className="p-3 sm:p-5 md:p-6 pb-20 md:pb-6 flex-1 overflow-y-auto min-w-0">{children}</main>
+        <MobileBottomNav onOpenMoreMenu={() => setMobileOpen(true)} />
       </div>
     </div>
   );

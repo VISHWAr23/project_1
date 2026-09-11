@@ -47,7 +47,9 @@ export default function RawMaterialsPage() {
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [typeTab, setTypeTab] = useState<'ALL' | 'RM' | 'PM' | 'FG'>('ALL');
+  const [itemSourceFilter, setItemSourceFilter] = useState<'ALL' | 'MANUFACTURED' | 'TRADED'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   const [adjustmentMaterial, setAdjustmentMaterial] = useState<RawMaterial | null>(null);
 
@@ -58,6 +60,7 @@ export default function RawMaterialsPage() {
     storageLocationId: selectedLocation || undefined,
     stockStatus: selectedStatus || undefined,
     type: typeTab,
+    itemSource: typeTab === 'FG' && itemSourceFilter !== 'ALL' ? itemSourceFilter : undefined,
     page: currentPage,
     limit: 10,
   });
@@ -161,10 +164,22 @@ export default function RawMaterialsPage() {
           );
         }
         if (isFG) {
+          const isTraded = row.itemSource === 'TRADED';
           return (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              FINISHED GOOD
-            </span>
+            <div className="flex flex-col gap-1 items-start">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                FINISHED GOOD
+              </span>
+              {isTraded ? (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
+                  🛒 TRADED (BUY & SELL)
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-600/15 text-emerald-700 dark:text-emerald-300 border border-emerald-600/30">
+                  🏭 IN-HOUSE PRODUCED
+                </span>
+              )}
+            </div>
           );
         }
         return (
@@ -302,24 +317,24 @@ export default function RawMaterialsPage() {
       className="space-y-6"
     >
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-border pb-4 sm:pb-5">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
-            <Package className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-            Materials & Packaging Master Catalog
+          <h1 className="text-lg sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
+            <Package className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>Materials & Packaging Master Catalog</span>
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Manage Raw Materials, Packaging Supplies (Boxes, Covers, Tapes) & Finished Products
+            Manage Raw Materials, Packaging Supplies & Finished Products
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link href="/raw-materials/history">
-            <Button variant="outline" size="sm" leftIcon={<History className="h-3.5 w-3.5" />}>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Link href="/raw-materials/history" className="flex-1 sm:flex-initial">
+            <Button variant="outline" size="sm" fullWidth leftIcon={<History className="h-3.5 w-3.5" />} className="min-h-[36px]">
               Stock Ledger
             </Button>
           </Link>
-          <Link href="/raw-materials/new">
-            <Button variant="primary" size="sm" leftIcon={<Plus className="h-3.5 w-3.5" />}>
+          <Link href="/raw-materials/new" className="flex-1 sm:flex-initial">
+            <Button variant="primary" size="sm" fullWidth leftIcon={<Plus className="h-3.5 w-3.5" />} className="min-h-[36px]">
               Add New Item
             </Button>
           </Link>
@@ -327,13 +342,13 @@ export default function RawMaterialsPage() {
       </div>
 
       {/* Classification Tabs */}
-      <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto">
+      <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto touch-scroll no-scrollbar py-0.5">
         <button
           onClick={() => {
             setTypeTab('ALL');
             setCurrentPage(1);
           }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0 min-h-[36px] ${
             typeTab === 'ALL'
               ? 'bg-blue-600 text-white shadow-sm'
               : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
@@ -346,7 +361,7 @@ export default function RawMaterialsPage() {
             setTypeTab('RM');
             setCurrentPage(1);
           }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0 min-h-[36px] ${
             typeTab === 'RM'
               ? 'bg-blue-600 text-white shadow-sm'
               : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
@@ -359,21 +374,21 @@ export default function RawMaterialsPage() {
             setTypeTab('PM');
             setCurrentPage(1);
           }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 min-h-[36px] ${
             typeTab === 'PM'
               ? 'bg-amber-600 text-white shadow-sm'
               : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
           }`}
         >
           <Archive className="h-3.5 w-3.5" />
-          Packaging Materials (Boxes, Covers, Tape)
+          Packaging Materials
         </button>
         <button
           onClick={() => {
             setTypeTab('FG');
             setCurrentPage(1);
           }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0 min-h-[36px] ${
             typeTab === 'FG'
               ? 'bg-emerald-600 text-white shadow-sm'
               : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
@@ -383,63 +398,192 @@ export default function RawMaterialsPage() {
         </button>
       </div>
 
-      {/* KPI Metrics Panel */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-secondary/30 border border-border rounded-xl p-4 flex items-center justify-between">
-          <div>
-            <span className="text-xs text-muted-foreground block font-medium">Total Item SKUs</span>
-            <span className="text-2xl font-bold text-foreground font-mono mt-1 block">
-              {stats.totalSkus}
+      {/* Finished Goods Sourcing Sub-Tabs (In-House Manufactured vs Direct Buy & Sell) */}
+      {typeTab === 'FG' && (
+        <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 rounded-xl bg-gradient-to-r from-emerald-500/10 via-background to-indigo-500/10 border border-emerald-500/20">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              Sourcing & Procurement Type:
             </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setItemSourceFilter('ALL');
+                  setCurrentPage(1);
+                }}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  itemSourceFilter === 'ALL'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-secondary/60 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                All FG Products
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setItemSourceFilter('MANUFACTURED');
+                  setCurrentPage(1);
+                }}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                  itemSourceFilter === 'MANUFACTURED'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-secondary/60 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <span>🏭 In-House Produced ({stats.manufacturedFgCount ?? 0})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setItemSourceFilter('TRADED');
+                  setCurrentPage(1);
+                }}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                  itemSourceFilter === 'TRADED'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'bg-secondary/60 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <span>🛒 Direct Buy & Sell / Traded ({stats.tradedFgCount ?? 0})</span>
+              </button>
+            </div>
           </div>
-          <div className="p-3 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg">
-            <Boxes className="h-5 w-5" />
-          </div>
-        </div>
 
-        <div className="bg-secondary/30 border border-border rounded-xl p-4 flex items-center justify-between">
-          <div>
-            <span className="text-xs text-muted-foreground block font-medium">Total Inventory Valuation</span>
-            <span className="text-2xl font-bold text-emerald-400 font-mono mt-1 block">
-              ₹ {stats.totalValuation.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-            </span>
-          </div>
-          <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-lg">
-            <DollarSign className="h-5 w-5" />
+          <div className="text-[11px] text-muted-foreground hidden lg:block">
+            Distinguish products manufactured in plant vs procured directly from vendors for resale
           </div>
         </div>
+      )}
 
-        <div className="bg-secondary/30 border border-border rounded-xl p-4 flex items-center justify-between">
-          <div>
-            <span className="text-xs text-muted-foreground block font-medium">Packaging Inventory Value</span>
-            <span className="text-2xl font-bold text-amber-500 font-mono mt-1 block">
-              ₹ {(stats.packagingValuation || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-            </span>
-          </div>
-          <div className="p-3 bg-amber-500/10 text-amber-500 rounded-lg">
-            <Archive className="h-5 w-5" />
-          </div>
-        </div>
+      {/* KPI Metrics Panel - 2 Columns on Mobile */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        {typeTab === 'FG' ? (
+          <>
+            <div className="bg-secondary/30 border border-border rounded-xl p-3 sm:p-4 flex items-center justify-between">
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-xs text-muted-foreground block font-medium truncate">Total Finished Goods</span>
+                <span className="text-lg sm:text-2xl font-bold text-foreground font-mono mt-0.5 sm:mt-1 block truncate">
+                  {stats.totalSkus} <span className="text-xs font-normal text-muted-foreground">SKUs</span>
+                </span>
+              </div>
+              <div className="p-2 sm:p-3 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg shrink-0">
+                <Boxes className="h-4 w-4 sm:h-5 sm:w-5" />
+              </div>
+            </div>
 
-        <div className="bg-secondary/30 border border-border rounded-xl p-4 flex items-center justify-between">
-          <div>
-            <span className="text-xs text-muted-foreground block font-medium">Low Stock Alerts</span>
-            <span className="text-2xl font-bold text-rose-500 font-mono mt-1 block">
-              {stats.lowStockCount}
-            </span>
-          </div>
-          <div className="p-3 bg-rose-500/10 text-rose-500 rounded-lg">
-            <AlertTriangle className="h-5 w-5" />
-          </div>
-        </div>
+            <div className="bg-secondary/30 border border-border rounded-xl p-3 sm:p-4 flex items-center justify-between">
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-xs text-muted-foreground block font-medium truncate">Total FG Valuation</span>
+                <span className="text-lg sm:text-2xl font-bold text-emerald-500 font-mono mt-0.5 sm:mt-1 block truncate">
+                  ₹ {stats.totalValuation.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                </span>
+              </div>
+              <div className="p-2 sm:p-3 bg-emerald-500/10 text-emerald-500 rounded-lg shrink-0">
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
+              </div>
+            </div>
+
+            <div className="bg-secondary/30 border border-emerald-500/20 rounded-xl p-3 sm:p-4 flex items-center justify-between bg-emerald-500/5">
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 block font-bold truncate">🏭 In-House Produced</span>
+                <span className="text-base sm:text-xl font-bold text-foreground font-mono mt-0.5 sm:mt-1 block truncate">
+                  ₹ {(stats.manufacturedFgValuation || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                </span>
+                <span className="text-[10px] text-muted-foreground font-medium block">
+                  {stats.manufacturedFgCount || 0} Products Manufactured
+                </span>
+              </div>
+              <div className="p-2 sm:p-3 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded-lg shrink-0">
+                <Building2 className="h-4 w-4 sm:h-5 sm:w-5" />
+              </div>
+            </div>
+
+            <div className="bg-secondary/30 border border-indigo-500/20 rounded-xl p-3 sm:p-4 flex items-center justify-between bg-indigo-500/5">
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-xs text-indigo-600 dark:text-indigo-400 block font-bold truncate">🛒 Direct Buy & Sell</span>
+                <span className="text-base sm:text-xl font-bold text-foreground font-mono mt-0.5 sm:mt-1 block truncate">
+                  ₹ {(stats.tradedFgValuation || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                </span>
+                <span className="text-[10px] text-muted-foreground font-medium block">
+                  {stats.tradedFgCount || 0} Products Traded
+                </span>
+              </div>
+              <div className="p-2 sm:p-3 bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 rounded-lg shrink-0">
+                <Package className="h-4 w-4 sm:h-5 sm:w-5" />
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="bg-secondary/30 border border-border rounded-xl p-3 sm:p-4 flex items-center justify-between">
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-xs text-muted-foreground block font-medium truncate">Total Item SKUs</span>
+                <span className="text-lg sm:text-2xl font-bold text-foreground font-mono mt-0.5 sm:mt-1 block truncate">
+                  {stats.totalSkus}
+                </span>
+              </div>
+              <div className="p-2 sm:p-3 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg shrink-0">
+                <Boxes className="h-4 w-4 sm:h-5 sm:w-5" />
+              </div>
+            </div>
+
+            <div className="bg-secondary/30 border border-border rounded-xl p-3 sm:p-4 flex items-center justify-between">
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-xs text-muted-foreground block font-medium truncate">Total Valuation</span>
+                <span className="text-lg sm:text-2xl font-bold text-emerald-500 font-mono mt-0.5 sm:mt-1 block truncate">
+                  ₹ {stats.totalValuation.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                </span>
+              </div>
+              <div className="p-2 sm:p-3 bg-emerald-500/10 text-emerald-500 rounded-lg shrink-0">
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
+              </div>
+            </div>
+
+            <div className="bg-secondary/30 border border-border rounded-xl p-3 sm:p-4 flex items-center justify-between">
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-xs text-muted-foreground block font-medium truncate">Packaging Value</span>
+                <span className="text-lg sm:text-2xl font-bold text-amber-500 font-mono mt-0.5 sm:mt-1 block truncate">
+                  ₹ {(stats.packagingValuation || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                </span>
+              </div>
+              <div className="p-2 sm:p-3 bg-amber-500/10 text-amber-500 rounded-lg shrink-0">
+                <Archive className="h-4 w-4 sm:h-5 sm:w-5" />
+              </div>
+            </div>
+
+            <div className="bg-secondary/30 border border-border rounded-xl p-3 sm:p-4 flex items-center justify-between">
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-xs text-muted-foreground block font-medium truncate">Low Stock Alerts</span>
+                <span className="text-lg sm:text-2xl font-bold text-rose-500 font-mono mt-0.5 sm:mt-1 block truncate">
+                  {stats.lowStockCount}
+                </span>
+              </div>
+              <div className="p-2 sm:p-3 bg-rose-500/10 text-rose-500 rounded-lg shrink-0">
+                <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Filter Control Bar */}
-      <div className="bg-secondary/20 border border-border rounded-xl p-4 space-y-3">
+      <div className="bg-secondary/20 border border-border rounded-xl p-3.5 sm:p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-            <Filter className="h-3.5 w-3.5 text-[#3ECF8E]" /> Filter & Search Master Catalog
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+              <Filter className="h-3.5 w-3.5 text-[#3ECF8E]" /> Filter & Search
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
+              className="sm:hidden text-[11px] font-semibold px-2 py-0.5 rounded bg-secondary border border-border text-muted-foreground hover:text-foreground"
+            >
+              {isMobileFilterOpen ? 'Hide Filters' : 'Show Filters'}
+            </button>
+          </div>
           <Button
             variant="ghost"
             size="sm"
@@ -452,11 +596,11 @@ export default function RawMaterialsPage() {
               refetch();
             }}
           >
-            Clear Filters
+            Clear
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+        <div className={`${isMobileFilterOpen ? 'grid' : 'hidden sm:grid'} grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 pt-1`}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <input

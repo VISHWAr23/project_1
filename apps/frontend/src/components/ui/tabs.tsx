@@ -18,14 +18,14 @@ export interface TabsProps {
 
 export function Tabs({ tabs, activeTab, onChange }: TabsProps) {
   return (
-    <div className="flex border-b border-border space-x-1 overflow-x-auto scrollbar-none">
+    <div className="flex border-b border-border space-x-1 overflow-x-auto scrollbar-none touch-scroll no-scrollbar py-0.5">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         return (
           <button
             key={tab.id}
             onClick={() => onChange(tab.id)}
-            className={`relative px-4 py-2.5 text-xs font-medium flex items-center gap-2 transition-colors whitespace-nowrap ${
+            className={`relative px-3.5 sm:px-4 py-2.5 text-xs font-medium flex items-center gap-2 transition-colors whitespace-nowrap shrink-0 min-h-[38px] ${
               isActive ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-muted-foreground hover:text-foreground'
             }`}
           >

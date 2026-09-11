@@ -251,20 +251,21 @@ export default function EmployeesPage() {
       className="space-y-6"
     >
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-border pb-4 sm:pb-5">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2.5">
-            <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2 sm:gap-2.5">
+            <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400 shrink-0" />
             Staff & Employee Directory
           </h1>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
             size="sm"
             onClick={() => refetch()}
             leftIcon={<RefreshCw className="h-3.5 w-3.5" />}
+            className="flex-1 sm:flex-initial justify-center"
           >
             Sync
           </Button>
@@ -273,56 +274,57 @@ export default function EmployeesPage() {
             size="sm"
             onClick={() => setIsCreateModalOpen(true)}
             leftIcon={<Plus className="h-4 w-4" />}
+            className="flex-1 sm:flex-initial justify-center whitespace-nowrap"
           >
-            New Employee Intake
+            New Intake
           </Button>
         </div>
       </div>
 
       {/* KPI Stats Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2.5 rounded-lg bg-[#3ECF8E]/10 text-[#3ECF8E]">
-            <Users className="h-5 w-5" />
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        <div className="bg-card border border-border rounded-xl p-2.5 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+          <div className="p-2 sm:p-2.5 rounded-lg bg-[#3ECF8E]/10 text-[#3ECF8E] w-fit">
+            <Users className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
-          <div>
-            <div className="text-xs text-muted-foreground font-mono">Total Staff</div>
-            <div className="text-xl font-bold font-mono text-foreground">{stats.totalEmployees}</div>
-          </div>
-        </div>
-
-        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400">
-            <UserCheck className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground font-mono">Active Staff</div>
-            <div className="text-xl font-bold font-mono text-foreground">{stats.activeEmployees}</div>
+          <div className="min-w-0">
+            <div className="text-[10px] sm:text-xs text-muted-foreground font-mono truncate">Total Staff</div>
+            <div className="text-lg sm:text-xl font-bold font-mono text-foreground">{stats.totalEmployees}</div>
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400">
-            <UserX className="h-5 w-5" />
+        <div className="bg-card border border-border rounded-xl p-2.5 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+          <div className="p-2 sm:p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 w-fit">
+            <UserCheck className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
-          <div>
-            <div className="text-xs text-muted-foreground font-mono">Inactive Staff</div>
-            <div className="text-xl font-bold font-mono text-foreground">{stats.inactiveEmployees}</div>
+          <div className="min-w-0">
+            <div className="text-[10px] sm:text-xs text-muted-foreground font-mono truncate">Active Staff</div>
+            <div className="text-lg sm:text-xl font-bold font-mono text-foreground">{stats.activeEmployees}</div>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border rounded-xl p-2.5 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+          <div className="p-2 sm:p-2.5 rounded-lg bg-amber-500/10 text-amber-400 w-fit">
+            <UserX className="h-4 w-4 sm:h-5 sm:w-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-[10px] sm:text-xs text-muted-foreground font-mono truncate">Inactive Staff</div>
+            <div className="text-lg sm:text-xl font-bold font-mono text-foreground">{stats.inactiveEmployees}</div>
           </div>
         </div>
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="bg-card border border-border/80 rounded-xl p-4 space-y-4">
-        <div className="flex flex-col md:flex-row gap-3">
+      <div className="bg-card border border-border/80 rounded-xl p-3 sm:p-4 space-y-3 sm:space-y-4">
+        <div className="flex flex-col md:flex-row gap-2.5 sm:gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search by Employee ID, Name, Phone..."
+              placeholder="Search by ID, Name, Phone..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-secondary/50 border border-border text-xs rounded-lg pl-9 pr-4 py-2 text-foreground focus:outline-none focus:border-[#3ECF8E] font-mono"
+              className="w-full bg-secondary/50 border border-border text-sm sm:text-xs rounded-lg pl-9 pr-4 py-2 text-foreground focus:outline-none focus:border-[#3ECF8E] font-mono"
             />
           </div>
 
@@ -330,7 +332,7 @@ export default function EmployeesPage() {
             <select
               value={deptFilter}
               onChange={(e) => setDeptFilter(e.target.value)}
-              className="bg-secondary/50 border border-border text-xs rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-[#3ECF8E] font-mono"
+              className="bg-secondary/50 border border-border text-sm sm:text-xs rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-[#3ECF8E] font-mono flex-1 sm:flex-initial min-w-[130px]"
             >
               <option value="ALL">All Departments</option>
               {departments.map((d) => (
@@ -343,7 +345,7 @@ export default function EmployeesPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-secondary/50 border border-border text-xs rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-[#3ECF8E] font-mono"
+              className="bg-secondary/50 border border-border text-sm sm:text-xs rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-[#3ECF8E] font-mono flex-1 sm:flex-initial min-w-[120px]"
             >
               <option value="ALL">All Statuses</option>
               <option value="ACTIVE">ACTIVE</option>
@@ -411,7 +413,7 @@ export default function EmployeesPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-muted-foreground block mb-1">Phone Number</label>
               <Input
@@ -431,7 +433,7 @@ export default function EmployeesPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <MasterEntityDropdown
               label="Department"
               entityType="department"
@@ -451,13 +453,13 @@ export default function EmployeesPage() {
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="text-muted-foreground block mb-1">Salary Cycle *</label>
               <select
                 value={formData.salaryCycle || 'MONTHLY'}
                 onChange={(e) => setFormData({ ...formData, salaryCycle: e.target.value })}
-                className="w-full bg-secondary/50 border border-border text-xs rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
+                className="w-full bg-secondary/50 border border-border text-sm sm:text-xs rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
               >
                 <option value="MONTHLY">Monthly</option>
                 <option value="WEEKLY">Weekly (Saturday Pay)</option>

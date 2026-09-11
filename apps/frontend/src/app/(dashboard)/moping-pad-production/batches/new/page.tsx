@@ -252,9 +252,9 @@ function CreateMopingPadBatchContent() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Link href="/job-work">
-            <Button variant="outline" size="sm" className="h-8 text-xs">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Link href="/job-work" className="flex-1 sm:flex-initial">
+            <Button variant="outline" size="sm" className="h-8 text-xs w-full justify-center">
               Cancel
             </Button>
           </Link>
@@ -263,10 +263,10 @@ function CreateMopingPadBatchContent() {
             type="submit"
             size="sm"
             disabled={createBatchMutation.isPending}
-            className="h-8 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white shadow-2xs"
+            className="h-8 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white shadow-2xs flex-1 sm:flex-initial justify-center whitespace-nowrap"
           >
             <CheckCircle2 className="h-3.5 w-3.5" />
-            <span>{createBatchMutation.isPending ? 'Commencing Run...' : 'Commence Production Run'}</span>
+            <span>{createBatchMutation.isPending ? 'Commencing...' : 'Commence Run'}</span>
           </Button>
         </div>
       </div>
@@ -427,9 +427,9 @@ function CreateMopingPadBatchContent() {
               <BadgeCheck className="h-4.5 w-4.5 text-amber-600 dark:text-amber-400" />
               <div>
                 <h2 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
-                  Jobwork Parameters
+                  Job Work Production Parameters
                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 normal-case">
-                    Required for Rolls & Pieces
+                    Production Specs
                   </span>
                 </h2>
               </div>
@@ -914,9 +914,9 @@ function CreateMopingPadBatchContent() {
         </Card>
 
         {/* Submit Bottom Bar */}
-        <div className="flex items-center justify-end gap-3 pt-2">
-          <Link href="/job-work">
-            <Button type="button" variant="outline" size="sm" className="h-9 px-4 text-xs">
+        <div className="flex items-center justify-end gap-2 sm:gap-3 pt-2 w-full">
+          <Link href="/job-work" className="flex-1 sm:flex-initial">
+            <Button type="button" variant="outline" size="sm" className="h-9 px-4 text-xs w-full justify-center">
               Cancel
             </Button>
           </Link>
@@ -924,7 +924,7 @@ function CreateMopingPadBatchContent() {
             type="submit"
             size="sm"
             disabled={createBatchMutation.isPending}
-            className="h-9 px-5 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white shadow-2xs"
+            className="h-9 px-5 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white shadow-2xs flex-1 sm:flex-initial justify-center whitespace-nowrap"
           >
             <CheckCircle2 className="h-4 w-4" />
             <span>{createBatchMutation.isPending ? 'Commencing Run...' : 'Commence Production Run'}</span>

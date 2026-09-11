@@ -17,7 +17,7 @@ export class SalaryService {
     const currentMonth = now.getMonth() + 1;
     const currentYear = now.getFullYear();
 
-    const [totalRuns, pendingRuns, approvedRuns, currentRun] = await Promise.all([
+    const [totalRuns, pendingRuns, approvedRuns, monthRun] = await Promise.all([
       prisma.payrollRun.count(),
       prisma.payrollRun.count({ where: { status: { in: [PayrollStatus.DRAFT, PayrollStatus.PENDING_APPROVAL] } } }),
       prisma.payrollRun.count({ where: { status: PayrollStatus.APPROVED } }),
@@ -26,6 +26,11 @@ export class SalaryService {
         include: { items: true },
       }),
     ]);
+
+    const currentRun = monthRun || await prisma.payrollRun.findFirst({
+      orderBy: [{ year: 'desc' }, { month: 'desc' }],
+      include: { items: true },
+    });
 
     // Active Employees Count
     const activeEmployeesCount = await prisma.employee.count({

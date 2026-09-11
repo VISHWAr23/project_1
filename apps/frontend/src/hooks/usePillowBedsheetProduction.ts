@@ -53,11 +53,13 @@ export function useUpdatePillowBedsheetProgress() {
       id,
       completedQuantity,
       status,
+      notes,
     }: {
       id: string;
       completedQuantity: number;
       status?: PillowBedsheetBatchStatus;
-    }) => pillowBedsheetProductionService.updateProgress(id, completedQuantity, status),
+      notes?: string;
+    }) => pillowBedsheetProductionService.updateProgress(id, completedQuantity, status, notes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pillowBedsheetBatches'] });
       queryClient.invalidateQueries({ queryKey: ['pillowBedsheetDashboard'] });

@@ -22,6 +22,7 @@ export class RawMaterialsController {
   @ApiQuery({ name: 'storageLocationId', required: false })
   @ApiQuery({ name: 'stockStatus', required: false, enum: ['OPTIMAL', 'LOW_STOCK', 'OVERSTOCK', 'OUT_OF_STOCK'] })
   @ApiQuery({ name: 'type', required: false, enum: ['ALL', 'RM', 'PM', 'FG'] })
+  @ApiQuery({ name: 'itemSource', required: false, enum: ['ALL', 'MANUFACTURED', 'TRADED'] })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   async findAll(
@@ -31,6 +32,7 @@ export class RawMaterialsController {
     @Query('storageLocationId') storageLocationId?: string,
     @Query('stockStatus') stockStatus?: 'OPTIMAL' | 'LOW_STOCK' | 'OVERSTOCK' | 'OUT_OF_STOCK',
     @Query('type') type?: 'ALL' | 'RM' | 'PM' | 'FG',
+    @Query('itemSource') itemSource?: 'ALL' | 'MANUFACTURED' | 'TRADED',
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
@@ -41,6 +43,7 @@ export class RawMaterialsController {
       storageLocationId,
       stockStatus,
       type,
+      itemSource,
       page,
       limit,
     });

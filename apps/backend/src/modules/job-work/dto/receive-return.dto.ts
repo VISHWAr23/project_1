@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsUUID, IsNotEmpty, IsNumber, IsOptional, IsString, IsArray, ValidateNested, Min } from 'class-validator';
+import { IsUUID, IsNotEmpty, IsNumber, IsOptional, IsString, IsArray, ValidateNested, Min, IsBoolean } from 'class-validator';
 
 export class ReturnItemDto {
   @ApiProperty({ description: 'Finished Product / Processed Material ID' })
@@ -57,8 +57,13 @@ export class ReceiveReturnDto {
   @Type(() => ReturnItemDto)
   items!: ReturnItemDto[];
 
-  @ApiPropertyOptional({ description: 'General return batch remarks' })
+  @ApiPropertyOptional({ description: 'General return batch remarks or final wastage description' })
   @IsString()
   @IsOptional()
   remarks?: string;
+
+  @ApiPropertyOptional({ description: 'Flag indicating this is the final/last return entry closing the order' })
+  @IsBoolean()
+  @IsOptional()
+  isFinal?: boolean;
 }

@@ -131,9 +131,18 @@ export default function MaterialDetailPage() {
             </Button>
           </Link>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight font-mono">{material.sku}</h1>
               <StockStatusBadge status={material.computedStatus} />
+              {material.itemSource === 'TRADED' ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
+                  🛒 Direct Buy & Sell (Traded)
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-emerald-600/15 text-emerald-700 dark:text-emerald-300 border border-emerald-600/30">
+                  🏭 In-House Manufactured
+                </span>
+              )}
             </div>
             <p className="text-sm font-semibold text-foreground mt-0.5">{material.name}</p>
           </div>

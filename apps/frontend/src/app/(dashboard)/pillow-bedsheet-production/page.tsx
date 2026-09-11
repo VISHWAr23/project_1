@@ -20,6 +20,8 @@ import {
   IndianRupee,
   Scale,
   Sparkles,
+  FileText,
+  AlertTriangle,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -45,6 +47,8 @@ export default function PillowBedsheetProductionPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBatchForProgress, setSelectedBatchForProgress] = useState<PillowBedsheetBatch | null>(null);
   const [newCompletedQuantity, setNewCompletedQuantity] = useState<number | ''>('');
+  const [isMarkFinal, setIsMarkFinal] = useState(false);
+  const [wastageDescription, setWastageDescription] = useState('');
 
   const { data: stats } = usePillowBedsheetDashboard();
   const { data: batchesData, isLoading } = usePillowBedsheetBatches({
@@ -79,14 +83,26 @@ export default function PillowBedsheetProductionPage() {
       return;
     }
 
+    const isFinishing = isMarkFinal || val >= batch.outputQuantity;
+
     try {
       await updateProgressMutation.mutateAsync({
         id: batch.id,
         completedQuantity: val,
+        status: isFinishing ? 'COMPLETED' : undefined,
+        notes: wastageDescription.trim() || undefined,
       });
-      toast('Progress Logged', `Logged ${val} pieces completed out of ${batch.outputQuantity}`, 'success');
+      toast(
+        isFinishing ? 'Batch Completed' : 'Progress Logged',
+        isFinishing
+          ? `Batch finished with ${val} / ${batch.outputQuantity} pieces and logged final wastage description.`
+          : `Logged ${val} pieces completed out of ${batch.outputQuantity}`,
+        'success'
+      );
       setSelectedBatchForProgress(null);
       setNewCompletedQuantity('');
+      setIsMarkFinal(false);
+      setWastageDescription('');
     } catch (e: any) {
       toast('Update Failed', e?.message || 'Failed to update progress', 'error');
     }
@@ -388,8 +404,10 @@ export default function PillowBedsheetProductionPage() {
                             onClick={() => {
                               setSelectedBatchForProgress(batch);
                               setNewCompletedQuantity(batch.completedQuantity);
+                              setIsMarkFinal((batch.completedQuantity || 0) >= batch.outputQuantity);
+                              setWastageDescription(batch.notes || '');
                             }}
-                            className="text-purple-600 dark:text-purple-400 hover:underline font-medium text-[10px]"
+                            className="text-purple-600 dark:text-purple-400 hover:underline font-semibold text-[10px]"
                           >
                             Update
                           </button>
@@ -462,6 +480,11 @@ export default function PillowBedsheetProductionPage() {
                             In Progress
                           </span>
                         )}
+                        {batch.notes && (
+                          <span className="block mt-1 text-[10px] text-muted-foreground italic truncate max-w-[120px]" title={batch.notes}>
+                            📝 {batch.notes}
+                          </span>
+                        )}
                       </td>
 
                       {/* Action */}
@@ -477,6 +500,22 @@ export default function PillowBedsheetProductionPage() {
                               <Eye className="h-3.5 w-3.5" />
                             </Button>
                           </Link>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedBatchForProgress(batch);
+                              setNewCompletedQuantity(batch.completedQuantity || batch.outputQuantity);
+                              setIsMarkFinal(batch.status === 'COMPLETED' || (batch.completedQuantity || 0) >= batch.outputQuantity);
+                              setWastageDescription(batch.notes || '');
+                            }}
+                            className="h-7 px-1.5 text-[10px] text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/30 gap-1 border border-purple-500/20"
+                            title="Log Progress & Record Wastage"
+                          >
+                            <FileText className="h-3 w-3" />
+                            <span>Log/Wastage</span>
+                          </Button>
 
                           {batch.status === 'IN_PROGRESS' && (
                             <Button
@@ -507,6 +546,8 @@ export default function PillowBedsheetProductionPage() {
           onClose={() => {
             setSelectedBatchForProgress(null);
             setNewCompletedQuantity('');
+            setIsMarkFinal(false);
+            setWastageDescription('');
           }}
           title={`Log Completed Output — ${selectedBatchForProgress.batchNumber}`}
         >
@@ -527,8 +568,11 @@ export default function PillowBedsheetProductionPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-foreground mb-1">
-                Completed Pieces (Cumulative)
+              <label className="block text-xs font-semibold text-foreground mb-1 flex items-center justify-between">
+                <span>Completed Pieces (Cumulative)</span>
+                <span className="text-[11px] font-mono text-muted-foreground">
+                  Target: {selectedBatchForProgress.outputQuantity} pcs
+                </span>
               </label>
               <Input
                 type="number"
@@ -537,21 +581,128 @@ export default function PillowBedsheetProductionPage() {
                 value={newCompletedQuantity}
                 onChange={(e) => setNewCompletedQuantity(e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder={`0 to ${selectedBatchForProgress.outputQuantity}`}
-                className="font-mono"
+                className="font-mono h-11 text-base font-bold"
               />
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Enter total pieces finished to date. Max: {selectedBatchForProgress.outputQuantity} pcs.
-              </p>
+
+              {/* Quick Add Buttons */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-2">
+                <span className="text-[11px] text-muted-foreground mr-1">Quick Add:</span>
+                {[5, 10, 25].map((inc) => (
+                  <Button
+                    key={inc}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const current = Number(newCompletedQuantity) || 0;
+                      const nextVal = Math.min(selectedBatchForProgress.outputQuantity, current + inc);
+                      setNewCompletedQuantity(nextVal);
+                    }}
+                    className="h-7 px-2 text-xs font-mono"
+                  >
+                    +{inc}
+                  </Button>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setNewCompletedQuantity(selectedBatchForProgress.outputQuantity)}
+                  className="h-7 px-2 text-xs font-mono text-purple-600 dark:text-purple-400 border-purple-500/30 hover:bg-purple-500/10"
+                >
+                  Complete All ({selectedBatchForProgress.outputQuantity})
+                </Button>
+              </div>
             </div>
 
-            {typeof newCompletedQuantity === 'number' && (
-              <div className="p-2.5 rounded bg-purple-500/10 border border-purple-500/20 text-xs flex justify-between items-center">
-                <span className="text-purple-700 dark:text-purple-300 font-medium">Earned Salary:</span>
-                <span className="font-mono font-bold text-purple-700 dark:text-purple-300 text-sm">
-                  ₹{(newCompletedQuantity * selectedBatchForProgress.salaryRatePerUnit).toLocaleString()}
-                </span>
-              </div>
-            )}
+            {/* Live Progress Preview, Salary & Wastage Section */}
+            {(() => {
+              const val = typeof newCompletedQuantity === 'number' ? newCompletedQuantity : 0;
+              const total = selectedBatchForProgress.outputQuantity;
+              const pct = total > 0 ? Math.min(100, Math.round((val / total) * 1000) / 10) : 0;
+              const pending = Math.max(0, total - val);
+              const isFinishing = isMarkFinal || val >= total;
+
+              return (
+                <div className="space-y-3.5">
+                  <div className="p-3 rounded-lg bg-purple-500/5 border border-purple-500/20 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="font-semibold text-foreground">
+                        Progress: {val} / {total} pieces
+                      </span>
+                      <span className="font-bold text-purple-600 dark:text-purple-400">
+                        {pct}%
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          pct === 100 ? 'bg-emerald-500' : 'bg-purple-600'
+                        }`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono">
+                      <span>{pending} pieces pending</span>
+                      <span className="font-mono font-bold text-purple-700 dark:text-purple-300">
+                        Salary Earned: ₹{(val * selectedBatchForProgress.salaryRatePerUnit).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Final Entry Toggle */}
+                  <div className="flex items-center gap-2.5 px-1 py-1">
+                    <input
+                      type="checkbox"
+                      id="markFinalPillow"
+                      checked={isFinishing}
+                      onChange={(e) => setIsMarkFinal(e.target.checked)}
+                      disabled={val >= total}
+                      className="rounded border-border text-purple-600 focus:ring-purple-500 h-4 w-4 cursor-pointer disabled:opacity-75"
+                    />
+                    <label htmlFor="markFinalPillow" className="text-xs font-semibold cursor-pointer flex-1 flex items-center justify-between">
+                      <span className="text-foreground">Mark as Final Entry (Complete Batch)</span>
+                      {val >= total ? (
+                        <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                          100% Target Met
+                        </span>
+                      ) : isMarkFinal ? (
+                        <span className="text-[10px] font-mono font-bold text-purple-600 dark:text-purple-400">
+                          Ready to Close
+                        </span>
+                      ) : null}
+                    </label>
+                  </div>
+
+                  {/* Wastage & Completion Remarks */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span>{isFinishing ? 'Wastage & Completion Remarks' : 'Wastage & Shift Remarks'}</span>
+                      </label>
+                      {isFinishing && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
+                          Final Closure
+                        </span>
+                      )}
+                    </div>
+
+                    <textarea
+                      rows={3}
+                      value={wastageDescription}
+                      onChange={(e) => setWastageDescription(e.target.value)}
+                      placeholder={
+                        isFinishing
+                          ? 'Enter fabric cutting scrap, hem defect count, or closure remarks (optional)...'
+                          : 'Enter shift notes or scrap details (optional)...'
+                      }
+                      className="w-full rounded-md border border-input bg-background p-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-purple-500 font-sans"
+                    />
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="flex justify-end gap-2 pt-2 border-t border-border">
               <Button
@@ -560,6 +711,8 @@ export default function PillowBedsheetProductionPage() {
                 onClick={() => {
                   setSelectedBatchForProgress(null);
                   setNewCompletedQuantity('');
+                  setIsMarkFinal(false);
+                  setWastageDescription('');
                 }}
               >
                 Cancel
@@ -567,9 +720,19 @@ export default function PillowBedsheetProductionPage() {
               <Button
                 size="sm"
                 onClick={() => handleSaveProgress(selectedBatchForProgress)}
+                disabled={
+                  updateProgressMutation.isPending ||
+                  newCompletedQuantity === '' ||
+                  Number(newCompletedQuantity) < 0 ||
+                  Number(newCompletedQuantity) > selectedBatchForProgress.outputQuantity
+                }
                 className="bg-purple-600 hover:bg-purple-700 text-white font-semibold"
               >
-                Save Progress
+                {updateProgressMutation.isPending
+                  ? 'Saving...'
+                  : (isMarkFinal || Number(newCompletedQuantity) >= selectedBatchForProgress.outputQuantity)
+                  ? 'Finish Batch & Save Final Entry'
+                  : 'Save Progress'}
               </Button>
             </div>
           </div>

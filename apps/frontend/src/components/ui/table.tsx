@@ -36,7 +36,7 @@ export function Table<T>({
   onRowClick,
 }: TableProps<T>) {
   return (
-    <div className="w-full overflow-x-auto rounded-md border border-border bg-card shadow-sm scrollbar-thin relative min-h-[140px]">
+    <div className="w-full overflow-x-auto rounded-md border border-border bg-card shadow-sm scrollbar-thin relative min-h-[140px] touch-scroll">
       <table className="w-full text-left text-xs border-collapse min-w-[600px] sm:min-w-full">
         <thead>
           <tr className="border-b border-border bg-muted/40 text-muted-foreground font-mono">

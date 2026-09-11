@@ -3,7 +3,7 @@
 import React, { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowLeft, RefreshCw, Scale, Save } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Scale, Save, AlertTriangle, CheckCircle2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,8 @@ export default function ReceiveReturnPage({ params }: { params: Promise<{ id: st
 
   const [returnedDate, setReturnedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [generalRemarks, setGeneralRemarks] = useState('');
+  const [isMarkAsFinal, setIsMarkAsFinal] = useState(false);
+  const [wastageDescription, setWastageDescription] = useState('');
 
   const [rows, setRows] = useState<RollReturnRow[]>([]);
 
@@ -57,6 +59,10 @@ export default function ReceiveReturnPage({ params }: { params: Promise<{ id: st
   }
 
   const pendingWeight = Number(order.pendingWeight) || 0;
+  const totalBatchReturned = rows.reduce((sum, r) => sum + (Number(r.returnedWeight) || 0), 0);
+  const totalBatchWastage = rows.reduce((sum, r) => sum + (Number(r.wastageWeight) || 0), 0);
+  const remainingWeight = Math.max(0, pendingWeight - totalBatchReturned - totalBatchWastage);
+  const isOrderFinishing = isMarkAsFinal || remainingWeight <= 0.001;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,12 +72,17 @@ export default function ReceiveReturnPage({ params }: { params: Promise<{ id: st
       return;
     }
 
+    const finalRemarks = isOrderFinishing
+      ? (wastageDescription.trim() || generalRemarks.trim() || undefined)
+      : (generalRemarks.trim() || undefined);
+
     try {
       const updated = await returnMutation.mutateAsync({
         id: order.id,
         payload: {
           returnedDate,
-          remarks: generalRemarks,
+          remarks: finalRemarks,
+          isFinal: isOrderFinishing,
           items: rows.map((r) => ({
             finishedProductId: r.finishedProductId,
             rollNumber: r.rollNumber,
@@ -84,7 +95,11 @@ export default function ReceiveReturnPage({ params }: { params: Promise<{ id: st
         },
       });
 
-      toast('Returned Goods Recorded', `Return registered! Status updated to ${updated.status}`, 'success');
+      toast(
+        isOrderFinishing ? 'Job Work Order Completed' : 'Returned Goods Recorded',
+        `Return registered! Status updated to ${updated.status}`,
+        'success'
+      );
       router.push(`/job-work/${order.id}`);
     } catch (err: any) {
       toast('Return Failed', err.message || 'Unable to record return goods', 'error');
@@ -170,6 +185,66 @@ export default function ReceiveReturnPage({ params }: { params: Promise<{ id: st
           />
         </Card>
 
+        {/* Final Entry & Wastage Description Section */}
+        <Card className={`p-5 transition-all border-2 ${
+          isOrderFinishing
+            ? 'border-amber-500/50 bg-amber-500/5 dark:bg-amber-950/20'
+            : 'border-border bg-card'
+        } space-y-4`}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/60">
+            <div className="flex items-center gap-2.5">
+              <input
+                type="checkbox"
+                id="markAsFinalCheck"
+                checked={isMarkAsFinal}
+                onChange={(e) => setIsMarkAsFinal(e.target.checked)}
+                className="rounded border-border text-amber-600 focus:ring-amber-500 h-4 w-4 cursor-pointer"
+              />
+              <label htmlFor="markAsFinalCheck" className="text-xs font-bold text-foreground cursor-pointer flex items-center gap-1.5">
+                <span>Mark as Final / Last Return Entry</span>
+                {remainingWeight <= 0.001 && (
+                  <span className="text-[11px] font-normal text-emerald-600 dark:text-emerald-400 font-mono">
+                    (Auto-detected: 0.00 Kg remaining balance)
+                  </span>
+                )}
+              </label>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs font-mono">
+              <span className="text-muted-foreground">Remaining after this entry:</span>
+              <span className={`font-bold ${remainingWeight <= 0.001 ? 'text-emerald-500' : 'text-amber-500'}`}>
+                {remainingWeight.toFixed(2)} Kg
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>{isOrderFinishing ? 'Final Wastage & Closure Remarks' : 'Return Remarks & Wastage Notes'}</span>
+              </label>
+              {isOrderFinishing && (
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                  Order Closes as Completed
+                </span>
+              )}
+            </div>
+
+            <textarea
+              rows={3}
+              value={wastageDescription}
+              onChange={(e) => setWastageDescription(e.target.value)}
+              placeholder={
+                isOrderFinishing
+                  ? 'Enter fabric scrap, process shrinkage, or QC closure remarks (optional)...'
+                  : 'Enter scrap, roll quality observations, or delivery remarks (optional)...'
+              }
+              className="w-full rounded-md border border-input bg-background p-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-amber-500 font-sans"
+            />
+          </div>
+        </Card>
+
         {/* Submit Actions */}
         <div className="flex justify-end gap-3 pt-2">
           <Link href={`/job-work/${order.id}`}>
@@ -181,9 +256,10 @@ export default function ReceiveReturnPage({ params }: { params: Promise<{ id: st
             variant="primary"
             type="submit"
             isLoading={returnMutation.isPending}
-            leftIcon={<Save className="h-4 w-4" />}
+            className={isOrderFinishing ? 'bg-amber-600 hover:bg-amber-700 text-white' : ''}
+            leftIcon={isOrderFinishing ? <CheckCircle2 className="h-4 w-4" /> : <Save className="h-4 w-4" />}
           >
-            Save Return Register & Increase Stock
+            {isOrderFinishing ? 'Finish Order & Save Final Return' : 'Save Return Register & Increase Stock'}
           </Button>
         </div>
       </form>

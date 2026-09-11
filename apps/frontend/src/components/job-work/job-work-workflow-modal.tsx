@@ -135,9 +135,9 @@ export function JobWorkWorkflowModal({ order, onClose }: JobWorkWorkflowModalPro
               {order.status === 'CREATED' && (
                 <Link
                   href={`/job-work/${order.id}/issue`}
-                  className="px-4 py-2 bg-[#2563EB] hover:bg-[#2563EB]/90 text-[#0F1117] font-bold text-xs rounded-lg transition-colors shadow-sm flex items-center gap-1.5 shrink-0"
+                  className="px-4 py-2 bg-[#2563EB] hover:bg-[#2563EB]/90 text-white font-bold text-xs rounded-lg transition-colors shadow-sm flex items-center gap-1.5 shrink-0"
                 >
-                  <span>1-Tap Material Issue</span>
+                  <span>Issue Materials</span>
                   <ChevronRight className="h-4 w-4" />
                 </Link>
               )}

@@ -96,23 +96,24 @@ export default function DashboardPage() {
       className="space-y-6 pb-8"
     >
       {/* 1. Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-border pb-4 sm:pb-5">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Executive Dashboard</h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-lg sm:text-2xl font-bold text-foreground tracking-tight">Executive Dashboard</h1>
             <Badge variant="success" icon={<Activity className="h-3 w-3 animate-pulse" />}>
               LIVE LEDGER
             </Badge>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Button
             variant="outline"
             size="sm"
             isLoading={isSyncing}
             onClick={handleSyncLedger}
             leftIcon={<RefreshCw className="h-3.5 w-3.5" />}
+            className="min-h-[36px]"
           >
             Sync Ledger
           </Button>

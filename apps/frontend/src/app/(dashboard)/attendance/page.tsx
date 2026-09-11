@@ -619,48 +619,52 @@ export default function AttendancePage() {
       className="space-y-6"
     >
       {/* Header with Live IST Clock & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-border pb-4 sm:pb-5">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2.5">
-            <CalendarCheck className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2 sm:gap-2.5">
+            <CalendarCheck className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400 shrink-0" />
             Attendance Management
           </h1>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap w-full sm:w-auto">
           {/* Live Clock Pill (IST) */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-card border border-border rounded-xl font-mono text-xs shadow-sm">
+          <div className="flex items-center gap-2 px-2.5 py-1.5 bg-card border border-border rounded-xl font-mono text-xs shadow-sm shrink-0">
             <Clock className="h-3.5 w-3.5 text-blue-500 animate-pulse" />
             <span className="font-bold text-foreground">{currentTime || '--:--:--'} (IST)</span>
             <span className="text-muted-foreground hidden md:inline">• {currentDateFormatted}</span>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSyncAll}
-            isLoading={isSyncing}
-            leftIcon={<RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? 'animate-spin' : ''}`} />}
-          >
-            Sync
-          </Button>
+          <div className="flex items-center gap-2 flex-1 sm:flex-initial justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSyncAll}
+              isLoading={isSyncing}
+              leftIcon={<RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? 'animate-spin' : ''}`} />}
+              className="flex-1 sm:flex-initial justify-center"
+            >
+              Sync
+            </Button>
 
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => openQuickPunch()}
-            leftIcon={<Plus className="h-4 w-4" />}
-          >
-            Log Attendance
-          </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => openQuickPunch()}
+              leftIcon={<Plus className="h-4 w-4" />}
+              className="flex-1 sm:flex-initial justify-center whitespace-nowrap"
+            >
+              Log Punch
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Main View Tabs (Daily Register vs Monthly Calendar Grid) */}
-      <div className="flex items-center gap-2 border-b border-border pb-2 font-mono text-xs">
+      <div className="flex items-center gap-2 border-b border-border pb-2 font-mono text-xs overflow-x-auto touch-scroll no-scrollbar">
         <button
           onClick={() => setActiveTab('daily')}
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+          className={`px-3.5 sm:px-4 py-2 rounded-lg font-medium transition-all shrink-0 whitespace-nowrap ${
             activeTab === 'daily'
               ? 'bg-blue-500/10 text-blue-500 border border-blue-500/30 font-bold shadow-sm'
               : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
@@ -670,7 +674,7 @@ export default function AttendancePage() {
         </button>
         <button
           onClick={() => setActiveTab('monthly')}
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+          className={`px-3.5 sm:px-4 py-2 rounded-lg font-medium transition-all shrink-0 whitespace-nowrap ${
             activeTab === 'monthly'
               ? 'bg-blue-500/10 text-blue-500 border border-blue-500/30 font-bold shadow-sm'
               : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
@@ -686,68 +690,68 @@ export default function AttendancePage() {
       {activeTab === 'daily' && (
         <div className="space-y-6">
           {/* 4 Crisp KPI Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-card border border-border rounded-2xl p-4 space-y-1 shadow-sm">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+            <div className="bg-card border border-border rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-1 shadow-sm">
               <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-xs font-mono">Present Today</span>
-                <UserCheck className="h-4 w-4 text-emerald-500" />
+                <span className="text-[11px] sm:text-xs font-mono">Present Today</span>
+                <UserCheck className="h-4 w-4 text-emerald-500 shrink-0" />
               </div>
-              <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+              <div className="text-xl sm:text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
                 {todayStats?.presentToday || 0}
               </div>
-              <p className="text-[11px] font-mono text-muted-foreground">
+              <p className="text-[10px] sm:text-[11px] font-mono text-muted-foreground truncate">
                 Out of {todayStats?.totalActiveEmployees || 0} staff
               </p>
             </div>
 
-            <div className="bg-card border border-border rounded-2xl p-4 space-y-1 shadow-sm">
+            <div className="bg-card border border-border rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-1 shadow-sm">
               <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-xs font-mono">On Shift (Active)</span>
-                <Clock3 className="h-4 w-4 text-amber-500" />
+                <span className="text-[11px] sm:text-xs font-mono">On Shift (Active)</span>
+                <Clock3 className="h-4 w-4 text-amber-500 shrink-0" />
               </div>
-              <div className="text-2xl font-bold font-mono text-amber-500">
+              <div className="text-xl sm:text-2xl font-bold font-mono text-amber-500">
                 {attendanceList.filter((a) => a.checkIn && !a.checkOut).length}
               </div>
-              <p className="text-[11px] font-mono text-muted-foreground">
+              <p className="text-[10px] sm:text-[11px] font-mono text-muted-foreground truncate">
                 Punched IN, pending OUT
               </p>
             </div>
 
-            <div className="bg-card border border-border rounded-2xl p-4 space-y-1 shadow-sm">
+            <div className="bg-card border border-border rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-1 shadow-sm">
               <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-xs font-mono">Overtime Logged</span>
-                <Zap className="h-4 w-4 text-purple-500" />
+                <span className="text-[11px] sm:text-xs font-mono">Overtime Logged</span>
+                <Zap className="h-4 w-4 text-purple-500 shrink-0" />
               </div>
-              <div className="text-2xl font-bold font-mono text-purple-500">
+              <div className="text-xl sm:text-2xl font-bold font-mono text-purple-500">
                 {formatWorkHours(todayStats?.totalOvertimeHours, { zeroText: '0 hr' })}
               </div>
-              <p className="text-[11px] font-mono text-muted-foreground">
-                Beyond 8 hr 30 min standard shift
+              <p className="text-[10px] sm:text-[11px] font-mono text-muted-foreground truncate">
+                Beyond standard shift
               </p>
             </div>
 
-            <div className="bg-card border border-border rounded-2xl p-4 space-y-1 shadow-sm">
+            <div className="bg-card border border-border rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-1 shadow-sm">
               <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-xs font-mono">Absent / Leave</span>
-                <UserX className="h-4 w-4 text-rose-500" />
+                <span className="text-[11px] sm:text-xs font-mono">Absent / Leave</span>
+                <UserX className="h-4 w-4 text-rose-500 shrink-0" />
               </div>
-              <div className="text-2xl font-bold font-mono text-rose-500">
+              <div className="text-xl sm:text-2xl font-bold font-mono text-rose-500">
                 {(todayStats?.absentToday || 0) + (todayStats?.leaveToday || 0)}
               </div>
-              <p className="text-[11px] font-mono text-muted-foreground">
+              <p className="text-[10px] sm:text-[11px] font-mono text-muted-foreground truncate">
                 {todayStats?.absentToday || 0} Absent, {todayStats?.leaveToday || 0} Leave
               </p>
             </div>
           </div>
 
           {/* Fast Quick Punch IN / OUT Card */}
-          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
+          <div className="bg-card border border-border rounded-xl sm:rounded-2xl p-3.5 sm:p-5 shadow-sm space-y-3 sm:space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
               <h3 className="font-bold text-foreground text-sm font-mono flex items-center gap-2">
                 <LogIn className="h-4 w-4 text-blue-500" />
                 Quick Punch IN / OUT (IST)
               </h3>
-              <span className="text-xs font-mono text-muted-foreground">
+              <span className="text-[11px] sm:text-xs font-mono text-muted-foreground">
                 Fast input with current IST time
               </span>
             </div>
@@ -759,7 +763,7 @@ export default function AttendancePage() {
                 <select
                   value={punchForm.employeeId}
                   onChange={(e) => handleEmployeeSelect(e.target.value)}
-                  className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
+                  className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-blue-500 text-sm sm:text-xs"
                 >
                   <option value="">-- Choose Employee --</option>
                   {activeEmployees.map((emp) => (
@@ -786,7 +790,7 @@ export default function AttendancePage() {
                 <select
                   value={punchForm.actionType}
                   onChange={(e) => setPunchForm({ ...punchForm, actionType: e.target.value as any })}
-                  className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
+                  className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-blue-500 text-sm sm:text-xs"
                 >
                   <option value="IN">Punch IN (Arrival)</option>
                   <option value="OUT">Punch OUT (Departure)</option>
@@ -797,13 +801,13 @@ export default function AttendancePage() {
               </div>
 
               {/* Punch Trigger Button */}
-              <div className="flex items-end">
+              <div className="flex items-end pt-1 sm:pt-0">
                 <Button
                   variant="primary"
                   onClick={handlePunchSubmit}
                   isLoading={markMutation.isPending}
                   disabled={!punchForm.employeeId}
-                  className="w-full justify-center font-bold"
+                  className="w-full justify-center font-bold h-10 sm:h-9"
                 >
                   {punchForm.actionType === 'IN'
                     ? 'Record Punch IN'
@@ -816,7 +820,7 @@ export default function AttendancePage() {
 
             {/* Custom Times Inputs */}
             {punchForm.actionType === 'FULL_DAY' && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-border/40 font-mono text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-2 border-t border-border/40 font-mono text-xs">
                 <div>
                   <label className="text-muted-foreground block mb-1">Check IN (IST)</label>
                   <Input
@@ -854,23 +858,23 @@ export default function AttendancePage() {
           </div>
 
           {/* Daily Attendance Register Table */}
-          <div className="bg-card border border-border rounded-2xl p-5 space-y-4 shadow-sm">
+          <div className="bg-card border border-border rounded-xl sm:rounded-2xl p-3.5 sm:p-5 space-y-4 shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
                 <div className="relative w-full sm:w-64">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search staff name or code..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="pl-9 text-xs"
+                    className="pl-9"
                   />
                 </div>
 
                 <select
                   value={deptFilter}
                   onChange={(e) => setDeptFilter(e.target.value)}
-                  className="bg-secondary/50 border border-border text-xs rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-blue-500 font-mono"
+                  className="bg-secondary/50 border border-border text-sm sm:text-xs rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-blue-500 font-mono flex-1 sm:flex-initial min-w-[120px]"
                 >
                   <option value="ALL">All Departments</option>
                   {departments.map((d) => (
@@ -883,7 +887,7 @@ export default function AttendancePage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-secondary/50 border border-border text-xs rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-blue-500 font-mono"
+                  className="bg-secondary/50 border border-border text-sm sm:text-xs rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-blue-500 font-mono flex-1 sm:flex-initial min-w-[120px]"
                 >
                   <option value="ALL">All Statuses</option>
                   <option value="PRESENT">Present</option>
@@ -893,22 +897,22 @@ export default function AttendancePage() {
                 </select>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full md:w-auto justify-between sm:justify-start">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setSelectedDate(todayIST)}
-                  className={selectedDate === todayIST ? 'border-blue-500 text-blue-500 font-bold' : ''}
+                  className={selectedDate === todayIST ? 'border-blue-500 text-blue-500 font-bold flex-1 sm:flex-initial' : 'flex-1 sm:flex-initial'}
                 >
                   Today
                 </Button>
 
-                <div className="relative">
+                <div className="relative flex-1 sm:flex-initial">
                   <Input
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="text-xs font-mono w-36"
+                    className="text-sm sm:text-xs font-mono w-full sm:w-36"
                   />
                 </div>
               </div>
@@ -931,18 +935,19 @@ export default function AttendancePage() {
       {activeTab === 'monthly' && (
         <div className="space-y-6 font-mono text-xs">
           {/* Month Controls & Department Filter */}
-          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+          <div className="bg-card border border-border rounded-xl sm:rounded-2xl p-3.5 sm:p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3 w-full md:w-auto">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handlePrevMonth}
                 leftIcon={<ChevronLeft className="h-4 w-4" />}
+                className="flex-1 sm:flex-initial justify-center"
               >
-                Previous
+                Prev
               </Button>
 
-              <div className="text-sm font-bold text-foreground min-w-[160px] text-center">
+              <div className="text-xs sm:text-sm font-bold text-foreground min-w-[130px] sm:min-w-[160px] text-center">
                 {monthName}
               </div>
 
@@ -951,16 +956,17 @@ export default function AttendancePage() {
                 size="sm"
                 onClick={handleNextMonth}
                 rightIcon={<ChevronRight className="h-4 w-4" />}
+                className="flex-1 sm:flex-initial justify-center"
               >
                 Next
               </Button>
             </div>
 
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap w-full md:w-auto">
               <select
                 value={deptFilter}
                 onChange={(e) => setDeptFilter(e.target.value)}
-                className="bg-secondary/50 border border-border text-xs rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
+                className="bg-secondary/50 border border-border text-sm sm:text-xs rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-blue-500 flex-1 sm:flex-initial min-w-[140px]"
               >
                 <option value="ALL">All Departments</option>
                 {departments.map((d) => (
@@ -971,28 +977,28 @@ export default function AttendancePage() {
               </select>
 
               {/* Toggle Summary Table vs Day Matrix */}
-              <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-lg border border-border">
+              <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-lg border border-border w-full sm:w-auto">
                 <button
                   onClick={() => setMonthViewMode('summary')}
-                  className={`px-2.5 py-1 rounded text-xs transition-colors flex items-center gap-1.5 ${
+                  className={`flex-1 sm:flex-initial px-2.5 py-1.5 rounded text-xs transition-colors flex items-center justify-center gap-1.5 ${
                     monthViewMode === 'summary'
                       ? 'bg-blue-600 text-white font-bold'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   <ListFilter className="h-3.5 w-3.5" />
-                  Monthly Summary
+                  Summary
                 </button>
                 <button
                   onClick={() => setMonthViewMode('matrix')}
-                  className={`px-2.5 py-1 rounded text-xs transition-colors flex items-center gap-1.5 ${
+                  className={`flex-1 sm:flex-initial px-2.5 py-1.5 rounded text-xs transition-colors flex items-center justify-center gap-1.5 ${
                     monthViewMode === 'matrix'
                       ? 'bg-blue-600 text-white font-bold'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   <Grid className="h-3.5 w-3.5" />
-                  Day-by-Day (1-{daysInMonth})
+                  Day Grid (1-{daysInMonth})
                 </button>
               </div>
             </div>
@@ -1016,7 +1022,7 @@ export default function AttendancePage() {
                   Loading Monthly Summary Data...
                 </div>
               ) : monthSummaryData?.employees?.length ? (
-                <div className="overflow-x-auto border border-border rounded-xl">
+                <div className="overflow-x-auto touch-scroll border border-border rounded-xl">
                   <table className="w-full text-left border-collapse text-xs font-mono">
                     <thead>
                       <tr className="bg-secondary/40 border-b border-border text-muted-foreground text-[11px]">
@@ -1120,11 +1126,11 @@ export default function AttendancePage() {
                   Loading Monthly Matrix Data...
                 </div>
               ) : monthSummaryData?.employees?.length ? (
-                <div className="overflow-x-auto border border-border rounded-xl">
+                <div className="overflow-x-auto touch-scroll border border-border rounded-xl">
                   <table className="w-full text-center border-collapse text-[10px]">
                     <thead>
                       <tr className="bg-secondary/60 border-b border-border text-muted-foreground">
-                        <th className="p-2.5 text-left min-w-[160px] sticky left-0 bg-secondary/90 z-10">
+                        <th className="p-2.5 text-left min-w-[140px] sm:min-w-[160px] sticky left-0 bg-secondary/95 backdrop-blur z-20 shadow-[1px_0_0_0_hsl(var(--border))]">
                           Employee
                         </th>
                         {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
@@ -1171,7 +1177,7 @@ export default function AttendancePage() {
 
                         return (
                           <tr key={`matrix-row-${emp.id || emp.employeeCode || empIdx}`} className="hover:bg-secondary/30">
-                            <td className="p-2.5 text-left font-semibold text-foreground sticky left-0 bg-card z-10 border-r border-border flex items-center gap-2">
+                            <td className="p-2.5 text-left font-semibold text-foreground sticky left-0 bg-card z-10 border-r border-border flex items-center gap-2 shadow-[1px_0_0_0_hsl(var(--border))]">
                               <Avatar
                                 name={`${emp.firstName} ${emp.lastName}`}
                                 src={emp.avatarUrl || undefined}

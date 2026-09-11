@@ -175,6 +175,7 @@ export interface ReceiveReturnPayload {
     remarks?: string;
   }[];
   remarks?: string;
+  isFinal?: boolean;
 }
 
 export interface CloseJobWorkOrderPayload {

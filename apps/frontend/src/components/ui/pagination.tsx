@@ -31,17 +31,18 @@ export function Pagination({
         )}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between w-full sm:w-auto gap-2">
         <Button
           variant="outline"
           size="sm"
           disabled={currentPage <= 1}
           onClick={() => onPageChange(currentPage - 1)}
           leftIcon={<ChevronLeft className="h-3.5 w-3.5" />}
+          className="min-h-[36px] flex-1 sm:flex-initial"
         >
           Previous
         </Button>
-        <span className="font-mono px-2 text-foreground font-medium">
+        <span className="font-mono px-2 text-foreground font-medium text-center shrink-0">
           Page {currentPage} of {Math.max(totalPages, 1)}
         </span>
         <Button
@@ -50,6 +51,7 @@ export function Pagination({
           disabled={currentPage >= totalPages}
           onClick={() => onPageChange(currentPage + 1)}
           rightIcon={<ChevronRight className="h-3.5 w-3.5" />}
+          className="min-h-[36px] flex-1 sm:flex-initial"
         >
           Next
         </Button>

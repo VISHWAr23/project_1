@@ -100,7 +100,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           {isMobile ? (
             <button
               onClick={onMobileClose}
-              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0"
+              className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0 min-h-[38px] min-w-[38px] flex items-center justify-center"
               title="Close Navigation"
             >
               <X className="h-5 w-5" />
@@ -117,7 +117,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
         </div>
 
         {/* Navigation Items */}
-        <nav className="p-2 space-y-0.5 overflow-y-auto max-h-[calc(100vh-130px)]">
+        <nav className="p-2 space-y-0.5 overflow-y-auto max-h-[calc(100dvh-135px)] touch-scroll">
           {(!collapsed || isMobile) && (
             <div className="px-2.5 py-1.5 text-[10px] font-mono font-semibold text-muted-foreground/70 uppercase tracking-wider">
               Platform Navigation
@@ -174,7 +174,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
       </div>
 
       {/* Bottom User Profile */}
-      <div className="p-2.5 border-t border-sidebar-border">
+      <div className="p-2.5 border-t border-sidebar-border pb-[max(0.65rem,env(safe-area-inset-bottom))]">
         {!collapsed || isMobile ? (
           <div className="space-y-2">
             <div className="p-2 rounded-sm bg-secondary/40 border border-border/80 flex items-center justify-between">

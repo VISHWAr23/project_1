@@ -34,6 +34,7 @@ export default function EditRawMaterialPage() {
   const { data: locations } = useStorageLocations();
 
   const [hasDualUnit, setHasDualUnit] = useState(false);
+  const [itemSource, setItemSource] = useState<'MANUFACTURED' | 'TRADED'>('MANUFACTURED');
 
   const [formData, setFormData] = useState({
     sku: '',
@@ -98,6 +99,7 @@ export default function EditRawMaterialPage() {
         masterCartonQty: material.masterCartonQty ? String(material.masterCartonQty) : '12',
         features: material.features || '',
       });
+      setItemSource((material.itemSource as any) || 'MANUFACTURED');
     }
   }, [material]);
 
@@ -144,6 +146,7 @@ export default function EditRawMaterialPage() {
           reorderQuantity: Number(formData.reorderQuantity) || 0,
           unitCost: Number(formData.unitCost) || 0,
           remarks: formData.remarks || undefined,
+          itemSource,
           brand: formData.brand || undefined,
           variantType: formData.variantType || undefined,
           size: formData.size || undefined,
@@ -202,6 +205,49 @@ export default function EditRawMaterialPage() {
           <h2 className="text-sm font-bold text-foreground tracking-tight border-b border-border pb-2">
             1. Material Identification & Cataloging
           </h2>
+
+          {/* Sourcing & Procurement Classification */}
+          <div className="p-3 rounded-lg border border-border bg-secondary/30 space-y-2">
+            <label className="block text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              Procurement & Sourcing Model
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setItemSource('MANUFACTURED')}
+                className={`p-2.5 rounded-lg border text-left transition-all ${
+                  itemSource === 'MANUFACTURED'
+                    ? 'border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500'
+                    : 'border-border bg-secondary/50 text-muted-foreground hover:bg-secondary'
+                }`}
+              >
+                <span className="font-bold text-xs flex items-center gap-1.5">
+                  🏭 In-House Plant Manufactured
+                </span>
+                <span className="text-[10px] text-muted-foreground block mt-0.5">
+                  Produced in plant across Bleaching, Gauze, Gamjee, Stitching or Job Work
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setItemSource('TRADED')}
+                className={`p-2.5 rounded-lg border text-left transition-all ${
+                  itemSource === 'TRADED'
+                    ? 'border-indigo-500 bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-500'
+                    : 'border-border bg-secondary/50 text-muted-foreground hover:bg-secondary'
+                }`}
+              >
+                <span className="font-bold text-xs flex items-center gap-1.5">
+                  🛒 Direct Buy & Sell (Traded Product)
+                </span>
+                <span className="text-[10px] text-muted-foreground block mt-0.5">
+                  Procured complete from vendors and directly resold to customers/hospitals
+                </span>
+              </button>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input

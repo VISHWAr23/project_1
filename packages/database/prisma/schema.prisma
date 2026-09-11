@@ -756,6 +756,9 @@ model RawMaterial {
   features            String?  @db.Text // e.g. "Soft Waist Panel, Anti Bacterial, Super Absorbent, Super Leak guard, Wetness indicator"
   variantType         String?  @map("variant_type") @db.VarChar(100) // e.g. "ADULT PULLUPS - PREMIUM"
 
+  // Sourcing & Procurement Classification (MANUFACTURED vs TRADED)
+  itemSource          String?  @default("MANUFACTURED") @map("item_source") @db.VarChar(50) // "MANUFACTURED" | "TRADED"
+
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 

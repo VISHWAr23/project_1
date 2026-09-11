@@ -66,11 +66,13 @@ export function useUpdateMopingPadProgress() {
       id,
       completedQuantity,
       status,
+      notes,
     }: {
       id: string;
       completedQuantity: number;
       status?: MopingPadBatchStatus;
-    }) => mopingPadProductionService.updateProgress(id, completedQuantity, status),
+      notes?: string;
+    }) => mopingPadProductionService.updateProgress(id, completedQuantity, status, notes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mopingPadBatches'] });
       queryClient.invalidateQueries({ queryKey: ['mopingPadDashboard'] });

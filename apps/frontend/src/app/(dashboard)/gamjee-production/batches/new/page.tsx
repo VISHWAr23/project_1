@@ -570,9 +570,9 @@ function CreateGamjeeBatchContent() {
         </Card>
 
         {/* Submit Actions */}
-        <div className="flex items-center justify-between pt-2">
-          <Link href="/gamjee-production/batches">
-            <Button type="button" variant="outline">
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 pt-2">
+          <Link href="/gamjee-production/batches" className="w-full sm:w-auto">
+            <Button type="button" variant="outline" className="w-full sm:w-auto justify-center">
               Cancel
             </Button>
           </Link>
@@ -580,13 +580,13 @@ function CreateGamjeeBatchContent() {
           <Button
             type="submit"
             disabled={createBatchMutation.isPending || calculations.totalPieces <= 0}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm font-semibold px-6"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm font-semibold px-6 w-full sm:w-auto justify-center"
           >
-            <Plus className="h-4 w-4" />
-            <span>
+            <Plus className="h-4 w-4 shrink-0" />
+            <span className="truncate">
               {createBatchMutation.isPending
                 ? 'Creating Batch...'
-                : `Create Batch (${calculations.totalPieces} Rolls / ${calculations.cottonWeightKg} KG Cotton)`}
+                : `Create Batch (${calculations.totalPieces} Rolls)`}
             </span>
           </Button>
         </div>

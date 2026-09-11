@@ -448,18 +448,30 @@ export class JobWorkService {
       const pendingQty = Math.max(0, totalIssuedQty - totalReturnedQty - totalWastageQty);
 
       // Determine order status
-      const nextStatus = pendingWeight <= 0.001 ? JobWorkStatus.COMPLETED : JobWorkStatus.PARTIAL_RETURN;
+      const isComplete = Boolean(dto.isFinal) || pendingWeight <= 0.001;
+      const nextStatus = isComplete ? JobWorkStatus.COMPLETED : JobWorkStatus.PARTIAL_RETURN;
+      const finalPendingWeight = isComplete ? 0 : pendingWeight;
+      const finalPendingQty = isComplete ? 0 : pendingQty;
+
+      // If marked final with remaining difference, absorb difference into total wastage weight
+      const extraWastage = (dto.isFinal && pendingWeight > 0.001) ? pendingWeight : 0;
+      const finalTotalWastageWeight = totalWastageWeight + extraWastage;
+
+      const updatedRemarks = dto.remarks?.trim()
+        ? (order.remarks ? `${order.remarks}\n[${isComplete ? 'Final Return & Wastage' : 'Return Log'}]: ${dto.remarks.trim()}` : dto.remarks.trim())
+        : order.remarks;
 
       const orderUpdated = await tx.jobWorkOrder.update({
         where: { id },
         data: {
           totalReturnedWeight,
           totalReturnedQty,
-          totalWastageWeight,
+          totalWastageWeight: finalTotalWastageWeight,
           totalWastageQty,
-          pendingWeight,
-          pendingQty,
+          pendingWeight: finalPendingWeight,
+          pendingQty: finalPendingQty,
           status: nextStatus,
+          remarks: updatedRemarks,
         },
         include: {
           jobWorkCompany: true,
@@ -473,7 +485,9 @@ export class JobWorkService {
           jobWorkOrderId: order.id,
           fromStatus: order.status,
           toStatus: nextStatus,
-          notes: `Received ${dto.items.length} returned roll(s) weighing ${batchReturnedWeight} kg (Scrap: ${batchWastageWeight} kg). Pending: ${pendingWeight} kg`,
+          notes: dto.remarks?.trim()
+            ? `${isComplete ? 'FINAL RETURN (Order Completed): ' : ''}Received ${dto.items.length} roll(s) (${batchReturnedWeight.toFixed(2)} kg). ${dto.remarks.trim()}`
+            : `Received ${dto.items.length} returned roll(s) weighing ${batchReturnedWeight} kg (Scrap: ${batchWastageWeight} kg). Pending: ${finalPendingWeight} kg`,
           performedByUserId: userId || null,
         },
       });

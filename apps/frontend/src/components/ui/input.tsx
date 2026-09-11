@@ -32,7 +32,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             type={inputType}
-            className={`w-full bg-secondary/50 text-foreground text-xs rounded-sm border border-border py-2.5 ${
+            className={`w-full bg-secondary/50 text-foreground text-sm sm:text-xs rounded-sm border border-border py-2.5 ${
               leftIcon ? 'pl-9' : 'pl-3'
             } ${
               isPassword ? 'pr-9' : 'pr-3'

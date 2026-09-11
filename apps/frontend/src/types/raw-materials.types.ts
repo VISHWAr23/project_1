@@ -124,6 +124,7 @@ export interface RawMaterial {
   isFinishedGood?: boolean;
   isRawMaterial?: boolean;
   classification?: 'RM' | 'PM' | 'FG';
+  itemSource?: 'MANUFACTURED' | 'TRADED';
   
   // Product Variant & Packaging Specs
   brand?: string | null;
@@ -153,6 +154,10 @@ export interface RawMaterialStats {
   outOfStockCount: number;
   packagingSkusCount?: number;
   packagingValuation?: number;
+  manufacturedFgCount?: number;
+  manufacturedFgValuation?: number;
+  tradedFgCount?: number;
+  tradedFgValuation?: number;
 }
 
 export interface RawMaterialListResponse {
@@ -204,6 +209,7 @@ export interface CreateRawMaterialPayload {
   unitCost?: number;
   remarks?: string;
   isActive?: boolean;
+  itemSource?: 'MANUFACTURED' | 'TRADED';
   brand?: string;
   size?: string;
   dimensionInches?: string;

@@ -94,12 +94,18 @@ export function ReconciliationDialog({
           </div>
         )}
 
-        <Input
-          label="Closing Remarks / Variance Note"
-          placeholder="Reason for closure or scrap tolerance note..."
-          value={remarks}
-          onChange={(e) => setRemarks(e.target.value)}
-        />
+        <div className="space-y-1.5">
+          <label className="block text-xs font-semibold text-foreground">
+            Closing Remarks & Wastage Notes
+          </label>
+          <textarea
+            rows={3}
+            placeholder="Enter scrap wastage, shrinkage reasons, or closure variance notes..."
+            value={remarks}
+            onChange={(e) => setRemarks(e.target.value)}
+            className="w-full rounded-md border border-input bg-background p-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary font-sans"
+          />
+        </div>
 
         <div className="flex items-center gap-2 pt-2">
           <input

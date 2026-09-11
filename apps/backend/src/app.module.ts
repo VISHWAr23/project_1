@@ -15,6 +15,7 @@ import { CustomersModule } from './modules/customers/customers.module';
 import { CustomerOrdersModule } from './modules/customer-orders/customer-orders.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { FabricCostingModule } from './modules/fabric-costing/fabric-costing.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { FabricCostingModule } from './modules/fabric-costing/fabric-costing.mod
     CustomersModule,
     CustomerOrdersModule,
     FabricCostingModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}

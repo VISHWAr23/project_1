@@ -125,4 +125,8 @@ export class CreateRawMaterialDto {
   @IsString()
   @IsOptional()
   secondaryUnitName?: string;
+
+  @IsString()
+  @IsOptional()
+  itemSource?: 'MANUFACTURED' | 'TRADED';
 }

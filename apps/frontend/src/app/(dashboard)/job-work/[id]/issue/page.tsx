@@ -178,10 +178,10 @@ export default function IssueMaterialsPage({ params }: { params: Promise<{ id: s
           <div className="flex items-center justify-between border-b border-border pb-2">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <FileText className="h-4 w-4 text-primary" />
-              Jobwork Notebook Parameters (DC, Ends, Item Type & Output Width)
+              Production Technical Specifications (DC, Ends, Item Type & Output Width)
             </h3>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
-              Notebook Specs
+              Technical Specs
             </span>
           </div>
 
@@ -260,7 +260,7 @@ export default function IssueMaterialsPage({ params }: { params: Promise<{ id: s
                   storageKey="moping_pad_output_widths"
                   options={STANDARD_OUTPUT_WIDTHS.map((w) => ({ value: w, label: w }))}
                   placeholder="Select Output Size & Ply..."
-                  hint="Notebook specification for moping pad conversion"
+                  hint="Output dimensions and ply specification"
                 />
               </div>
             </div>

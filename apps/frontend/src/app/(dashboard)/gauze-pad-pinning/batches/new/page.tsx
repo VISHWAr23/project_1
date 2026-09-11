@@ -363,11 +363,11 @@ function CreateGauzePadPinningBatchContent() {
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4 text-cyan-600" />
             <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Jobwork Notebook Parameters (DC, Ends & Item Type)
+              Job Work Production Parameters (DC, Ends & Item Type)
             </h2>
           </div>
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-600 border border-cyan-500/20">
-            Notebook Specs
+            Production Specs
           </span>
         </div>
 

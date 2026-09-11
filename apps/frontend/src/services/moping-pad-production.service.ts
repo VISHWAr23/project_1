@@ -103,6 +103,7 @@ export interface UpdateMopingPadProgressInput {
   id: string;
   completedQuantity: number;
   status?: MopingPadBatchStatus;
+  notes?: string;
 }
 
 export interface MopingPadDashboardStats {
@@ -122,7 +123,7 @@ const DEFAULT_BATCHES: MopingPadBatch[] = [
     batchNumber: 'MPP-2026-001',
     productName: 'Heavy-Duty Surgical Moping Pad 40cm',
     materialType: 'ROLL',
-    dcNo: 'D.C. No. 05',
+    dcNo: 'D.C. No. 01',
     dcDate: '2026-09-06',
     ends: 1140,
     itemType: '22x14',
@@ -141,80 +142,13 @@ const DEFAULT_BATCHES: MopingPadBatch[] = [
     remnantLength: 0,
     executorType: 'WORKERS',
     workerIds: ['emp-1'],
-    workerNames: 'Anitha Sharma, Rajesh Kumar',
+    workerNames: 'Ramesh Kumar, Suresh Patel',
     status: 'IN_PROGRESS',
     startDate: '2026-09-05',
-    targetDate: '2026-09-08',
+    targetDate: '2026-09-18',
     notes: 'Floor hospital sterile mop pads - batch 1',
     createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
     updatedAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: 'mp-batch-102',
-    batchNumber: 'MPP-2026-002',
-    productName: 'Standard Cleanroom Mop Pad 30cm',
-    materialType: 'PIECES',
-    dcNo: 'D.C. No. 04',
-    dcDate: '2026-09-01',
-    ends: 1140,
-    itemType: '23x17',
-    outputProductWidth: '30cm x 30cm - 6 ply',
-    deliveryPerson: 'Ramesh Kumar',
-    vehicleNumber: 'TN-67-AB-1234',
-    pieceLength: 2.5,
-    pieceLengthUom: 'm',
-    pieceWidth: 50,
-    pieceWidthUom: 'cm',
-    pieceCount: 40,
-    totalLength: 100,
-    pinningSize: 0.3,
-    pinningSizeUom: 'm',
-    outputQuantity: 333,
-    completedQuantity: 200,
-    pendingQuantity: 133,
-    completionPercentage: 60.1,
-    remnantLength: 0.1,
-    executorType: 'COMPANY',
-    companyId: 'comp-1',
-    companyName: 'Sri Lakshmi Bleaching & Scouring Works',
-    status: 'IN_PROGRESS',
-    startDate: '2026-09-06',
-    targetDate: '2026-09-09',
-    notes: 'Subcontracted slitting & pinning jobwork',
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'mp-batch-103',
-    batchNumber: 'MPP-2026-003',
-    productName: 'Microfiber Absorbent Mop Pad 35cm',
-    materialType: 'ROLL',
-    dcNo: 'D.C. No. 03',
-    dcDate: '2026-08-28',
-    ends: 1140,
-    itemType: '28x27',
-    outputProductWidth: '25cm x 25cm - 8 ply',
-    rollWidth: 90,
-    rollWidthUom: 'cm',
-    rollLength: 200,
-    rollLengthUom: 'm',
-    totalLength: 200,
-    pinningSize: 0.35,
-    pinningSizeUom: 'm',
-    outputQuantity: 571,
-    completedQuantity: 571,
-    pendingQuantity: 0,
-    completionPercentage: 100.0,
-    remnantLength: 0.15,
-    executorType: 'WORKERS',
-    workerIds: ['emp-2'],
-    workerNames: 'Venkatesh Murugan',
-    status: 'COMPLETED',
-    startDate: '2026-09-01',
-    completionDate: '2026-09-04',
-    notes: 'Quality checked and sterile packed',
-    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
   },
 ];
 
@@ -414,7 +348,8 @@ class MopingPadProductionService {
   async updateProgress(
     id: string,
     completedQuantity: number,
-    status?: MopingPadBatchStatus
+    status?: MopingPadBatchStatus,
+    notes?: string
   ): Promise<MopingPadBatch> {
     const batches = this.getStorageBatches();
     const index = batches.findIndex((b) => b.id === id);
@@ -427,10 +362,26 @@ class MopingPadProductionService {
     const completed = Math.min(Math.max(completedQuantity, 0), total);
     const pending = Math.max(0, total - completed);
     const pct = total > 0 ? Number(((completed / total) * 100).toFixed(1)) : 0;
-    const isCompleted = completed >= total && total > 0;
+    const isCompleted = status === 'COMPLETED' || (completed >= total && total > 0);
     const newStatus =
       status ||
       (isCompleted ? 'COMPLETED' : current.status === 'COMPLETED' ? 'IN_PROGRESS' : current.status);
+
+    let updatedNotes = current.notes;
+    if (notes !== undefined) {
+      const trimmed = notes.trim();
+      if (!trimmed) {
+        updatedNotes = undefined;
+      } else if (trimmed === current.notes?.trim()) {
+        updatedNotes = current.notes;
+      } else if (trimmed.includes('[Final Wastage') || trimmed.includes('[Progress')) {
+        updatedNotes = trimmed;
+      } else {
+        updatedNotes = current.notes
+          ? `${current.notes}\n[${isCompleted ? 'Final Wastage' : 'Progress'}]: ${trimmed}`
+          : `[${isCompleted ? 'Final Wastage' : 'Progress'}]: ${trimmed}`;
+      }
+    }
 
     const updated: MopingPadBatch = {
       ...current,
@@ -438,6 +389,7 @@ class MopingPadProductionService {
       pendingQuantity: pending,
       completionPercentage: pct,
       status: newStatus,
+      notes: updatedNotes,
       updatedAt: new Date().toISOString(),
       ...(newStatus === 'COMPLETED'
         ? { completionDate: new Date().toISOString().split('T')[0] }

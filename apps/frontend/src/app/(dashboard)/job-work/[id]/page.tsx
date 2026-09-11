@@ -230,6 +230,19 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
               <p><span className="text-muted-foreground">Driver Name:</span> <span className="text-foreground">{order.driverName || 'Not specified'}</span></p>
             </div>
           </Card>
+
+          {/* Remarks & Wastage Records if present */}
+          {order.remarks && (
+            <Card className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl space-y-1.5 text-xs">
+              <h4 className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <FileText className="h-3.5 w-3.5 text-amber-500" />
+                <span>Closure Remarks & Wastage Records</span>
+              </h4>
+              <p className="text-foreground whitespace-pre-line leading-relaxed font-sans bg-background/50 p-2.5 rounded-lg border border-border/60">
+                {order.remarks}
+              </p>
+            </Card>
+          )}
         </div>
 
         {/* Right Column: Workflow Timeline & Audit */}

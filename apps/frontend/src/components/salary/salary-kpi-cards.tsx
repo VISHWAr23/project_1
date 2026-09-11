@@ -72,20 +72,23 @@ export function SalaryKpiCards({ summary, isLoading }: SalaryKpiCardsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
       {cards.map((c, i) => {
         const Icon = c.icon;
         return (
-          <Card key={i} className="p-4 relative overflow-hidden border border-border/60 hover:border-border transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">{c.title}</p>
-                <h3 className="text-xl sm:text-2xl font-bold font-mono text-foreground mt-1 tracking-tight">
+          <Card key={i} className="p-3 sm:p-4 relative overflow-hidden border border-border/60 hover:border-border transition-all">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] sm:text-xs text-muted-foreground font-medium truncate">{c.title}</p>
+                <h3 className="text-base sm:text-xl font-bold font-mono text-foreground mt-0.5 sm:mt-1 tracking-tight truncate">
                   {c.value}
                 </h3>
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground/80 font-mono truncate mt-1 hidden xs:block">
+                  {c.subtext}
+                </p>
               </div>
-              <div className={`p-2.5 rounded-xl ${c.bg} ${c.color}`}>
-                <Icon className="h-5 w-5" />
+              <div className={`p-2 sm:p-2.5 rounded-lg sm:rounded-xl ${c.bg} ${c.color} shrink-0`}>
+                <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
             </div>
           </Card>

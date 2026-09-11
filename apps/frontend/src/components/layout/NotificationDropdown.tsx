@@ -117,7 +117,7 @@ export function NotificationDropdown() {
         onClick={() => setIsOpen(!isOpen)}
         title="Notifications & System Alerts"
         aria-label="Open notifications"
-        className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-sm transition-colors relative flex items-center justify-center"
+        className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors relative flex items-center justify-center min-h-[38px] min-w-[38px]"
       >
         <Bell className="h-4 w-4" />
         {unreadCount > 0 && (
@@ -135,7 +135,7 @@ export function NotificationDropdown() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 4, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 mt-2 w-80 sm:w-96 bg-popover border border-border rounded-lg shadow-2xl z-50 overflow-hidden flex flex-col text-xs"
+            className="fixed inset-x-3 top-16 sm:top-auto sm:absolute sm:inset-x-auto sm:right-0 sm:mt-2 sm:w-96 max-w-sm sm:max-w-md bg-popover border border-border rounded-lg shadow-2xl z-50 overflow-hidden flex flex-col text-xs max-h-[80vh]"
           >
             {/* Header */}
             <div className="p-3 bg-secondary/30 border-b border-border flex items-center justify-between">

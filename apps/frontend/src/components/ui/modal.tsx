@@ -58,7 +58,7 @@ export function Modal({
   const modalContent = (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -68,27 +68,31 @@ export function Modal({
           />
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.97, y: 8 }}
+            initial={{ opacity: 0, scale: 0.98, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: 8 }}
-            transition={{ type: 'spring', duration: 0.2 }}
-            className={`relative w-full max-w-[92vw] ${maxWidthClasses[effectiveWidth]} bg-popover border border-border rounded-md shadow-2xl overflow-hidden z-10 max-h-[90vh] flex flex-col`}
+            exit={{ opacity: 0, scale: 0.98, y: 16 }}
+            transition={{ type: 'spring', duration: 0.25, damping: 25 }}
+            className={`relative w-full ${maxWidthClasses[effectiveWidth]} bg-popover border border-border rounded-t-2xl sm:rounded-md shadow-2xl overflow-hidden z-10 max-h-[92dvh] sm:max-h-[90vh] flex flex-col pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:pb-0`}
           >
+            {/* Mobile Drag Indicator Bar */}
+            <div className="w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto mt-2.5 sm:hidden" />
+
             {(title || description) && (
               <div className="p-3.5 sm:p-4 border-b border-border/80 flex items-start justify-between shrink-0">
-                <div>
+                <div className="pr-2">
                   {title && <h3 className="text-sm font-semibold text-foreground">{title}</h3>}
                   {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-1 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center shrink-0"
+                  title="Close Dialog"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
             )}
-            <div className="p-4 sm:p-5 overflow-y-auto">{children}</div>
+            <div className="p-3.5 sm:p-5 overflow-y-auto touch-scroll">{children}</div>
           </motion.div>
         </div>
       )}

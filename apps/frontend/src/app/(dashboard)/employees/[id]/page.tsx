@@ -331,54 +331,52 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
       </div>
 
       {/* Main Profile Header Banner */}
-      <div className="bg-card border border-border rounded-2xl p-6 shadow-sm relative overflow-hidden">
+      <div className="bg-card border border-border rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
 
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
             <Avatar
               name={`${employee.firstName} ${employee.lastName}`}
               src={employee.avatarUrl || undefined}
               size="lg"
-              className="h-16 w-16 text-lg font-bold border-2 border-blue-500 shadow-md"
+              className="h-14 w-14 sm:h-16 sm:w-16 text-lg font-bold border-2 border-blue-500 shadow-md shrink-0"
             />
             <div className="space-y-1">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-xl sm:text-2xl font-bold text-foreground font-mono">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <h1 className="text-lg sm:text-2xl font-bold text-foreground font-mono">
                   {employee.firstName} {employee.lastName}
                 </h1>
-                <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/30">
+                <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/30">
                   {employee.employeeCode}
                 </span>
-                <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-500 border border-purple-500/30">
-                  {employee.salaryCycle === 'WEEKLY' ? 'Weekly (Saturday Pay)' : 'Monthly Cycle'}
+                <span className="font-mono text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-500 border border-purple-500/30">
+                  {employee.salaryCycle === 'WEEKLY' ? 'Weekly Pay' : 'Monthly Cycle'}
                 </span>
                 <Badge variant={employee.status === 'ACTIVE' ? 'success' : 'warning'}>
                   {employee.status}
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground font-mono flex items-center gap-2">
+              <p className="text-xs text-muted-foreground font-mono flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 <span>{employee.designation?.name || 'Staff'}</span>
                 <span>•</span>
                 <span className="text-foreground">{employee.department?.name || 'Unassigned'}</span>
                 <span>•</span>
-                <span>OT Rate: <strong className="text-blue-500">₹{employee.otRatePerHour || 0}/hr</strong></span>
-                <span>•</span>
-                <span>Joined: {new Date(employee.joiningDate).toLocaleDateString()}</span>
+                <span>OT: <strong className="text-blue-500">₹{employee.otRatePerHour || 0}/hr</strong></span>
               </p>
             </div>
           </div>
 
           {/* Quick Action Buttons */}
-          <div className="flex items-center gap-2.5 flex-wrap w-full lg:w-auto justify-start lg:justify-end">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full lg:w-auto">
             <Button
               variant="primary"
               size="sm"
               onClick={() => openSettleModal('FULL_SETTLEMENT')}
               leftIcon={<Zap className="h-4 w-4 text-amber-300" />}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 shadow-md font-bold"
+              className="col-span-2 sm:col-span-1 bg-gradient-to-r from-blue-600 to-indigo-600 shadow-md font-bold justify-center"
             >
-              Pay / Settle Amount
+              Pay / Settle
             </Button>
 
             <Button
@@ -386,9 +384,9 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
               size="sm"
               onClick={() => setIsReportModalOpen(true)}
               leftIcon={<FileText className="h-4 w-4 text-blue-500" />}
-              className="font-bold border-blue-500/30 text-blue-500 hover:bg-blue-500/10"
+              className="font-bold border-blue-500/30 text-blue-500 hover:bg-blue-500/10 justify-center"
             >
-              Generate Report
+              Report
             </Button>
 
             <Button
@@ -396,8 +394,9 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
               size="sm"
               onClick={() => setIsAdvanceModalOpen(true)}
               leftIcon={<PiggyBank className="h-4 w-4 text-emerald-500" />}
+              className="justify-center"
             >
-              Give Advance
+              Advance
             </Button>
 
             <Button
@@ -405,6 +404,7 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
               size="sm"
               onClick={openEditModal}
               leftIcon={<Edit className="h-3.5 w-3.5" />}
+              className="justify-center"
             >
               Edit
             </Button>
@@ -413,7 +413,7 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
               variant={employee.status === 'ACTIVE' ? 'outline' : 'primary'}
               size="sm"
               onClick={handleStatusToggle}
-              className={employee.status === 'ACTIVE' ? 'border-amber-500/40 text-amber-500' : ''}
+              className={employee.status === 'ACTIVE' ? 'border-amber-500/40 text-amber-500 justify-center' : 'justify-center'}
               isLoading={updateMutation.isPending}
             >
               {employee.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
@@ -423,59 +423,59 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
       </div>
 
       {/* 4 KPI Financial Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 font-mono text-xs">
         {/* Card 1: Base Salary (Per Day) */}
-        <div className="bg-card border border-border rounded-2xl p-4 space-y-2 relative overflow-hidden shadow-sm">
+        <div className="bg-card border border-border rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-1.5 relative overflow-hidden shadow-sm">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-[11px]">Base Salary (₹ / Day)</span>
-            <DollarSign className="h-4 w-4 text-blue-500" />
+            <span className="text-[11px] truncate">Base (₹/Day)</span>
+            <DollarSign className="h-4 w-4 text-blue-500 shrink-0" />
           </div>
-          <div className="text-xl font-bold text-foreground">
-            ₹{Number(employee.baseWage || 0).toLocaleString()} <span className="text-xs font-normal text-muted-foreground">/ day</span>
+          <div className="text-base sm:text-xl font-bold text-foreground">
+            ₹{Number(employee.baseWage || 0).toLocaleString()} <span className="text-[10px] font-normal text-muted-foreground">/d</span>
           </div>
-          <div className="text-[11px] text-muted-foreground flex items-center justify-between pt-1 border-t border-border/40">
-            <span>Cycle Earned:</span>
+          <div className="text-[10px] sm:text-[11px] text-muted-foreground flex items-center justify-between pt-1 border-t border-border/40">
+            <span>Cycle:</span>
             <strong className="text-emerald-500">₹{fin?.settlementSummary?.baseSalaryEarned || 0}</strong>
           </div>
         </div>
 
         {/* Card 2: Overtime Salary */}
-        <div className="bg-card border border-border rounded-2xl p-4 space-y-2 relative overflow-hidden shadow-sm">
+        <div className="bg-card border border-border rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-1.5 relative overflow-hidden shadow-sm">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-[11px]">Overtime Earnings</span>
-            <Zap className="h-4 w-4 text-purple-500" />
+            <span className="text-[11px] truncate">Overtime</span>
+            <Zap className="h-4 w-4 text-purple-500 shrink-0" />
           </div>
-          <div className="text-xl font-bold text-purple-500">
+          <div className="text-base sm:text-xl font-bold text-purple-500">
             ₹{fin?.settlementSummary?.otSalaryEarned || 0}
           </div>
-          <div className="text-[11px] text-muted-foreground flex items-center justify-between pt-1 border-t border-border/40">
-            <span>Logged OT:</span>
-            <strong className="text-foreground">{formatWorkHours(fin?.currentCycle?.totalOvertimeHours, { zeroText: '0 hr' })} (@ ₹{employee.otRatePerHour || 0}/hr)</strong>
+          <div className="text-[10px] sm:text-[11px] text-muted-foreground flex items-center justify-between pt-1 border-t border-border/40">
+            <span>OT Hrs:</span>
+            <strong className="text-foreground">{formatWorkHours(fin?.currentCycle?.totalOvertimeHours, { zeroText: '0 hr' })}</strong>
           </div>
         </div>
 
         {/* Card 3: Advance Balance */}
-        <div className="bg-card border border-border rounded-2xl p-4 space-y-2 relative overflow-hidden shadow-sm">
+        <div className="bg-card border border-border rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-1.5 relative overflow-hidden shadow-sm">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-[11px]">Advance Balance</span>
-            <PiggyBank className="h-4 w-4 text-amber-500" />
+            <span className="text-[11px] truncate">Advance Due</span>
+            <PiggyBank className="h-4 w-4 text-amber-500 shrink-0" />
           </div>
-          <div className="text-xl font-bold text-amber-500">
+          <div className="text-base sm:text-xl font-bold text-amber-500">
             ₹{fin?.advances?.outstandingBalance || 0}
           </div>
-          <div className="text-[11px] text-muted-foreground flex items-center justify-between pt-1 border-t border-border/40">
-            <span>Weekly Repayment:</span>
-            <strong className="text-foreground">₹{fin?.advances?.weeklyDeductionTotal || 0} / wk</strong>
+          <div className="text-[10px] sm:text-[11px] text-muted-foreground flex items-center justify-between pt-1 border-t border-border/40">
+            <span>Weekly Ded:</span>
+            <strong className="text-foreground">₹{fin?.advances?.weeklyDeductionTotal || 0}</strong>
           </div>
         </div>
 
         {/* Card 4: Net Estimated Payout */}
-        <div className="bg-gradient-to-br from-emerald-950/30 to-blue-950/30 border border-emerald-500/30 rounded-2xl p-4 space-y-2 relative overflow-hidden shadow-sm">
+        <div className="bg-gradient-to-br from-emerald-950/30 to-blue-950/30 border border-emerald-500/30 rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-1.5 relative overflow-hidden shadow-sm">
           <div className="flex items-center justify-between text-emerald-500">
-            <span className="text-[11px] font-bold">Estimated Net Payout</span>
-            <IndianRupee className="h-4 w-4" />
+            <span className="text-[11px] font-bold truncate">Est. Payout</span>
+            <IndianRupee className="h-4 w-4 shrink-0" />
           </div>
-          <div className="text-xl font-bold text-emerald-500">
+          <div className="text-base sm:text-xl font-bold text-emerald-500">
             ₹{fin?.settlementSummary?.estimatedNetPayout || 0}
           </div>
           <div className="text-[10px] text-muted-foreground flex items-center justify-between pt-1 border-t border-border/40">
@@ -484,14 +484,14 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
               onClick={() => openSettleModal('FULL_SETTLEMENT')}
               className="text-blue-500 font-bold hover:underline"
             >
-              Settle Now &rarr;
+              Settle &rarr;
             </button>
           </div>
         </div>
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto font-mono text-xs">
+      <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto touch-scroll no-scrollbar font-mono text-xs">
         {[
           { key: 'financial', label: 'Financial Summary' },
           { key: 'report', label: 'Work & Attendance Report' },
@@ -502,7 +502,7 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
           <button
             key={`tab-${tab.key}`}
             onClick={() => setActiveTab(tab.key as any)}
-            className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
+            className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap shrink-0 ${
               activeTab === tab.key
                 ? 'bg-blue-500/10 text-blue-500 border border-blue-500/30 font-bold'
                 : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'

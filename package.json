@@ -14,7 +14,8 @@
     "build": "npm run build:packages && npm run build:backend && npm run build:frontend",
     "db:generate": "npm run db:generate --workspace=packages/database",
     "db:push": "npm run db:push --workspace=packages/database",
-    "db:seed": "npm run db:seed --workspace=packages/database"
+    "db:seed": "npm run db:seed --workspace=packages/database",
+    "db:clean-reseed": "npm run db:clean-reseed --workspace=packages/database"
   },
   "devDependencies": {
     "typescript": "^5.3.3"

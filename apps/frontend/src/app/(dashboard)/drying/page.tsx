@@ -18,6 +18,8 @@ import {
   Check,
   Percent,
   Truck,
+  FileText,
+  AlertTriangle,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,6 +40,8 @@ export default function DryingPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBatchForProgress, setSelectedBatchForProgress] = useState<any | null>(null);
   const [newCompletedPieces, setNewCompletedPieces] = useState<number | ''>('');
+  const [isMarkFinal, setIsMarkFinal] = useState(false);
+  const [wastageDescription, setWastageDescription] = useState('');
 
   const { data: stats } = useDryingDashboard();
   const { data: batchesData } = useDryingBatches({
@@ -61,15 +65,26 @@ export default function DryingPage() {
       return;
     }
 
+    const isFinishing = isMarkFinal || val >= totalPieces;
+
     try {
       await updateProgressMutation.mutateAsync({
         id,
         completedPieces: val,
-        status: val >= totalPieces ? 'COMPLETED' : 'IN_PROGRESS',
+        status: isFinishing ? 'COMPLETED' : 'IN_PROGRESS',
+        notes: wastageDescription.trim() || undefined,
       });
-      toast('Progress Updated', `Updated drying progress to ${val} / ${totalPieces} pieces`, 'success');
+      toast(
+        isFinishing ? 'Batch Completed' : 'Progress Updated',
+        isFinishing
+          ? `Finished drying batch with ${val} / ${totalPieces} pieces and logged final wastage.`
+          : `Updated drying progress to ${val} / ${totalPieces} pieces`,
+        'success'
+      );
       setSelectedBatchForProgress(null);
       setNewCompletedPieces('');
+      setIsMarkFinal(false);
+      setWastageDescription('');
     } catch (e: any) {
       toast('Error', e?.message || 'Failed to update progress', 'error');
     }
@@ -334,21 +349,51 @@ export default function DryingPage() {
 
                     <td className="py-3.5 px-4 text-center">
                       {batch.status !== 'COMPLETED' ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedBatchForProgress(batch);
-                            setNewCompletedPieces(batch.completedPieces);
-                          }}
-                          className="h-7 px-2.5 text-[11px] gap-1 text-orange-600 hover:text-orange-700 hover:bg-orange-500/10 border-orange-500/30"
-                        >
-                          <span>Log Progress</span>
-                        </Button>
+                        <div className="flex flex-col items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedBatchForProgress(batch);
+                              setNewCompletedPieces(batch.completedPieces);
+                              setIsMarkFinal((batch.completedPieces || 0) >= batch.totalPieces);
+                              setWastageDescription(batch.notes || '');
+                            }}
+                            className="h-7 px-2.5 text-[11px] gap-1 text-orange-600 hover:text-orange-700 hover:bg-orange-500/10 border-orange-500/30 font-semibold shadow-2xs"
+                          >
+                            <span>Log Progress</span>
+                          </Button>
+                          {batch.notes && (
+                            <span className="text-[10px] text-muted-foreground italic truncate max-w-[130px] block" title={batch.notes}>
+                              📝 {batch.notes}
+                            </span>
+                          )}
+                        </div>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                          <Check className="h-3.5 w-3.5" /> Finished
-                        </span>
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            <Check className="h-3.5 w-3.5" /> Finished
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedBatchForProgress(batch);
+                              setNewCompletedPieces(batch.completedPieces || batch.totalPieces);
+                              setIsMarkFinal(true);
+                              setWastageDescription(batch.notes || '');
+                            }}
+                            className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground gap-1 border-border/70 hover:bg-secondary/50"
+                          >
+                            <FileText className="h-3 w-3 text-orange-500" />
+                            <span>View / Edit Wastage</span>
+                          </Button>
+                          {batch.notes && (
+                            <span className="text-[10px] text-orange-700 dark:text-orange-300 font-medium truncate max-w-[130px] bg-orange-500/10 px-1.5 py-0.5 rounded border border-orange-500/20" title={batch.notes}>
+                              📝 {batch.notes}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -366,6 +411,8 @@ export default function DryingPage() {
           onClose={() => {
             setSelectedBatchForProgress(null);
             setNewCompletedPieces('');
+            setIsMarkFinal(false);
+            setWastageDescription('');
           }}
           title="Log Drying Progress"
           description={`Update completed drying pieces for batch ${selectedBatchForProgress.batchNumber}`}
@@ -471,47 +518,102 @@ export default function DryingPage() {
               const workerCount = Math.max(1, selectedBatchForProgress.workerCount || 1);
               const perWorker = earned / workerCount;
 
+              const isFinishing = isMarkFinal || val >= total;
+
               return (
-                <div className="p-3.5 rounded-lg bg-orange-500/5 border border-orange-500/20 space-y-3">
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="font-semibold text-foreground">
-                      Progress: {val} / {total} pieces ({completedMeters}m dried)
-                    </span>
-                    <span className="font-bold text-orange-600 dark:text-orange-400">
-                      {pct}%
-                    </span>
-                  </div>
-                  <div className="w-full h-2.5 bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-300 ${
-                        pct === 100 ? 'bg-emerald-500' : 'bg-orange-500'
-                      }`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono">
-                    <span>{pending} pieces pending</span>
-                    {pct === 100 && (
-                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                        <Check className="h-3 w-3" /> Ready to mark Completed
+                <div className="space-y-4">
+                  <div className="p-3.5 rounded-lg bg-orange-500/5 border border-orange-500/20 space-y-3">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="font-semibold text-foreground">
+                        Progress: {val} / {total} pieces ({completedMeters}m dried)
                       </span>
-                    )}
+                      <span className="font-bold text-orange-600 dark:text-orange-400">
+                        {pct}%
+                      </span>
+                    </div>
+                    <div className="w-full h-2.5 bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          pct === 100 ? 'bg-emerald-500' : 'bg-orange-500'
+                        }`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono">
+                      <span>{pending} pieces pending</span>
+                      {isFinishing && (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                          <Check className="h-3 w-3" /> Ready to mark Completed
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Realtime Salary preview */}
+                    <div className="pt-2 border-t border-orange-500/20 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-muted-foreground block text-[11px]">Salary Earned So Far:</span>
+                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                          ₹{earned.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-muted-foreground block text-[11px]">Per Worker ({workerCount}):</span>
+                        <span className="font-mono font-semibold text-foreground">
+                          ₹{perWorker.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Realtime Salary preview */}
-                  <div className="pt-2 border-t border-orange-500/20 flex items-center justify-between text-xs">
-                    <div>
-                      <span className="text-muted-foreground block text-[11px]">Salary Earned So Far:</span>
-                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
-                        ₹{earned.toFixed(2)}
-                      </span>
+                  {/* Final Entry Toggle */}
+                  <div className="flex items-center gap-2.5 px-1 py-1">
+                    <input
+                      type="checkbox"
+                      id="markFinalDrying"
+                      checked={isFinishing}
+                      onChange={(e) => setIsMarkFinal(e.target.checked)}
+                      disabled={val >= total}
+                      className="rounded border-border text-orange-600 focus:ring-orange-500 h-4 w-4 cursor-pointer disabled:opacity-75"
+                    />
+                    <label htmlFor="markFinalDrying" className="text-xs font-semibold cursor-pointer flex-1 flex items-center justify-between">
+                      <span className="text-foreground">Mark as Final Entry (Complete Batch)</span>
+                      {val >= total ? (
+                        <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                          100% Target Met
+                        </span>
+                      ) : isMarkFinal ? (
+                        <span className="text-[10px] font-mono font-bold text-orange-600 dark:text-orange-400">
+                          Ready to Close
+                        </span>
+                      ) : null}
+                    </label>
+                  </div>
+
+                  {/* Wastage & Completion Remarks */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span>{isFinishing ? 'Wastage & Completion Remarks' : 'Wastage & Shift Remarks'}</span>
+                      </label>
+                      {isFinishing && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-orange-500/10 text-orange-700 dark:text-orange-300 border border-orange-500/20">
+                          Final Closure
+                        </span>
+                      )}
                     </div>
-                    <div className="text-right">
-                      <span className="text-muted-foreground block text-[11px]">Per Worker ({workerCount}):</span>
-                      <span className="font-mono font-semibold text-foreground">
-                        ₹{perWorker.toFixed(2)}
-                      </span>
-                    </div>
+
+                    <textarea
+                      rows={3}
+                      value={wastageDescription}
+                      onChange={(e) => setWastageDescription(e.target.value)}
+                      placeholder={
+                        isFinishing
+                          ? 'Enter drying shrinkage, defect scrap, or closure remarks (optional)...'
+                          : 'Enter shift notes, shrinkage, or damp defect details (optional)...'
+                      }
+                      className="w-full rounded-md border border-input bg-background p-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-orange-500 font-sans"
+                    />
                   </div>
                 </div>
               );
@@ -525,6 +627,8 @@ export default function DryingPage() {
                 onClick={() => {
                   setSelectedBatchForProgress(null);
                   setNewCompletedPieces('');
+                  setIsMarkFinal(false);
+                  setWastageDescription('');
                 }}
                 disabled={updateProgressMutation.isPending}
               >
@@ -544,7 +648,11 @@ export default function DryingPage() {
                 className="bg-orange-600 hover:bg-orange-700 text-white gap-1.5"
               >
                 <Check className="h-4 w-4" />
-                {updateProgressMutation.isPending ? 'Saving...' : 'Save & Update Progress'}
+                {updateProgressMutation.isPending
+                  ? 'Saving...'
+                  : (isMarkFinal || Number(newCompletedPieces) >= selectedBatchForProgress.totalPieces)
+                  ? 'Finish Batch & Save Final Entry'
+                  : 'Save & Update Progress'}
               </Button>
             </div>
           </div>

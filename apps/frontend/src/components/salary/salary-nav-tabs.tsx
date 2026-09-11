@@ -36,7 +36,7 @@ export function SalaryNavTabs() {
   ];
 
   return (
-    <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto select-none">
+    <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto touch-scroll no-scrollbar select-none">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         if (tab.isActive) {

@@ -256,15 +256,20 @@ export function exportEmployeeReportToPDF(report: EmployeeReportData) {
       fillColor: [248, 250, 252],
     },
     columnStyles: {
-      0: { cellWidth: 20 }, // Date
-      1: { cellWidth: 12 }, // Day
-      2: { cellWidth: 22 }, // Status
-      3: { cellWidth: 18 }, // In
-      4: { cellWidth: 18 }, // Out
-      5: { cellWidth: 20 }, // Work Time
-      6: { cellWidth: 18 }, // OT Time
-      7: { cellWidth: 18 }, // OT Pay
-      8: { cellWidth: 'auto' }, // Remarks
+      0: { cellWidth: 20, halign: 'left' }, // Date
+      1: { cellWidth: 12, halign: 'center' }, // Day
+      2: { cellWidth: 22, halign: 'center' }, // Status
+      3: { cellWidth: 18, halign: 'center' }, // In
+      4: { cellWidth: 18, halign: 'center' }, // Out
+      5: { cellWidth: 20, halign: 'right' }, // Work Time
+      6: { cellWidth: 18, halign: 'right' }, // OT Time
+      7: { cellWidth: 18, halign: 'right' }, // OT Pay
+      8: { cellWidth: 'auto', halign: 'left' }, // Remarks
+    },
+    didParseCell: (data: any) => {
+      if (data.section === 'head' && data.column?.styles?.halign) {
+        data.cell.styles.halign = data.column.styles.halign;
+      }
     },
     didDrawPage: (data) => {
       // Page Footer

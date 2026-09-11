@@ -18,6 +18,8 @@ import {
   Boxes,
   Eye,
   Check,
+  AlertTriangle,
+  FileText,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,6 +46,8 @@ export default function MopingPadProductionPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBatchForProgress, setSelectedBatchForProgress] = useState<any | null>(null);
   const [newCompletedQuantity, setNewCompletedQuantity] = useState<number | ''>('');
+  const [isMarkFinal, setIsMarkFinal] = useState(false);
+  const [wastageDescription, setWastageDescription] = useState('');
 
   const { data: stats } = useMopingPadDashboard();
   const { data: batchesData, isLoading } = useMopingPadBatches({
@@ -78,14 +82,26 @@ export default function MopingPadProductionPage() {
       return;
     }
 
+    const isFinishing = isMarkFinal || val >= outputQuantity;
+
     try {
       await updateProgressMutation.mutateAsync({
         id,
         completedQuantity: val,
+        status: isFinishing ? 'COMPLETED' : undefined,
+        notes: isFinishing ? wastageDescription.trim() || undefined : undefined,
       });
-      toast('Progress Logged', `Logged ${val} pads completed out of ${outputQuantity}`, 'success');
+      toast(
+        isFinishing ? 'Batch Completed' : 'Progress Logged',
+        isFinishing
+          ? `Batch finished! Logged ${val}/${outputQuantity} pads with final wastage description.`
+          : `Logged ${val} pads completed out of ${outputQuantity}`,
+        'success'
+      );
       setSelectedBatchForProgress(null);
       setNewCompletedQuantity('');
+      setIsMarkFinal(false);
+      setWastageDescription('');
     } catch (e: any) {
       toast('Update Failed', e?.message || 'Failed to update progress', 'error');
     }
@@ -400,21 +416,51 @@ export default function MopingPadProductionPage() {
                     {/* Action */}
                     <td className="py-3.5 px-4 text-center">
                       {batch.status !== 'COMPLETED' ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedBatchForProgress(batch);
-                            setNewCompletedQuantity(batch.completedQuantity || 0);
-                          }}
-                          className="h-7 px-2.5 text-[11px] gap-1 text-amber-600 hover:text-amber-700 hover:bg-amber-500/10 border-amber-500/30"
-                        >
-                          <span>Log Progress</span>
-                        </Button>
+                        <div className="flex flex-col items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedBatchForProgress(batch);
+                              setNewCompletedQuantity(batch.completedQuantity || 0);
+                              setIsMarkFinal((batch.completedQuantity || 0) >= batch.outputQuantity);
+                              setWastageDescription(batch.notes || '');
+                            }}
+                            className="h-7 px-2.5 text-[11px] gap-1 text-amber-600 hover:text-amber-700 hover:bg-amber-500/10 border-amber-500/30 font-semibold shadow-2xs"
+                          >
+                            <span>Log Progress</span>
+                          </Button>
+                          {batch.notes && (
+                            <span className="text-[10px] text-muted-foreground italic truncate max-w-[130px] block" title={batch.notes}>
+                              📝 {batch.notes}
+                            </span>
+                          )}
+                        </div>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                          <Check className="h-3.5 w-3.5" /> Finished
-                        </span>
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            <Check className="h-3.5 w-3.5" /> Finished
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedBatchForProgress(batch);
+                              setNewCompletedQuantity(batch.completedQuantity || batch.outputQuantity);
+                              setIsMarkFinal(true);
+                              setWastageDescription(batch.notes || '');
+                            }}
+                            className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground gap-1 border-border/70 hover:bg-secondary/50"
+                          >
+                            <FileText className="h-3 w-3 text-amber-500" />
+                            <span>View / Edit Wastage</span>
+                          </Button>
+                          {batch.notes && (
+                            <span className="text-[10px] text-amber-700 dark:text-amber-300 font-medium truncate max-w-[130px] bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20" title={batch.notes}>
+                              📝 {batch.notes}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -432,6 +478,8 @@ export default function MopingPadProductionPage() {
           onClose={() => {
             setSelectedBatchForProgress(null);
             setNewCompletedQuantity('');
+            setIsMarkFinal(false);
+            setWastageDescription('');
           }}
           title="Log Production Progress"
           description={`Update completed pads for batch ${selectedBatchForProgress.batchNumber}`}
@@ -525,38 +573,92 @@ export default function MopingPadProductionPage() {
               </div>
             </div>
 
-            {/* Live Progress Preview */}
+            {/* Live Progress Preview & Wastage Section */}
             {(() => {
               const val = typeof newCompletedQuantity === 'number' ? newCompletedQuantity : 0;
               const total = selectedBatchForProgress.outputQuantity;
               const pct = total > 0 ? Math.min(100, Math.round((val / total) * 1000) / 10) : 0;
               const pending = Math.max(0, total - val);
+              const isFinishing = isMarkFinal || val >= total;
 
               return (
-                <div className="p-3.5 rounded-lg bg-amber-500/5 border border-amber-500/20 space-y-2">
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="font-semibold text-foreground">
-                      Progress Preview: {val} / {total} pads
-                    </span>
-                    <span className="font-bold text-amber-600 dark:text-amber-400">
-                      {pct}%
-                    </span>
-                  </div>
-                  <div className="w-full h-2.5 bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-300 ${
-                        pct === 100 ? 'bg-emerald-500' : 'bg-amber-500'
-                      }`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono">
-                    <span>{pending} pads remaining</span>
-                    {pct === 100 && (
-                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                        <Check className="h-3 w-3" /> Ready to mark Completed
+                <div className="space-y-4">
+                  <div className="p-3.5 rounded-lg bg-amber-500/5 border border-amber-500/20 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="font-semibold text-foreground">
+                        Progress Preview: {val} / {total} pads
                       </span>
-                    )}
+                      <span className="font-bold text-amber-600 dark:text-amber-400">
+                        {pct}%
+                      </span>
+                    </div>
+                    <div className="w-full h-2.5 bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          pct === 100 ? 'bg-emerald-500' : 'bg-amber-500'
+                        }`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono">
+                      <span>{pending} pads remaining</span>
+                      {isFinishing && (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                          <Check className="h-3 w-3" /> Ready to mark Completed
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Final Entry Toggle */}
+                  <div className="flex items-center gap-2.5 px-1 py-1">
+                    <input
+                      type="checkbox"
+                      id="markFinalMoping"
+                      checked={isFinishing}
+                      onChange={(e) => setIsMarkFinal(e.target.checked)}
+                      disabled={val >= total}
+                      className="rounded border-border text-amber-600 focus:ring-amber-500 h-4 w-4 cursor-pointer disabled:opacity-75"
+                    />
+                    <label htmlFor="markFinalMoping" className="text-xs font-semibold cursor-pointer flex-1 flex items-center justify-between">
+                      <span className="text-foreground">Mark as Final Entry (Complete Batch)</span>
+                      {val >= total ? (
+                        <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                          100% Target Met
+                        </span>
+                      ) : isMarkFinal ? (
+                        <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400">
+                          Ready to Close
+                        </span>
+                      ) : null}
+                    </label>
+                  </div>
+
+                  {/* Wastage & Completion Remarks */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span>{isFinishing ? 'Wastage & Completion Remarks' : 'Wastage & Shift Remarks'}</span>
+                      </label>
+                      {isFinishing && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                          Final Closure
+                        </span>
+                      )}
+                    </div>
+
+                    <textarea
+                      rows={3}
+                      value={wastageDescription}
+                      onChange={(e) => setWastageDescription(e.target.value)}
+                      placeholder={
+                        isFinishing
+                          ? 'Enter fabric scrap, rejected pieces, or closure remarks (optional)...'
+                          : 'Enter shift notes or scrap details (optional)...'
+                      }
+                      className="w-full rounded-md border border-input bg-background p-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-amber-500 font-sans"
+                    />
                   </div>
                 </div>
               );
@@ -570,6 +672,8 @@ export default function MopingPadProductionPage() {
                 onClick={() => {
                   setSelectedBatchForProgress(null);
                   setNewCompletedQuantity('');
+                  setIsMarkFinal(false);
+                  setWastageDescription('');
                 }}
                 disabled={updateProgressMutation.isPending}
               >
@@ -589,7 +693,11 @@ export default function MopingPadProductionPage() {
                 className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5"
               >
                 <Check className="h-4 w-4" />
-                {updateProgressMutation.isPending ? 'Saving...' : 'Save & Update Progress'}
+                {updateProgressMutation.isPending
+                  ? 'Saving...'
+                  : (isMarkFinal || Number(newCompletedQuantity) >= selectedBatchForProgress.outputQuantity)
+                  ? 'Finish Batch & Save Final Entry'
+                  : 'Save & Update Progress'}
               </Button>
             </div>
           </div>

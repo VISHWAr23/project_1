@@ -319,10 +319,10 @@ export default function JobWorkProductionHubPage() {
   return (
     <div className="space-y-8 pb-12">
       {/* Top Banner / Breadcrumb & Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border pb-5">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 border-b border-border pb-4 sm:pb-5">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-foreground">
               Job Work & Production Operations
             </h1>
             <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
@@ -331,15 +331,15 @@ export default function JobWorkProductionHubPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Link href="/employees">
-            <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Link href="/employees" className="flex-1 sm:flex-initial">
+            <Button variant="outline" size="sm" fullWidth className="h-9 gap-1.5 text-xs min-h-[36px]">
               <Users className="h-4 w-4 text-emerald-600" />
               <span>Staff ({activeEmployeesCount})</span>
             </Button>
           </Link>
-          <Link href="/job-work/vendors">
-            <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs border-blue-500/30 hover:bg-blue-500/10 text-foreground">
+          <Link href="/job-work/vendors" className="flex-1 sm:flex-initial">
+            <Button variant="outline" size="sm" fullWidth className="h-9 gap-1.5 text-xs border-blue-500/30 hover:bg-blue-500/10 text-foreground min-h-[36px]">
               <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               <span>Vendors ({companies.length})</span>
             </Button>
@@ -876,11 +876,11 @@ export default function JobWorkProductionHubPage() {
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex items-center flex-wrap gap-1 bg-secondary/50 p-1 rounded-lg border border-border/60 text-xs">
+          <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-lg border border-border/60 text-xs overflow-x-auto touch-scroll no-scrollbar w-full sm:w-auto">
             <button
               type="button"
               onClick={() => setActiveTab('all')}
-              className={`px-2.5 py-1 rounded-md transition-colors ${
+              className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap shrink-0 min-h-[32px] ${
                 activeTab === 'all'
                   ? 'bg-background font-semibold text-foreground shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
@@ -891,7 +891,7 @@ export default function JobWorkProductionHubPage() {
             <button
               type="button"
               onClick={() => setActiveTab('gauze')}
-              className={`px-2.5 py-1 rounded-md transition-colors ${
+              className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap shrink-0 min-h-[32px] ${
                 activeTab === 'gauze'
                   ? 'bg-background font-semibold text-blue-600 dark:text-blue-400 shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
@@ -902,7 +902,7 @@ export default function JobWorkProductionHubPage() {
             <button
               type="button"
               onClick={() => setActiveTab('gamjee')}
-              className={`px-2.5 py-1 rounded-md transition-colors ${
+              className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap shrink-0 min-h-[32px] ${
                 activeTab === 'gamjee'
                   ? 'bg-background font-semibold text-emerald-600 dark:text-emerald-400 shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
@@ -913,7 +913,7 @@ export default function JobWorkProductionHubPage() {
             <button
               type="button"
               onClick={() => setActiveTab('moping-pad')}
-              className={`px-2.5 py-1 rounded-md transition-colors ${
+              className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap shrink-0 min-h-[32px] ${
                 activeTab === 'moping-pad'
                   ? 'bg-background font-semibold text-amber-600 dark:text-amber-400 shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
@@ -924,7 +924,7 @@ export default function JobWorkProductionHubPage() {
             <button
               type="button"
               onClick={() => setActiveTab('gauze-pad-pinning')}
-              className={`px-2.5 py-1 rounded-md transition-colors ${
+              className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap shrink-0 min-h-[32px] ${
                 activeTab === 'gauze-pad-pinning'
                   ? 'bg-background font-semibold text-cyan-600 dark:text-cyan-400 shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
@@ -935,7 +935,7 @@ export default function JobWorkProductionHubPage() {
             <button
               type="button"
               onClick={() => setActiveTab('drying')}
-              className={`px-2.5 py-1 rounded-md transition-colors ${
+              className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap shrink-0 min-h-[32px] ${
                 activeTab === 'drying'
                   ? 'bg-background font-semibold text-orange-600 dark:text-orange-400 shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
@@ -946,7 +946,7 @@ export default function JobWorkProductionHubPage() {
             <button
               type="button"
               onClick={() => setActiveTab('pillow-bedsheet')}
-              className={`px-2.5 py-1 rounded-md transition-colors ${
+              className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap shrink-0 min-h-[32px] ${
                 activeTab === 'pillow-bedsheet'
                   ? 'bg-background font-semibold text-purple-600 dark:text-purple-400 shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'

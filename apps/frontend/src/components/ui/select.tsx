@@ -17,7 +17,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         <div className="relative">
           <select
             ref={ref}
-            className={`w-full appearance-none bg-secondary/50 text-foreground text-xs rounded-sm border border-border px-3 py-2.5 pr-8 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors ${className}`}
+            className={`w-full appearance-none bg-secondary/50 text-foreground text-sm sm:text-xs rounded-sm border border-border px-3 py-2.5 pr-8 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors ${className}`}
             {...props}
           >
             {options.map((opt) => (

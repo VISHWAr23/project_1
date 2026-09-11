@@ -131,56 +131,18 @@ const INITIAL_BATCHES: PillowBedsheetBatch[] = [
     totalSalary: 585.0,
     workerSalaryShare: 292.5,
     executorType: 'WORKERS',
-    workerIds: ['emp-101', 'emp-102'],
-    workerNames: 'Anitha R., Selvi M.',
+    workerIds: ['emp-1', 'emp-2'],
+    workerNames: 'Ramesh Kumar, Suresh Patel',
     dcNo: 'DC-BS-01',
     dcDate: '2026-09-02',
     ends: '1140',
     itemType: '22x16',
     status: 'IN_PROGRESS',
     startDate: '2026-09-02',
-    targetDate: '2026-09-10',
+    targetDate: '2026-09-18',
     notes: 'Premium 100% bleached cotton bed sheet cutting & hemming.',
     createdAt: '2026-09-02T09:00:00.000Z',
     updatedAt: '2026-09-04T14:30:00.000Z',
-  },
-  {
-    id: 'pbs-batch-102',
-    batchNumber: 'PBS-2026-002',
-    productName: 'Standard Envelope Pillow Cover (45x70cm)',
-    productType: 'PILLOW_COVER',
-    weightKg: 40,
-    gsm: 120,
-    rollWidth: 120,
-    rollWidthUom: 'cm',
-    rollWidthInMeters: 1.2,
-    totalLength: 277.778, // ((40*1000)/1.2)/120
-    pillowCoverCuttingLength: 0.8,
-    pillowCoverCuttingLengthUom: 'm',
-    cuttingCount: 2,
-    outputQuantity: 694, // Math.floor(277.778 / 0.8) * 2 = 347 * 2
-    remnantLength: 0.178,
-    completedQuantity: 694,
-    pendingQuantity: 0,
-    completionPercentage: 100,
-    salaryRatePerUnit: 1.25,
-    totalSalary: 867.5,
-    workerSalaryShare: 867.5,
-    executorType: 'COMPANY',
-    companyId: 'comp-102',
-    companyName: 'Sri Balaji Tex Job Works',
-    deliveryPerson: 'Senthil Murugan',
-    vehicleNumber: 'TN-38-BZ-4412',
-    dcNo: 'DC-PC-08',
-    dcDate: '2026-08-28',
-    ends: '1140',
-    itemType: '23x17',
-    status: 'COMPLETED',
-    startDate: '2026-08-28',
-    completionDate: '2026-09-01',
-    notes: 'All 694 pillow covers inspected, packaged, and accepted.',
-    createdAt: '2026-08-28T10:00:00.000Z',
-    updatedAt: '2026-09-01T17:00:00.000Z',
   },
 ];
 
@@ -439,7 +401,8 @@ class PillowBedsheetProductionService {
   public async updateProgress(
     id: string,
     completedQuantity: number,
-    status?: PillowBedsheetBatchStatus
+    status?: PillowBedsheetBatchStatus,
+    notes?: string
   ): Promise<PillowBedsheetBatch> {
     const list = this.getStoredBatches();
     const batch = list.find((b) => b.id === id);
@@ -458,10 +421,28 @@ class PillowBedsheetProductionService {
       finalStatus = 'IN_PROGRESS';
     }
 
+    const isCompleted = finalStatus === 'COMPLETED';
+    let updatedNotes = batch.notes;
+    if (notes !== undefined) {
+      const trimmed = notes.trim();
+      if (!trimmed) {
+        updatedNotes = undefined;
+      } else if (trimmed === batch.notes?.trim()) {
+        updatedNotes = batch.notes;
+      } else if (trimmed.includes('[Final Wastage') || trimmed.includes('[Progress')) {
+        updatedNotes = trimmed;
+      } else {
+        updatedNotes = batch.notes
+          ? `${batch.notes}\n[${isCompleted ? 'Final Wastage' : 'Progress'}]: ${trimmed}`
+          : `[${isCompleted ? 'Final Wastage' : 'Progress'}]: ${trimmed}`;
+      }
+    }
+
     batch.completedQuantity = completed;
     batch.pendingQuantity = pending;
     batch.completionPercentage = completionPercentage;
     batch.status = finalStatus;
+    batch.notes = updatedNotes;
     batch.updatedAt = new Date().toISOString();
 
     this.setStoredBatches(list);

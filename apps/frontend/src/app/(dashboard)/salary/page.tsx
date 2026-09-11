@@ -36,18 +36,19 @@ export default function SalaryDashboardPage() {
       className="space-y-6"
     >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-border pb-4 sm:pb-5">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
             Salary & Payroll Management
           </h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button
             variant="primary"
             size="sm"
             onClick={() => setIsGenerateOpen(true)}
             leftIcon={<Play className="h-3.5 w-3.5 fill-current" />}
+            className="w-full sm:w-auto justify-center"
           >
             Run Monthly Payroll
           </Button>
@@ -62,14 +63,14 @@ export default function SalaryDashboardPage() {
 
 
       {/* Active Run Table Section */}
-      <Card className="p-5 border border-border/60 space-y-4">
+      <Card className="p-3.5 sm:p-5 border border-border/60 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-[#3ECF8E]/10 text-[#3ECF8E]">
+            <div className="p-2 rounded-lg bg-[#3ECF8E]/10 text-[#3ECF8E] shrink-0">
               <FileText className="h-5 w-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-bold text-foreground text-sm">
                   {currentRun ? `Payroll Batch ${currentRun.payrollCode}` : 'Current Month Payroll'}
                 </h3>
@@ -93,15 +94,15 @@ export default function SalaryDashboardPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Link href="/salary/list">
-              <Button variant="ghost" size="sm" leftIcon={<ListFilter className="h-3.5 w-3.5" />}>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Link href="/salary/list" className="flex-1 sm:flex-initial">
+              <Button variant="ghost" size="sm" leftIcon={<ListFilter className="h-3.5 w-3.5" />} className="w-full justify-center">
                 View All Batches
               </Button>
             </Link>
             {currentRun && (
-              <Link href={`/salary/${currentRun.id}`}>
-                <Button variant="outline" size="sm">
+              <Link href={`/salary/${currentRun.id}`} className="flex-1 sm:flex-initial">
+                <Button variant="outline" size="sm" className="w-full justify-center">
                   Batch Details
                 </Button>
               </Link>

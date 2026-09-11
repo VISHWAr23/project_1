@@ -332,15 +332,15 @@ export default function RawMaterialsCustomersPage() {
       className="space-y-6 pb-12 w-full"
     >
       {/* Top Header - Identical to Suppliers module */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-border pb-4 sm:pb-5">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Link href="/raw-materials">
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
           <div>
-            <h1 className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
+            <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
               <UserCheck className="h-5 w-5 text-[#3ECF8E]" />
               Customer Master Directory
             </h1>
@@ -352,16 +352,17 @@ export default function RawMaterialsCustomersPage() {
           size="sm"
           onClick={() => setIsCreateOpen(true)}
           leftIcon={<Plus className="h-3.5 w-3.5" />}
+          className="w-full sm:w-auto justify-center"
         >
           Add New Customer
         </Button>
       </div>
 
       {/* Filter Control Bar */}
-      <div className="bg-secondary/20 border border-border rounded-xl p-4 space-y-3">
+      <div className="bg-secondary/20 border border-border rounded-xl p-3 sm:p-4 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-            <Filter className="h-3.5 w-3.5 text-[#3ECF8E]" /> Search & Filter Customer Accounts
+            <Filter className="h-3.5 w-3.5 text-[#3ECF8E]" /> Search & Filter
           </span>
           <Button
             variant="ghost"
@@ -372,6 +373,7 @@ export default function RawMaterialsCustomersPage() {
               setSelectedStatus('');
               refetch();
             }}
+            className="text-xs h-7"
           >
             Clear Filters
           </Button>
@@ -382,10 +384,10 @@ export default function RawMaterialsCustomersPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search Company, Code, Contact, GSTIN, City..."
+              placeholder="Search Company, Code, GSTIN, City..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-secondary/60 text-foreground text-xs pl-9 pr-3 py-2 rounded-md border border-border focus:outline-none focus:border-[#3ECF8E]"
+              className="w-full bg-secondary/60 text-foreground text-sm sm:text-xs pl-9 pr-3 py-2 rounded-md border border-border focus:outline-none focus:border-[#3ECF8E]"
             />
           </div>
 

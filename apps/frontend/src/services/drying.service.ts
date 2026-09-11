@@ -88,6 +88,7 @@ export interface UpdateDryingProgressInput {
   id: string;
   completedPieces: number;
   status?: DryingBatchStatus;
+  notes?: string;
 }
 
 export interface DryingDashboardStats {
@@ -112,61 +113,28 @@ const DEFAULT_BATCHES: DryingBatch[] = [
     pieceWidthUom: 'cm',
     totalPieces: 100,
     totalLength: 2300,
-    completedPieces: 0,
-    pendingPieces: 100,
-    completedLength: 0,
-    completionPercentage: 0,
+    completedPieces: 40,
+    pendingPieces: 60,
+    completedLength: 920,
+    completionPercentage: 40,
     salaryRatePerMeter: 0.1,
     totalSalary: 230,
-    earnedSalary: 0,
-    workerSalaryShare: 0,
+    earnedSalary: 92,
+    workerSalaryShare: 46,
     executorType: 'WORKERS',
     workerIds: ['emp-1', 'emp-2'],
-    workerNames: 'Anitha Sharma, Rajesh Kumar',
-    dcNo: 'DC-05',
+    workerNames: 'Ramesh Kumar, Suresh Patel',
+    dcNo: 'DC-01',
     dcDate: '2026-09-06',
     ends: '1140',
     itemType: '22x14',
     status: 'IN_PROGRESS',
     startDate: '2026-09-06',
-    targetDate: '2026-09-07',
+    targetDate: '2026-09-18',
     dryingChamberOrLine: 'Drying Chamber Line 1',
     notes: 'Hot air drying chamber run - ready for progress logging',
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'dry-batch-2',
-    batchNumber: 'DRY-2026-002',
-    productName: 'Sterile Surgical Bandage Strips (15m)',
-    pieceLength: 15,
-    pieceLengthUom: 'm',
-    pieceWidth: 100,
-    pieceWidthUom: 'cm',
-    totalPieces: 80,
-    totalLength: 1200,
-    completedPieces: 80,
-    pendingPieces: 0,
-    completedLength: 1200,
-    completionPercentage: 100,
-    salaryRatePerMeter: 0.1,
-    totalSalary: 120,
-    earnedSalary: 120,
-    workerSalaryShare: 120,
-    executorType: 'WORKERS',
-    workerIds: ['emp-3'],
-    workerNames: 'Venkatesh Murugan',
-    dcNo: 'DC-03',
-    dcDate: '2026-09-03',
-    ends: '1140',
-    itemType: '23x17',
-    status: 'COMPLETED',
-    startDate: '2026-09-03',
-    completionDate: '2026-09-04',
-    dryingChamberOrLine: 'Drying Chamber Line 2',
-    notes: 'Full run complete & quality approved',
-    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
   },
 ];
 
@@ -379,7 +347,23 @@ class DryingService {
       workerCount
     );
 
-    const isCompleted = completedPieces >= current.totalPieces;
+    const isCompleted = completedPieces >= current.totalPieces || input.status === 'COMPLETED';
+    let updatedNotes = current.notes;
+    if (input.notes !== undefined) {
+      const trimmed = input.notes.trim();
+      if (!trimmed) {
+        updatedNotes = undefined;
+      } else if (trimmed === current.notes?.trim()) {
+        updatedNotes = current.notes;
+      } else if (trimmed.includes('[Final Wastage') || trimmed.includes('[Progress')) {
+        updatedNotes = trimmed;
+      } else {
+        updatedNotes = current.notes
+          ? `${current.notes}\n[${isCompleted ? 'Final Wastage' : 'Progress'}]: ${trimmed}`
+          : `[${isCompleted ? 'Final Wastage' : 'Progress'}]: ${trimmed}`;
+      }
+    }
+
     const updated: DryingBatch = {
       ...current,
       completedPieces,
@@ -390,6 +374,7 @@ class DryingService {
       earnedSalary,
       workerSalaryShare,
       status: input.status || (isCompleted ? 'COMPLETED' : 'IN_PROGRESS'),
+      notes: updatedNotes,
       completionDate: isCompleted ? new Date().toISOString().split('T')[0] : current.completionDate,
       updatedAt: new Date().toISOString(),
     };

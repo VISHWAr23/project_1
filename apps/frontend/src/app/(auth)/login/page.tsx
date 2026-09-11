@@ -46,19 +46,19 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col justify-between p-4 sm:p-6 selection:bg-blue-500/20 selection:text-blue-600 font-sans">
+    <div className="min-h-screen min-h-dvh bg-background text-foreground flex flex-col justify-between p-3.5 sm:p-6 selection:bg-blue-500/20 selection:text-blue-600 font-sans touch-scroll">
       {/* Top Header */}
       <header className="max-w-5xl w-full mx-auto flex justify-between items-center py-2">
         <Link
           href="/"
-          className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors min-h-[38px]"
         >
           <ArrowLeft className="h-4 w-4 text-blue-600 dark:text-blue-400" /> Return to Landing Page
         </Link>
 
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-colors border border-border"
+          className="p-2 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-colors border border-border min-h-[38px] min-w-[38px] flex items-center justify-center"
           title="Toggle Theme"
           aria-label="Toggle theme"
         >
@@ -71,15 +71,15 @@ export default function LoginPage() {
         initial={{ opacity: 0, scale: 0.97, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="max-w-md w-full mx-auto my-auto space-y-6"
+        className="max-w-md w-full mx-auto my-auto py-4 sm:py-6 space-y-5 sm:space-y-6"
       >
         {/* Brand Header */}
         <div className="text-center space-y-2">
           <div className="inline-flex justify-center">
-            <AppLogo size="lg" className="w-14 h-14 rounded-2xl shadow-xl shadow-blue-600/25" />
+            <AppLogo size="lg" className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl shadow-xl shadow-blue-600/25" />
           </div>
           <div className="space-y-0.5">
-            <h1 className="text-2xl font-black tracking-tight text-foreground">Shri Lathikka Surgicals</h1>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground">Shri Lathikka Surgicals</h1>
             <p className="text-xs text-muted-foreground">
               Internal Enterprise Inventory Portal
             </p>
@@ -87,7 +87,7 @@ export default function LoginPage() {
         </div>
 
         {/* Clean Login Card */}
-        <div className="bg-card border border-border rounded-xl p-6 shadow-2xl space-y-5">
+        <div className="bg-card border border-border rounded-xl p-4 sm:p-6 shadow-2xl space-y-4 sm:space-y-5">
           {error && (
             <div className="p-3 rounded-md bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs flex items-center gap-2">
               <AlertCircle className="h-4 w-4 shrink-0" />

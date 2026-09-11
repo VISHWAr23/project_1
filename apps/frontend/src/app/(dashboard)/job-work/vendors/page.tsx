@@ -246,16 +246,16 @@ export default function JobWorkVendorsPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Link href="/job-work">
-            <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Link href="/job-work" className="flex-1 sm:flex-initial">
+            <Button variant="outline" size="sm" className="h-8 text-xs gap-1 w-full justify-center">
               <span>Operations Hub</span>
             </Button>
           </Link>
           <Button
             onClick={handleOpenCreate}
             size="sm"
-            className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-sm"
+            className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-sm flex-1 sm:flex-initial justify-center whitespace-nowrap"
           >
             <Plus className="h-3.5 w-3.5" />
             <span>Register Vendor</span>
@@ -264,17 +264,17 @@ export default function JobWorkVendorsPage() {
       </div>
 
       {/* KPI Metric Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
         <Card className="p-3 sm:p-4 bg-card border-border">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground font-medium">Total Registered</span>
-            <div className="w-7 h-7 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+            <span className="text-[11px] sm:text-xs text-muted-foreground font-medium truncate">Total Registered</span>
+            <div className="w-7 h-7 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
               <Building2 className="h-3.5 w-3.5" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-2xl font-bold font-mono text-foreground">{totalVendors}</span>
-            <span className="text-[11px] text-muted-foreground font-mono">Vendors</span>
+          <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5">
+            <span className="text-xl sm:text-2xl font-bold font-mono text-foreground">{totalVendors}</span>
+            <span className="text-[10px] sm:text-[11px] text-muted-foreground font-mono">Vendors</span>
           </div>
         </Card>
 

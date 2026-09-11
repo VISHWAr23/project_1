@@ -193,50 +193,50 @@ export default function FabricCostingPage() {
   const activeColumnDefs = ALL_AVAILABLE_COLUMNS.filter((c) => visibleColumns.includes(c.id));
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
+    <div className="space-y-6 max-w-[1600px] mx-auto">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-border/80 pb-4 sm:pb-5">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-xl bg-primary/10 text-primary shadow-xs">
-              <Calculator className="w-6 h-6" />
+            <div className="p-2 sm:p-2.5 rounded-xl bg-primary/10 text-primary shadow-xs shrink-0">
+              <Calculator className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground">
+              <h1 className="text-lg sm:text-2xl font-black tracking-tight text-foreground">
                 Gray Roll Production & Bleaching Cost
               </h1>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[11px] sm:text-xs text-muted-foreground truncate">
                 சாம்பல் துணி உற்பத்தி மற்றும் பிளீச்சிங் அடக்கவிலை கணக்கீட்டு தொகுதி
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
           <Button
             variant="outline"
             size="sm"
             onClick={handleExportCsv}
             disabled={items.length === 0}
-            className="text-xs h-9 gap-1.5"
+            className="text-xs h-9 gap-1.5 flex-1 sm:flex-initial justify-center"
             title="Export current table data to CSV"
           >
             <Download className="w-4 h-4" />
-            Export CSV
+            Export
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setIsCustomizerOpen(true)}
-            className="text-xs h-9 gap-1.5 border-border hover:bg-muted/50"
+            className="text-xs h-9 gap-1.5 border-border hover:bg-muted/50 flex-1 sm:flex-initial justify-center"
           >
             <SlidersHorizontal className="w-4 h-4 text-primary" />
-            Customize Columns ({visibleColumns.length})
+            Columns ({visibleColumns.length})
           </Button>
           <Button
             size="sm"
             onClick={() => setIsCreateOpen(true)}
-            className="text-xs h-9 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
+            className="text-xs h-9 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs flex-1 sm:flex-initial justify-center whitespace-nowrap"
           >
             <Plus className="w-4 h-4" />
             New Calculation
@@ -245,50 +245,50 @@ export default function FabricCostingPage() {
       </div>
 
       {/* KPI Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 bg-card/60 backdrop-blur-xs border-border/70 flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-primary/10 text-primary">
-            <Calculator className="w-5 h-5" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <Card className="p-3 sm:p-4 bg-card/60 backdrop-blur-xs border-border/70 flex items-center gap-2.5 sm:gap-3">
+          <div className="p-2 sm:p-3 rounded-xl bg-primary/10 text-primary shrink-0">
+            <Calculator className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <div className="text-xs text-muted-foreground font-medium">Saved Formulations</div>
-            <div className="text-xl font-bold font-mono text-foreground mt-0.5">
+          <div className="min-w-0">
+            <div className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">Saved Formulations</div>
+            <div className="text-base sm:text-xl font-bold font-mono text-foreground mt-0.5">
               {statsLoading ? '...' : stats?.totalFormulations || 0}
             </div>
           </div>
         </Card>
 
-        <Card className="p-4 bg-card/60 backdrop-blur-xs border-border/70 flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            <TrendingUp className="w-5 h-5" />
+        <Card className="p-3 sm:p-4 bg-card/60 backdrop-blur-xs border-border/70 flex items-center gap-2.5 sm:gap-3">
+          <div className="p-2 sm:p-3 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <div className="text-xs text-muted-foreground font-medium">Avg Cost / Meter</div>
-            <div className="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
+          <div className="min-w-0">
+            <div className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">Avg Cost / Meter</div>
+            <div className="text-base sm:text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-0.5 truncate">
               {statsLoading ? '...' : `₹${stats?.averageCostPerMeter?.toFixed(2) || '0.00'}`}
             </div>
           </div>
         </Card>
 
-        <Card className="p-4 bg-card/60 backdrop-blur-xs border-border/70 flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
-            <Scale className="w-5 h-5" />
+        <Card className="p-3 sm:p-4 bg-card/60 backdrop-blur-xs border-border/70 flex items-center gap-2.5 sm:gap-3">
+          <div className="p-2 sm:p-3 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+            <Scale className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <div className="text-xs text-muted-foreground font-medium">Avg Fabric Weight</div>
-            <div className="text-xl font-bold font-mono text-blue-600 dark:text-blue-400 mt-0.5">
+          <div className="min-w-0">
+            <div className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">Avg Fabric Weight</div>
+            <div className="text-base sm:text-xl font-bold font-mono text-blue-600 dark:text-blue-400 mt-0.5 truncate">
               {statsLoading ? '...' : `${stats?.averageWeightPerMeterGram?.toFixed(2) || '0.00'} g/m`}
             </div>
           </div>
         </Card>
 
-        <Card className="p-4 bg-card/60 backdrop-blur-xs border-border/70 flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
-            <Layers className="w-5 h-5" />
+        <Card className="p-3 sm:p-4 bg-card/60 backdrop-blur-xs border-border/70 flex items-center gap-2.5 sm:gap-3">
+          <div className="p-2 sm:p-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+            <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <div className="text-xs text-muted-foreground font-medium">Total Fabric Meters</div>
-            <div className="text-xl font-bold font-mono text-foreground mt-0.5">
+          <div className="min-w-0">
+            <div className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">Total Fabric Meters</div>
+            <div className="text-base sm:text-xl font-bold font-mono text-foreground mt-0.5 truncate">
               {statsLoading ? '...' : `${stats?.totalMetersCalculated?.toLocaleString() || '0'} m`}
             </div>
           </div>
@@ -325,7 +325,7 @@ export default function FabricCostingPage() {
       </div>
 
       {/* Dynamic Calculation Table */}
-      <div className="w-full overflow-x-auto rounded-xl border border-border bg-card shadow-xs relative">
+      <div className="w-full overflow-x-auto touch-scroll rounded-xl border border-border bg-card shadow-xs relative">
         <table className="w-full text-xs text-left border-collapse min-w-[900px]">
           <thead>
             <tr className="border-b border-border bg-muted/40 text-muted-foreground font-mono">

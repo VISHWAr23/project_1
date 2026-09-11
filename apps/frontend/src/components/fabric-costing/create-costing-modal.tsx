@@ -104,9 +104,9 @@ export function CreateCostingModal({ isOpen, onClose, onSuccess }: CreateCosting
 
   if (!isOpen) return null;
 
-  const handleLoadNotebookExample = () => {
-    setQualityName('Grey Gauze Roll (780 Ends x 16 Reed x 13 Pick)');
-    setNotes('Standard Mill Formulation from Workshop Notes');
+  const handleLoadStandardGauze = () => {
+    setQualityName('Standard Hospital Gauze 40s (780 Ends x 16 Reed x 13 Pick)');
+    setNotes('Standard Mill Formulation for absorbent gauze rolls');
     setEnds(780);
     setReed(16);
     setPick(13);
@@ -118,6 +118,50 @@ export function CreateCostingModal({ isOpen, onClose, onSuccess }: CreateCosting
     setSizingRatePerKg(38.6);
     setWeavingRatePerMeter(2.015);
     setBleachingRatePerKg(57);
+    setYarnConstant(0.54);
+    setConversionDivisor(1000);
+    setEndsDeduction(24);
+    setMeterToYardFactor(1.12);
+    setBaseReedPicks(16);
+    setFormError(null);
+  };
+
+  const handleLoadBP17Gauze = () => {
+    setQualityName('BP17 Premium Absorbent Gauze 120cm (960 Ends x 20 Reed x 16 Pick)');
+    setNotes('British Pharmacopoeia surgical gauze specification for sterile absorbent pads');
+    setEnds(960);
+    setReed(20);
+    setPick(16);
+    setTotalLengthMeters(1000);
+    setWarpCount(40);
+    setWeftCount(40);
+    setWarpPricePerKg(320);
+    setWeftPricePerKg(310);
+    setSizingRatePerKg(40.0);
+    setWeavingRatePerMeter(2.25);
+    setBleachingRatePerKg(58.0);
+    setYarnConstant(0.54);
+    setConversionDivisor(1000);
+    setEndsDeduction(24);
+    setMeterToYardFactor(1.12);
+    setBaseReedPicks(16);
+    setFormError(null);
+  };
+
+  const handleLoadBedSheeting = () => {
+    setQualityName('Hospital Heavy Sheeting Bed Linen (1240 Ends x 24 Reed x 20 Pick)');
+    setNotes('Commercial bleached sheeting specification for hospital bed linen and surgical covers');
+    setEnds(1240);
+    setReed(24);
+    setPick(20);
+    setTotalLengthMeters(1000);
+    setWarpCount(30);
+    setWeftCount(30);
+    setWarpPricePerKg(295);
+    setWeftPricePerKg(285);
+    setSizingRatePerKg(36.0);
+    setWeavingRatePerMeter(2.50);
+    setBleachingRatePerKg(55.0);
     setYarnConstant(0.54);
     setConversionDivisor(1000);
     setEndsDeduction(24);
@@ -228,21 +272,43 @@ export function CreateCostingModal({ isOpen, onClose, onSuccess }: CreateCosting
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={handleLoadNotebookExample}
-              className="text-xs h-8 gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
-              title="Load exact numbers from notebook: 780 Ends, 16 Reed, 13 Pick, 1000m, 41/40 count"
+              onClick={handleLoadStandardGauze}
+              className="text-xs h-7 px-2.5 gap-1 border-primary/30 text-primary hover:bg-primary/10"
+              title="Standard Gauze 40s (780 Ends x 16 Reed x 13 Pick)"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              Load Notebook Example
+              <Sparkles className="w-3 h-3" />
+              Standard Gauze
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleLoadBP17Gauze}
+              className="text-xs h-7 px-2.5 gap-1 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+              title="BP17 Absorbent Gauze 120cm (960 Ends x 20 Reed x 16 Pick)"
+            >
+              <Sparkles className="w-3 h-3" />
+              BP17 Gauze
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleLoadBedSheeting}
+              className="text-xs h-7 px-2.5 gap-1 border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
+              title="Hospital Heavy Sheeting Bed Linen (1240 Ends x 24 Reed x 20 Pick)"
+            >
+              <Sparkles className="w-3 h-3" />
+              Bed Sheeting
             </Button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors ml-1"
             >
               <X className="w-5 h-5" />
             </button>

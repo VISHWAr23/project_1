@@ -9,6 +9,7 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "ts-node prisma/seed.ts",
+    "db:clean-reseed": "ts-node scripts/selective-clean-reseed.ts",
     "db:studio": "prisma studio"
   },
   "dependencies": {

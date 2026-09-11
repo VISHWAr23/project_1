@@ -35,6 +35,7 @@ export class RawMaterialsService {
     storageLocationId?: string;
     stockStatus?: 'OPTIMAL' | 'LOW_STOCK' | 'OVERSTOCK' | 'OUT_OF_STOCK';
     type?: 'ALL' | 'RM' | 'PM' | 'FG';
+    itemSource?: 'ALL' | 'MANUFACTURED' | 'TRADED';
     page?: number;
     limit?: number;
   }) {
@@ -145,7 +146,7 @@ export class RawMaterialsService {
       prisma.rawMaterial.count({ where }),
     ]);
 
-    // Format & filter by stockStatus and type if specified
+    // Format & filter by stockStatus, type, and itemSource
     const items = rawItems
       .map((item) => {
         const current = Math.max(0, Number(item.currentStockBalance));
@@ -184,6 +185,7 @@ export class RawMaterialsService {
           isFinishedGood: isFG,
           isRawMaterial: isRM,
           classification: isPM ? 'PM' : isFG ? 'FG' : 'RM',
+          itemSource: (item.itemSource || 'MANUFACTURED') as 'MANUFACTURED' | 'TRADED',
         };
       })
       .filter((item) => {
@@ -196,6 +198,10 @@ export class RawMaterialsService {
         if (query.type === 'FG') return item.isFinishedGood;
         if (query.type === 'RM') return item.isRawMaterial;
         return true;
+      })
+      .filter((item) => {
+        if (!query.itemSource || query.itemSource === 'ALL') return true;
+        return (item.itemSource || 'MANUFACTURED') === query.itemSource;
       });
 
     const paginatedItems = items.slice(skip, skip + limit);
@@ -207,6 +213,10 @@ export class RawMaterialsService {
     let outOfStockCount = 0;
     let packagingSkusCount = 0;
     let packagingValuation = 0;
+    let manufacturedFgCount = 0;
+    let manufacturedFgValuation = 0;
+    let tradedFgCount = 0;
+    let tradedFgValuation = 0;
 
     rawItems.forEach((m) => {
       const current = Number(m.currentStockBalance);
@@ -217,6 +227,17 @@ export class RawMaterialsService {
       if (isItemPM(m)) {
         packagingSkusCount++;
         packagingValuation += val;
+      }
+
+      const isFG = !isItemPM(m) && isItemFG(m);
+      if (isFG) {
+        if (m.itemSource === 'TRADED') {
+          tradedFgCount++;
+          tradedFgValuation += val;
+        } else {
+          manufacturedFgCount++;
+          manufacturedFgValuation += val;
+        }
       }
 
       if (current <= 0) outOfStockCount++;
@@ -238,6 +259,10 @@ export class RawMaterialsService {
         outOfStockCount,
         packagingSkusCount,
         packagingValuation,
+        manufacturedFgCount,
+        manufacturedFgValuation,
+        tradedFgCount,
+        tradedFgValuation,
       },
     };
   }
@@ -349,6 +374,7 @@ export class RawMaterialsService {
           remarks: dto.remarks,
           isActive: dto.isActive ?? true,
           brand: dto.brand,
+          itemSource: dto.itemSource || 'MANUFACTURED',
           size: dto.size,
           dimensionInches: dto.dimensionInches,
           dimensionCm: dto.dimensionCm,
@@ -454,6 +480,7 @@ export class RawMaterialsService {
           remarks: dto.remarks,
           isActive: dto.isActive,
           brand: dto.brand,
+          itemSource: dto.itemSource !== undefined ? dto.itemSource : undefined,
           size: dto.size,
           dimensionInches: dto.dimensionInches,
           dimensionCm: dto.dimensionCm,
