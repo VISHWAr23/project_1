@@ -5,6 +5,8 @@ import { UpdateJobWorkOrderDto } from './dto/update-job-work-order.dto';
 import { IssueMaterialsDto } from './dto/issue-materials.dto';
 import { ReceiveReturnDto } from './dto/receive-return.dto';
 import { CloseJobWorkOrderDto } from './dto/close-job-work.dto';
+import { CreateWeavingJobWorkDto } from './dto/create-weaving-job-work.dto';
+import { ReceiveWeavingReturnDto } from './dto/receive-weaving-return.dto';
 
 @Injectable()
 export class JobWorkService {
@@ -50,8 +52,10 @@ export class JobWorkService {
           jobWorkCompany: true,
           rawMaterial: true,
           finishedProduct: true,
+          weavingDetail: true,
+          weavingReceivedItems: true,
           _count: {
-            select: { issueItems: true, returnItems: true },
+            select: { issueItems: true, returnItems: true, weavingReceivedItems: true },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -125,6 +129,13 @@ export class JobWorkService {
             performedByUser: { select: { id: true, email: true } },
           },
           orderBy: { createdAt: 'desc' },
+        },
+        weavingDetail: true,
+        weavingReceivedItems: {
+          include: {
+            receivedByUser: { select: { id: true, email: true } },
+          },
+          orderBy: { date: 'desc' },
         },
       },
     });
@@ -204,6 +215,106 @@ export class JobWorkService {
   }
 
   /**
+   * Create a new Weaving Job Work Order with calculations & mark breakdown
+   */
+  async createWeavingOrder(dto: CreateWeavingJobWorkDto, userId?: string) {
+    const company = await prisma.jobWorkCompany.findUnique({
+      where: { id: dto.jobWorkCompanyId },
+    });
+    if (!company) {
+      throw new BadRequestException('Invalid Job Working Company specified');
+    }
+
+    if (dto.rawMaterialId) {
+      const rawMat = await prisma.rawMaterial.findUnique({
+        where: { id: dto.rawMaterialId },
+      });
+      if (!rawMat) {
+        throw new BadRequestException('Invalid Raw Material specified');
+      }
+    }
+
+    // Auto-generate Job Work Number e.g. JWO-2026-0042
+    const count = await prisma.jobWorkOrder.count();
+    const year = new Date().getFullYear();
+    const jobWorkNumber = `JWO-${year}-${String(count + 1).padStart(4, '0')}`;
+
+    const order = await prisma.$transaction(async (tx) => {
+      const createdOrder = await tx.jobWorkOrder.create({
+        data: {
+          jobWorkNumber,
+          jobWorkType: 'WEAVING',
+          jobWorkCompanyId: dto.jobWorkCompanyId,
+          rawMaterialId: dto.rawMaterialId || null,
+          expectedReturnDate: new Date(dto.expectedReturnDate),
+          totalIssuedWeight: dto.totalReceivableWeightKg,
+          totalIssuedQty: dto.totalPieces,
+          pendingWeight: dto.totalReceivableWeightKg,
+          pendingQty: dto.totalPieces,
+          remarks: dto.remarks,
+          status: JobWorkStatus.CREATED,
+        },
+      });
+
+      // Create WeavingJobWorkDetail
+      const weavingDetail = await tx.weavingJobWorkDetail.create({
+        data: {
+          jobWorkOrderId: createdOrder.id,
+          ends: dto.ends,
+          reed: dto.reed,
+          pick: dto.pick,
+          totalPaavu: dto.totalPaavu,
+          pieceLengthYards: dto.pieceLengthYards ?? 112,
+          pieceLengthMeters: dto.pieceLengthMeters ?? 100,
+          weftCount: dto.weftCount,
+          warpCount: dto.warpCount || null,
+          yarnConstant: dto.yarnConstant ?? 0.54,
+          markBreakdown: dto.markBreakdown as any,
+          totalPieces: dto.totalPieces,
+          weftWeightPerPieceKg: dto.weftWeightPerPieceKg,
+          totalWeftWeightKg: dto.totalWeftWeightKg,
+          warpWeightKg: dto.warpWeightKg ?? 0,
+          totalReceivableWeightKg: dto.totalReceivableWeightKg,
+          salaryType: dto.salaryType || 'Roll',
+          ratePerMeter: dto.ratePerMeter,
+          baseReedPicks: dto.baseReedPicks ?? 16,
+          salaryPerPiece: dto.salaryPerPiece,
+          totalSalary: dto.totalSalary,
+        },
+      });
+
+      // Track timeline history
+      await tx.jobWorkStatusHistory.create({
+        data: {
+          jobWorkOrderId: createdOrder.id,
+          toStatus: JobWorkStatus.CREATED,
+          notes: `Weaving Job Work Order created: ${dto.totalPieces} pcs (${dto.totalPaavu} Paavu), Weft: ${dto.totalWeftWeightKg} kg, Salary: ₹${Number(dto.totalSalary).toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${dto.salaryType} @ ₹${dto.ratePerMeter}/m)`,
+          performedByUserId: userId || null,
+        },
+      });
+
+      // Audit log
+      await tx.auditLog.create({
+        data: {
+          action: 'CREATE_WEAVING_JOB_WORK_ORDER',
+          entityName: 'JobWorkOrder',
+          entityId: createdOrder.id,
+          newValues: { ...createdOrder, weavingDetail } as any,
+          userId: userId || null,
+        },
+      });
+
+      return {
+        ...createdOrder,
+        weavingDetail,
+        jobWorkCompany: company,
+      };
+    });
+
+    return order;
+  }
+
+  /**
    * Issue Materials (Status -> MATERIALS_ISSUED, auto deduct stock, generate Challan)
    */
   async issueMaterials(id: string, dto: IssueMaterialsDto, userId?: string) {
@@ -223,11 +334,16 @@ export class JobWorkService {
     const totalWeight = dto.items.reduce((sum, item) => sum + Number(item.issuedWeight || 0), 0);
     const totalQty = dto.items.reduce((sum, item) => sum + Number(item.issuedQty || 0), 0);
 
-    // Validate stock balance against Weight (Kg)
+    if (!order.rawMaterial || !order.rawMaterialId) {
+      throw new BadRequestException('No raw material is designated for this job work order to issue');
+    }
+
+    const rawMaterialId = order.rawMaterialId;
+    const rawMaterialName = order.rawMaterial.name;
     const stockBalance = Number(order.rawMaterial.currentStockBalance);
     if (stockBalance < totalWeight) {
       throw new BadRequestException(
-        `Insufficient stock for ${order.rawMaterial.name}. Available: ${stockBalance.toFixed(2)} Kg, Requested: ${totalWeight.toFixed(2)} Kg`,
+        `Insufficient stock for ${rawMaterialName}. Available: ${stockBalance.toFixed(2)} Kg, Requested: ${totalWeight.toFixed(2)} Kg`,
       );
     }
 
@@ -243,13 +359,13 @@ export class JobWorkService {
     const updatedOrder = await prisma.$transaction(async (tx) => {
       // 1. Deduct raw material stock in Kg
       const rawMat = await tx.rawMaterial.findUniqueOrThrow({
-        where: { id: order.rawMaterialId },
+        where: { id: rawMaterialId },
       });
       const prevStock = Number(rawMat.currentStockBalance);
       const newStock = Math.max(0, prevStock - totalWeight);
 
       await tx.rawMaterial.update({
-        where: { id: order.rawMaterialId },
+        where: { id: rawMaterialId },
         data: {
           currentStockBalance: newStock,
         },
@@ -259,7 +375,7 @@ export class JobWorkService {
       await tx.inventoryTransaction.create({
         data: {
           transactionType: TransactionType.JOB_WORK_DISPATCH,
-          rawMaterialId: order.rawMaterialId,
+          rawMaterialId: rawMaterialId,
           quantity: totalWeight,
           previousStock: prevStock,
           newStock: newStock,
@@ -499,6 +615,138 @@ export class JobWorkService {
           entityName: 'JobWorkOrder',
           entityId: order.id,
           newValues: { batchReturnedWeight, batchReturnedQty, nextStatus } as any,
+          userId: userId || null,
+        },
+      });
+
+      return orderUpdated;
+    });
+
+    return updatedOrder;
+  }
+
+  /**
+   * Receive Weaving In-Pass Returned Goods
+   * CRITICAL: Stores goods directly in WeavingReceivedItem table
+   * STRICTLY BYPASSES raw_materials inventory table and inventory_transactions
+   */
+  async receiveWeavingReturn(id: string, dto: ReceiveWeavingReturnDto, userId?: string) {
+    const order = await prisma.jobWorkOrder.findUnique({
+      where: { id },
+      include: {
+        weavingDetail: true,
+        weavingReceivedItems: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Job Work Order with ID ${id} not found`);
+    }
+
+    if (order.jobWorkType !== 'WEAVING') {
+      throw new BadRequestException('Order is not a Weaving Job Work Order');
+    }
+
+    if (
+      order.status !== JobWorkStatus.CREATED &&
+      order.status !== JobWorkStatus.MATERIALS_ISSUED &&
+      order.status !== JobWorkStatus.IN_PROGRESS &&
+      order.status !== JobWorkStatus.PARTIAL_RETURN
+    ) {
+      throw new BadRequestException(`Cannot receive returns for order in status ${order.status}`);
+    }
+
+    const batchReturnedWeight = dto.items.reduce((sum, i) => sum + Number(i.weightKg || 0), 0);
+    const batchWastageWeight = dto.items.reduce((sum, i) => sum + Number(i.wastageWeightKg || 0), 0);
+
+    const updatedOrder = await prisma.$transaction(async (tx) => {
+      // 1. Create In-Pass records in WeavingReceivedItem table
+      // (STRICTLY NO raw_materials update or inventoryTransaction creation!)
+      for (const item of dto.items) {
+        await tx.weavingReceivedItem.create({
+          data: {
+            jobWorkOrderId: order.id,
+            date: new Date(item.date),
+            inPassNumber: item.inPassNumber,
+            description: item.description,
+            weightKg: item.weightKg,
+            wastageDescription: item.wastageDescription || null,
+            wastageWeightKg: item.wastageWeightKg || 0,
+            receivedByUserId: userId || null,
+          },
+        });
+      }
+
+      // 2. Cumulative calculation
+      const totalReturnedWeight = Number(order.totalReturnedWeight) + batchReturnedWeight;
+      const totalWastageWeight = Number(order.totalWastageWeight) + batchWastageWeight;
+
+      const expectedWeight = order.weavingDetail
+        ? Number(order.weavingDetail.totalReceivableWeightKg)
+        : Number(order.totalIssuedWeight);
+
+      const pendingWeight = Math.max(0, expectedWeight - totalReturnedWeight - totalWastageWeight);
+
+      // Determine order status
+      let nextStatus: JobWorkStatus;
+      if (dto.isFinal || pendingWeight <= 0.001) {
+        nextStatus = JobWorkStatus.COMPLETED;
+      } else {
+        nextStatus = JobWorkStatus.PARTIAL_RETURN;
+      }
+
+      const orderUpdated = await tx.jobWorkOrder.update({
+        where: { id: order.id },
+        data: {
+          totalReturnedWeight,
+          totalWastageWeight,
+          pendingWeight,
+          status: nextStatus,
+          remarks: dto.remarks
+            ? order.remarks
+              ? `${order.remarks}\n${dto.remarks}`
+              : dto.remarks
+            : order.remarks,
+        },
+        include: {
+          jobWorkCompany: true,
+          weavingDetail: true,
+          weavingReceivedItems: {
+            include: {
+              receivedByUser: { select: { id: true, email: true } },
+            },
+            orderBy: { date: 'desc' },
+          },
+        },
+      });
+
+      // 3. Track timeline history
+      const inPassNumbers = dto.items.map((i) => i.inPassNumber).join(', ');
+      await tx.jobWorkStatusHistory.create({
+        data: {
+          jobWorkOrderId: order.id,
+          fromStatus: order.status,
+          toStatus: nextStatus,
+          notes: `Received In-Pass Weaving Return: ${dto.items.length} item(s) weighing ${batchReturnedWeight.toFixed(2)} kg (Wastage: ${batchWastageWeight.toFixed(2)} kg). In-Pass: ${inPassNumbers}. Recorded in Weaving In-Pass Register.`,
+          performedByUserId: userId || null,
+        },
+      });
+
+      // 4. Audit log
+      await tx.auditLog.create({
+        data: {
+          action: 'RECEIVE_WEAVING_IN_PASS_RETURN',
+          entityName: 'JobWorkOrder',
+          entityId: order.id,
+          newValues: {
+            inPassNumbers,
+            batchReturnedWeight,
+            batchWastageWeight,
+            totalReturnedWeight,
+            totalWastageWeight,
+            pendingWeight,
+            nextStatus,
+          } as any,
           userId: userId || null,
         },
       });
@@ -807,9 +1055,10 @@ export class JobWorkService {
       // If materials were issued, reverse stock back to warehouse
       if (order.status === JobWorkStatus.MATERIALS_ISSUED || order.status === JobWorkStatus.IN_PROGRESS) {
         const issuedWeight = Number(order.totalIssuedWeight) || 0;
-        if (issuedWeight > 0) {
+        if (issuedWeight > 0 && order.rawMaterialId) {
+          const rawMaterialId = order.rawMaterialId;
           const currentMat = await tx.rawMaterial.findUnique({
-            where: { id: order.rawMaterialId },
+            where: { id: rawMaterialId },
           });
 
           if (currentMat) {
@@ -817,13 +1066,13 @@ export class JobWorkService {
             const restoredStock = currentStock + issuedWeight;
 
             await tx.rawMaterial.update({
-              where: { id: order.rawMaterialId },
+              where: { id: rawMaterialId },
               data: { currentStockBalance: restoredStock },
             });
 
             await tx.inventoryTransaction.create({
               data: {
-                rawMaterialId: order.rawMaterialId,
+                rawMaterialId: rawMaterialId,
                 transactionType: TransactionType.ADJUSTMENT_ADD,
                 quantity: issuedWeight,
                 previousStock: currentStock,

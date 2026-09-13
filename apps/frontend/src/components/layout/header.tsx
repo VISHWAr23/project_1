@@ -16,6 +16,7 @@ const ROUTE_LABELS: Record<string, string> = {
   '/fabric-costing': 'Fabric Production & Bleaching Costing',
   '/customer-orders': 'Customer Orders',
   '/job-work': 'Job Work Pipeline',
+  '/weaving-production': 'Weaving Production (நெசவு பணி)',
   '/job-work/vendors': 'Job Work Vendors & Processing Mills',
   '/vendors': 'Job Work Vendors & Processing Mills',
   '/employees': 'Employee Directory',

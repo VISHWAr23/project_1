@@ -110,16 +110,67 @@ export interface JobWorkOrder {
   outputProductWidth?: string;
   remarks?: string;
   closedAt?: string;
+  jobWorkType?: 'STANDARD' | 'WEAVING';
   jobWorkCompanyId: string;
   jobWorkCompany: JobWorkCompany;
-  rawMaterialId: string;
-  rawMaterial: RawMaterialItem;
+  rawMaterialId?: string | null;
+  rawMaterial?: RawMaterialItem | null;
   finishedProductId?: string;
   finishedProduct?: RawMaterialItem;
   closedByUser?: { email: string };
   issueItems?: JobWorkIssueItem[];
   returnItems?: JobWorkReturnItem[];
   statusHistory?: JobWorkStatusHistory[];
+  weavingDetail?: WeavingJobWorkDetail | null;
+  weavingReceivedItems?: WeavingReceivedItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MarkBreakdownItem {
+  mark: number;
+  paavu: number;
+  pieces?: number;
+}
+
+export interface WeavingJobWorkDetail {
+  id: string;
+  jobWorkOrderId: string;
+  ends: number;
+  reed: number;
+  pick: number;
+  totalPaavu: number;
+  pieceLengthYards: number;
+  pieceLengthMeters: number;
+  weftCount: number;
+  warpCount?: number | null;
+  yarnConstant: number;
+  markBreakdown: MarkBreakdownItem[];
+  totalPieces: number;
+  weftWeightPerPieceKg: number;
+  totalWeftWeightKg: number;
+  warpWeightKg: number;
+  totalReceivableWeightKg: number;
+  salaryType: 'Roll' | 'Than' | 'Custom';
+  ratePerMeter: number;
+  baseReedPicks: number;
+  salaryPerPiece: number;
+  totalSalary: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WeavingReceivedItem {
+  id: string;
+  jobWorkOrderId: string;
+  date: string;
+  inPassNumber: string;
+  description: string;
+  weightKg: number;
+  wastageDescription?: string | null;
+  wastageWeightKg: number;
+  receivedByUserId?: string | null;
+  receivedByUser?: { email: string };
   createdAt: string;
   updatedAt: string;
 }
@@ -141,6 +192,56 @@ export interface CreateJobWorkOrderPayload {
   finishedProductId?: string;
   expectedReturnDate: string;
   remarks?: string;
+}
+
+export interface CreateWeavingJobWorkPayload {
+  jobWorkCompanyId: string;
+  jobWorkType?: 'WEAVING';
+  rawMaterialId?: string | null;
+  expectedReturnDate: string;
+  remarks?: string;
+
+  // Weaving Specs
+  ends: number;
+  reed: number;
+  pick: number;
+  totalPaavu: number;
+  pieceLengthYards?: number;
+  pieceLengthMeters?: number;
+  weftCount: number;
+  warpCount?: number | null;
+  yarnConstant?: number;
+  markBreakdown: MarkBreakdownItem[];
+  totalPieces: number;
+
+  // Calculations
+  weftWeightPerPieceKg: number;
+  totalWeftWeightKg: number;
+  warpWeightKg?: number;
+  totalReceivableWeightKg: number;
+
+  // Salary
+  salaryType: 'Roll' | 'Than' | 'Custom';
+  ratePerMeter: number;
+  baseReedPicks?: number;
+  salaryPerPiece: number;
+  totalSalary: number;
+}
+
+export interface WeavingReceivedItemPayload {
+  date: string;
+  inPassNumber: string;
+  description: string;
+  weightKg: number;
+  wastageDescription?: string;
+  wastageWeightKg?: number;
+}
+
+export interface ReceiveWeavingReturnPayload {
+  returnedDate: string;
+  items: WeavingReceivedItemPayload[];
+  remarks?: string;
+  isFinal?: boolean;
 }
 
 export interface IssueMaterialsPayload {
@@ -182,3 +283,4 @@ export interface CloseJobWorkOrderPayload {
   remarks?: string;
   confirmed: boolean;
 }
+

@@ -63,6 +63,8 @@ export class FabricCostingService {
         bleachingTotalCharges: computed.bleachingTotalCharges,
 
         // Final Costing
+        costBeforeBleaching: computed.costBeforeBleaching,
+        costPerMeterBeforeBleaching: computed.costPerMeterBeforeBleaching,
         totalProductionCost: computed.totalProductionCost,
         costPerMeter: computed.costPerMeter,
 
@@ -103,6 +105,8 @@ export class FabricCostingService {
       'qualityName',
       'totalLengthMeters',
       'totalWeightKg',
+      'costBeforeBleaching',
+      'costPerMeterBeforeBleaching',
       'totalProductionCost',
       'costPerMeter',
     ];
@@ -126,8 +130,25 @@ export class FabricCostingService {
       prisma.greyFabricCosting.count({ where }),
     ]);
 
+    const mappedItems = items.map((item) => {
+      const costBeforeBleaching =
+        item.costBeforeBleaching ??
+        Number(
+          (item.warpTotalPrice + item.weftTotalPrice + item.sizingTotalWages + item.weavingTotalWages).toFixed(2)
+        );
+      const costPerMeterBeforeBleaching =
+        item.costPerMeterBeforeBleaching ??
+        Number((costBeforeBleaching / (item.totalLengthMeters || 1)).toFixed(2));
+
+      return {
+        ...item,
+        costBeforeBleaching,
+        costPerMeterBeforeBleaching,
+      };
+    });
+
     return {
-      items,
+      items: mappedItems,
       meta: {
         total,
         page,
@@ -157,7 +178,20 @@ export class FabricCostingService {
       throw new NotFoundException(`Fabric costing formulation with ID "${id}" not found`);
     }
 
-    return record;
+    const costBeforeBleaching =
+      record.costBeforeBleaching ??
+      Number(
+        (record.warpTotalPrice + record.weftTotalPrice + record.sizingTotalWages + record.weavingTotalWages).toFixed(2)
+      );
+    const costPerMeterBeforeBleaching =
+      record.costPerMeterBeforeBleaching ??
+      Number((costBeforeBleaching / (record.totalLengthMeters || 1)).toFixed(2));
+
+    return {
+      ...record,
+      costBeforeBleaching,
+      costPerMeterBeforeBleaching,
+    };
   }
 
   /**

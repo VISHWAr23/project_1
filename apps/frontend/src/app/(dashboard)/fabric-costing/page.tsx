@@ -59,7 +59,17 @@ export default function FabricCostingPage() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
+          // If costPerMeterBeforeBleaching is not in user's saved list, insert it before costPerMeter
+          if (!parsed.includes('costPerMeterBeforeBleaching')) {
+            const costIdx = parsed.indexOf('costPerMeter');
+            if (costIdx !== -1) {
+              parsed.splice(costIdx, 0, 'costPerMeterBeforeBleaching');
+            } else {
+              parsed.push('costPerMeterBeforeBleaching');
+            }
+          }
           setVisibleColumns(parsed);
+          return;
         }
       }
     } catch (e) {
@@ -114,14 +124,27 @@ export default function FabricCostingPage() {
     if (items.length === 0) return;
     const activeCols = ALL_AVAILABLE_COLUMNS.filter((c) => visibleColumns.includes(c.id));
     const header = activeCols.map((c) => `"${c.label}"`).join(',');
-    const rows = items.map((row: any) =>
-      activeCols
+    const rows = items.map((row: any) => {
+      const costBefore =
+        row.costBeforeBleaching ??
+        Number(
+          (row.warpTotalPrice + row.weftTotalPrice + row.sizingTotalWages + row.weavingTotalWages).toFixed(2)
+        );
+      const costPerMBefore =
+        row.costPerMeterBeforeBleaching ??
+        Number((costBefore / (row.totalLengthMeters || 1)).toFixed(2));
+      const rowData = {
+        ...row,
+        costBeforeBleaching: costBefore,
+        costPerMeterBeforeBleaching: costPerMBefore,
+      };
+      return activeCols
         .map((c) => {
-          const val = row[c.id];
+          const val = rowData[c.id];
           return `"${val !== null && val !== undefined ? val : ''}"`;
         })
-        .join(',')
-    );
+        .join(',');
+    });
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [header, ...rows].join('\n');
     const encodedUri = encodeURI(csvContent);
@@ -144,9 +167,17 @@ export default function FabricCostingPage() {
           </div>
         );
       case 'totalLengthMeters':
-        return <span className="font-mono">{row.totalLengthMeters.toLocaleString()} m</span>;
+        return (
+          <span className="font-mono">
+            {Number(row.totalLengthMeters).toLocaleString('en-IN', { maximumFractionDigits: 2 })} m
+          </span>
+        );
       case 'totalLengthYards':
-        return <span className="font-mono">{row.totalLengthYards.toLocaleString()} yds</span>;
+        return (
+          <span className="font-mono">
+            {Number(row.totalLengthYards).toLocaleString('en-IN', { maximumFractionDigits: 2 })} yds
+          </span>
+        );
       case 'warpWeightKg':
         return <span className="font-mono text-primary font-medium">{row.warpWeightKg.toFixed(3)} kg</span>;
       case 'weftWeightKg':
@@ -170,6 +201,33 @@ export default function FabricCostingPage() {
       case 'weavingTotalWages':
       case 'bleachingTotalCharges':
         return <span className="font-mono">₹{Number(row[colId as keyof GreyFabricCosting] || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>;
+      case 'costBeforeBleaching': {
+        const costBefore =
+          row.costBeforeBleaching ??
+          Number(
+            (row.warpTotalPrice + row.weftTotalPrice + row.sizingTotalWages + row.weavingTotalWages).toFixed(2)
+          );
+        return (
+          <span className="font-mono font-medium text-foreground">
+            ₹{costBefore.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          </span>
+        );
+      }
+      case 'costPerMeterBeforeBleaching': {
+        const costBefore =
+          row.costBeforeBleaching ??
+          Number(
+            (row.warpTotalPrice + row.weftTotalPrice + row.sizingTotalWages + row.weavingTotalWages).toFixed(2)
+          );
+        const costPerM =
+          row.costPerMeterBeforeBleaching ??
+          Number((costBefore / (row.totalLengthMeters || 1)).toFixed(2));
+        return (
+          <div className="inline-flex items-center gap-1 font-mono font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/25">
+            ₹{costPerM.toFixed(2)}/m
+          </div>
+        );
+      }
       case 'totalProductionCost':
         return (
           <span className="font-mono font-bold text-primary">

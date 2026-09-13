@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Package, ArrowLeft, Save, Sparkles, AlertCircle, Scale, Boxes } from 'lucide-react';
+import { Package, ArrowLeft, Save, Sparkles, AlertCircle, Scale, Boxes, Factory } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -31,6 +31,7 @@ export default function NewRawMaterialPage() {
   const [itemType, setItemType] = useState<'RM' | 'PM' | 'FG'>('RM');
   const [itemSource, setItemSource] = useState<'MANUFACTURED' | 'TRADED'>('MANUFACTURED');
   const [hasDualUnit, setHasDualUnit] = useState(false);
+  const isInHouseProduction = itemType === 'FG' && itemSource === 'MANUFACTURED';
 
   const [formData, setFormData] = useState({
     sku: '',
@@ -99,6 +100,8 @@ export default function NewRawMaterialPage() {
       return;
     }
 
+    const isInHouseProduction = itemType === 'FG' && itemSource === 'MANUFACTURED';
+
     try {
       await createMaterial.mutateAsync({
         sku: formData.sku,
@@ -109,15 +112,15 @@ export default function NewRawMaterialPage() {
         secondaryUnitId: hasDualUnit && formData.secondaryUnitId ? formData.secondaryUnitId : undefined,
         conversionFactor: hasDualUnit && formData.conversionFactor ? Number(formData.conversionFactor) : undefined,
         secondaryUnitName: hasDualUnit && formData.secondaryUnitName ? formData.secondaryUnitName : undefined,
-        supplierId: formData.supplierId || undefined,
+        supplierId: isInHouseProduction ? undefined : (formData.supplierId || undefined),
         storageLocationId: formData.storageLocationId || undefined,
-        hsnCode: formData.hsnCode || undefined,
-        gstRate: Number(formData.gstRate) || 0,
+        hsnCode: isInHouseProduction ? undefined : (formData.hsnCode || undefined),
+        gstRate: isInHouseProduction ? 0 : (Number(formData.gstRate) || 0),
         minimumStockLevel: minStock,
         maximumStockLevel: maxStock,
         reorderQuantity: Number(formData.reorderQuantity) || 0,
         initialStock: Number(formData.initialStock) || 0,
-        unitCost: Number(formData.unitCost) || 0,
+        unitCost: isInHouseProduction ? 0 : (Number(formData.unitCost) || 0),
         remarks: formData.remarks || undefined,
         isActive: true,
         itemSource: itemType === 'FG' ? itemSource : 'MANUFACTURED',
@@ -558,54 +561,76 @@ export default function NewRawMaterialPage() {
           </div>
         </div>
 
-        {/* Section 3: Financials & Tax */}
-        <div className="bg-secondary/20 border border-border rounded-xl p-5 space-y-4">
-          <h2 className="text-sm font-bold text-foreground tracking-tight border-b border-border pb-2">
-            3. Purchase Cost & Tax Classification
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Input
-              label="Purchase Rate / Unit Cost (₹)"
-              type="number"
-              step="0.01"
-              value={formData.unitCost}
-              onChange={(e) => setFormData({ ...formData, unitCost: e.target.value })}
-              required
-            />
-            <Input
-              label="HSN Code"
-              placeholder="e.g. 76061290"
-              value={formData.hsnCode}
-              onChange={(e) => setFormData({ ...formData, hsnCode: e.target.value })}
-            />
-            <Input
-              label="GST Rate (%)"
-              type="number"
-              step="0.1"
-              value={formData.gstRate}
-              onChange={(e) => setFormData({ ...formData, gstRate: e.target.value })}
-            />
+        {/* Section 3 & 4: Only for Purchased Materials / Traded Products - Bypassed for In-House Production */}
+        {isInHouseProduction ? (
+          <div className="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-xl flex items-center gap-3.5">
+            <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shrink-0">
+              <Factory className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold text-foreground flex items-center gap-2">
+                In-House Plant Manufactured Finished Good
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                  Self-Produced
+                </span>
+              </h3>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Purchase cost, purchase tax classification, and external supplier assignments are bypassed because this product is manufactured internally on factory lines.
+              </p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <>
+            {/* Section 3: Financials & Tax */}
+            <div className="bg-secondary/20 border border-border rounded-xl p-5 space-y-4">
+              <h2 className="text-sm font-bold text-foreground tracking-tight border-b border-border pb-2">
+                3. Purchase Cost & Tax Classification
+              </h2>
 
-        {/* Section 4: Supplier & Storage Location */}
-        <div className="bg-secondary/20 border border-border rounded-xl p-5 space-y-4">
-          <h2 className="text-sm font-bold text-foreground tracking-tight border-b border-border pb-2">
-            4. Primary Vendor & Storage Location Assignment
-          </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Input
+                  label="Purchase Rate / Unit Cost (₹)"
+                  type="number"
+                  step="0.01"
+                  value={formData.unitCost}
+                  onChange={(e) => setFormData({ ...formData, unitCost: e.target.value })}
+                  required
+                />
+                <Input
+                  label="HSN Code"
+                  placeholder="e.g. 76061290"
+                  value={formData.hsnCode}
+                  onChange={(e) => setFormData({ ...formData, hsnCode: e.target.value })}
+                />
+                <Input
+                  label="GST Rate (%)"
+                  type="number"
+                  step="0.1"
+                  value={formData.gstRate}
+                  onChange={(e) => setFormData({ ...formData, gstRate: e.target.value })}
+                />
+              </div>
+            </div>
 
-          <div>
-            <MasterEntityDropdown
-              label="Primary Supplier"
-              entityType="supplier"
-              placeholder="Select Preferred Vendor..."
-              options={suppliers?.map((s) => ({ label: `${s.name} (${s.code})`, value: s.id, raw: s })) || []}
-              value={formData.supplierId}
-              onChange={(val) => setFormData({ ...formData, supplierId: val })}
-            />
-          </div>
-        </div>
+            {/* Section 4: Supplier & Storage Location */}
+            <div className="bg-secondary/20 border border-border rounded-xl p-5 space-y-4">
+              <h2 className="text-sm font-bold text-foreground tracking-tight border-b border-border pb-2">
+                4. Primary Vendor & Storage Location Assignment
+              </h2>
+
+              <div>
+                <MasterEntityDropdown
+                  label="Primary Supplier"
+                  entityType="supplier"
+                  placeholder="Select Preferred Vendor..."
+                  options={suppliers?.map((s) => ({ label: `${s.name} (${s.code})`, value: s.id, raw: s })) || []}
+                  value={formData.supplierId}
+                  onChange={(val) => setFormData({ ...formData, supplierId: val })}
+                />
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="flex justify-end gap-3 pt-3">
           <Link href="/raw-materials">

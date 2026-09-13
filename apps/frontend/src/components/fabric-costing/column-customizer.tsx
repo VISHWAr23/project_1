@@ -48,6 +48,8 @@ export const ALL_AVAILABLE_COLUMNS: ColumnDefinition[] = [
   { id: 'bleachingTotalCharges', label: 'Bleaching Charges (₹)', tamilLabel: 'பிளீச்சிங் கட்டணம்', category: 'wages', defaultVisible: true, align: 'right', width: '145px' },
 
   // Final Results
+  { id: 'costBeforeBleaching', label: 'Cost Before Bleach (₹)', tamilLabel: 'சாம்பல் துணி அடக்கவிலை', category: 'primary', defaultVisible: false, align: 'right', width: '150px' },
+  { id: 'costPerMeterBeforeBleaching', label: 'Cost / Meter (Before Bleach)', tamilLabel: 'சாம்பல் துணி மீட்டர் விலை', category: 'primary', defaultVisible: true, align: 'right', width: '165px' },
   { id: 'totalProductionCost', label: 'Total Cost (₹)', tamilLabel: 'மொத்த அடக்கவிலை', category: 'primary', defaultVisible: true, align: 'right', width: '140px' },
   { id: 'costPerMeter', label: 'Cost / Meter (₹/m)', tamilLabel: 'மீட்டர் அடக்கவிலை', category: 'primary', defaultVisible: true, align: 'right', width: '140px' },
 

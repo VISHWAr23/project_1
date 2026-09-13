@@ -38,7 +38,7 @@ export function CreateCostingModal({ isOpen, onClose, onSuccess }: CreateCosting
   const [ends, setEnds] = useState<number>(780);
   const [reed, setReed] = useState<number>(16);
   const [pick, setPick] = useState<number>(13);
-  const [totalLengthMeters, setTotalLengthMeters] = useState<number>(1000);
+  const [totalLengthMeters, setTotalLengthMeters] = useState<number | string>(1000);
   const [warpCount, setWarpCount] = useState<number>(41);
   const [weftCount, setWeftCount] = useState<number>(40);
 
@@ -207,8 +207,8 @@ export function CreateCostingModal({ isOpen, onClose, onSuccess }: CreateCosting
       setFormError('Pick must be greater than 0');
       return;
     }
-    if (!totalLengthMeters || totalLengthMeters <= 0) {
-      setFormError('Total length in meters is required');
+    if (!totalLengthMeters || Number(totalLengthMeters) <= 0) {
+      setFormError('Total length in meters must be greater than 0');
       return;
     }
     if (!warpCount || warpCount <= 0 || !weftCount || weftCount <= 0) {
@@ -417,12 +417,13 @@ export function CreateCostingModal({ isOpen, onClose, onSuccess }: CreateCosting
                     </label>
                     <input
                       type="number"
-                      value={totalLengthMeters || ''}
-                      onChange={(e) => setTotalLengthMeters(Number(e.target.value))}
+                      value={totalLengthMeters}
+                      onChange={(e) => setTotalLengthMeters(e.target.value)}
                       placeholder="1000"
                       className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary font-mono"
                       required
-                      min={1}
+                      min={0.01}
+                      step="any"
                     />
                   </div>
                   <div>
@@ -740,26 +741,58 @@ export function CreateCostingModal({ isOpen, onClose, onSuccess }: CreateCosting
                 )}
               </div>
 
-              {/* Bottom Final Total Summary Card */}
+              {/* Bottom Final Total Summary Cards: Both Before Bleaching and After Bleaching */}
               {calculation && (
-                <div className="p-3.5 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/30 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                      Total Production Cost (மொத்த அடக்கவிலை)
-                    </span>
-                    <span className="text-base font-bold font-mono text-primary">
-                      ₹{calculation.totalProductionCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between pt-2 border-t border-primary/20">
-                    <span className="text-xs font-bold text-foreground">
-                      Final Cost Per Meter (மீட்டர் அடக்கவிலை):
-                    </span>
-                    <div className="text-right">
-                      <span className="text-lg font-black font-mono text-emerald-600 dark:text-emerald-400">
-                        ₹{calculation.costPerMeter.toFixed(2)}
+                <div className="space-y-2.5">
+                  {/* 1. Cost Before Bleaching (Grey Fabric) */}
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent border border-amber-500/30 space-y-1.5 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-amber-500" />
+                        <span className="text-[11px] font-bold text-foreground uppercase tracking-wide">
+                          Cost Before Bleaching (சாம்பல் துணி)
+                        </span>
+                      </div>
+                      <span className="text-xs font-semibold font-mono text-foreground">
+                        Total ₹{calculation.costBeforeBleaching.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </span>
-                      <span className="text-[10px] text-muted-foreground ml-1">/ meter</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-amber-500/20">
+                      <span className="text-xs font-bold text-amber-700 dark:text-amber-300">
+                        Total Cost / Meter (Before Bleach):
+                      </span>
+                      <div className="text-right">
+                        <span className="text-base font-black font-mono text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30">
+                          ₹{calculation.costPerMeterBeforeBleaching.toFixed(2)}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground ml-1">/ meter</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. Final Cost With Bleaching (Finished Fabric) */}
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent border border-emerald-500/30 space-y-1.5 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="text-[11px] font-bold text-foreground uppercase tracking-wide">
+                          Final Cost With Bleaching (வெள்ளை துணி)
+                        </span>
+                      </div>
+                      <span className="text-xs font-semibold font-mono text-foreground">
+                        Total ₹{calculation.totalProductionCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-emerald-500/20">
+                      <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                        Final Cost / Meter (With Bleach):
+                      </span>
+                      <div className="text-right">
+                        <span className="text-lg font-black font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/30">
+                          ₹{calculation.costPerMeter.toFixed(2)}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground ml-1">/ meter</span>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -2,8 +2,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { jobWorkService } from '@/services/job-work.service';
 import {
   CreateJobWorkOrderPayload,
+  CreateWeavingJobWorkPayload,
   IssueMaterialsPayload,
   ReceiveReturnPayload,
+  ReceiveWeavingReturnPayload,
   CloseJobWorkOrderPayload,
 } from '@/types/job-work.types';
 
@@ -89,6 +91,29 @@ export function useCreateJobWorkOrder() {
     mutationFn: (payload: CreateJobWorkOrderPayload) => jobWorkService.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['jobWorkOrders'] });
+    },
+  });
+}
+
+export function useCreateWeavingJobWorkOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateWeavingJobWorkPayload) => jobWorkService.createWeavingOrder(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobWorkOrders'] });
+    },
+  });
+}
+
+export function useReceiveWeavingReturn() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: ReceiveWeavingReturnPayload }) =>
+      jobWorkService.receiveWeavingReturn(id, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['jobWorkOrders'] });
+      queryClient.invalidateQueries({ queryKey: ['jobWorkOrder', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['returnRegister'] });
     },
   });
 }

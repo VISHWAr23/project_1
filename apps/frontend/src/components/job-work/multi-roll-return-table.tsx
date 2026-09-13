@@ -287,7 +287,7 @@ export function MultiRollReturnTable({
             leftIcon={<PackagePlus className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />}
             className="text-xs text-blue-600 dark:text-blue-400 border-blue-500/30 hover:bg-blue-500/10"
           >
-            + Create New Product
+            Create New Product
           </Button>
 
           {pendingWeight > 0 && (

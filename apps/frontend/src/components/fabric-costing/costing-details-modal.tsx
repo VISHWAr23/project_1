@@ -39,6 +39,16 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
   const weavingPct = ((costing.weavingTotalWages / total) * 100).toFixed(1);
   const bleachingPct = ((costing.bleachingTotalCharges / total) * 100).toFixed(1);
 
+  // Pre-bleaching costs
+  const costBeforeBleaching =
+    costing.costBeforeBleaching ??
+    Number(
+      (costing.warpTotalPrice + costing.weftTotalPrice + costing.sizingTotalWages + costing.weavingTotalWages).toFixed(2)
+    );
+  const costPerMeterBeforeBleaching =
+    costing.costPerMeterBeforeBleaching ??
+    Number((costBeforeBleaching / (costing.totalLengthMeters || 1)).toFixed(2));
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200">
       <div
@@ -106,16 +116,33 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
               </div>
             </div>
 
-            <div className="text-right">
-              <div className="text-xs text-muted-foreground uppercase font-semibold">
-                Cost per Meter (மீட்டர் அடக்கவிலை)
+            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+              {/* Cost Before Bleaching Badge */}
+              <div className="text-right p-2.5 sm:p-3 rounded-xl bg-amber-500/10 border border-amber-500/25">
+                <div className="text-[10px] text-amber-700 dark:text-amber-300 uppercase font-bold tracking-wider">
+                  Cost / Meter (Before Bleach)
+                </div>
+                <div className="text-xl font-black font-mono text-amber-600 dark:text-amber-400">
+                  ₹{costPerMeterBeforeBleaching.toFixed(2)}
+                  <span className="text-xs font-normal text-muted-foreground ml-1">/ m</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground font-mono">
+                  Subtotal: ₹{costBeforeBleaching.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </div>
               </div>
-              <div className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-                ₹{costing.costPerMeter.toFixed(2)}
-                <span className="text-xs font-normal text-muted-foreground ml-1">/ meter</span>
-              </div>
-              <div className="text-xs text-muted-foreground font-mono">
-                Total ₹{costing.totalProductionCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })} for {costing.totalLengthMeters}m
+
+              {/* Finished Cost Badge */}
+              <div className="text-right p-2.5 sm:p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25">
+                <div className="text-[10px] text-emerald-700 dark:text-emerald-300 uppercase font-bold tracking-wider">
+                  Cost / Meter (With Bleach)
+                </div>
+                <div className="text-xl sm:text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
+                  ₹{costing.costPerMeter.toFixed(2)}
+                  <span className="text-xs font-normal text-muted-foreground ml-1">/ m</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground font-mono">
+                  Total: ₹{costing.totalProductionCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })} for {Number(costing.totalLengthMeters).toLocaleString('en-IN', { maximumFractionDigits: 2 })}m
+                </div>
               </div>
             </div>
           </div>
@@ -283,11 +310,32 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
                 </div>
               </div>
 
-              {/* Formula 5: Bleaching Charges */}
+              {/* Formula 5: Cost Before Bleaching */}
+              <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-foreground">
+                    5. சாம்பல் துணி அடக்கவிலை (Cost Before Bleaching)
+                  </span>
+                  <span className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30">
+                    ₹{costPerMeterBeforeBleaching.toFixed(2)} / m
+                  </span>
+                </div>
+                <div className="text-[11px] font-mono text-muted-foreground bg-card p-2.5 rounded-lg border border-border/60">
+                  = பாவு Cost + ஊடை Cost + சைசிங் Wages + நெசவு Wages
+                  <br />
+                  = ₹{costing.warpTotalPrice.toFixed(2)} + ₹{costing.weftTotalPrice.toFixed(2)} + ₹{costing.sizingTotalWages.toFixed(2)} + ₹{costing.weavingTotalWages.toFixed(2)}
+                  <br />
+                  = <span className="text-foreground font-semibold">₹{costBeforeBleaching.toFixed(2)}</span>
+                  <br />
+                  மீட்டர் விலை = ₹{costBeforeBleaching.toFixed(2)} ÷ {Number(costing.totalLengthMeters).toLocaleString('en-IN', { maximumFractionDigits: 2 })}m = <span className="text-amber-600 dark:text-amber-400 font-bold">₹{costPerMeterBeforeBleaching.toFixed(2)}/m</span>
+                </div>
+              </div>
+
+              {/* Formula 6: Bleaching Charges */}
               <div className="p-4 rounded-xl border border-border bg-card space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-foreground">
-                    5. Bleaching Charges (பிளீச்சிங் கட்டணம்)
+                    6. Bleaching Charges (பிளீச்சிங் கட்டணம்)
                   </span>
                   <span className="text-xs font-mono font-bold text-foreground">
                     ₹{costing.bleachingTotalCharges.toFixed(2)}
@@ -302,11 +350,11 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
                 </div>
               </div>
 
-              {/* Formula 6: Fabric Weight & Density */}
+              {/* Formula 7: Fabric Weight & Density */}
               <div className="p-4 rounded-xl border border-border bg-card space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-foreground">
-                    6. Total Weight & Density (எடை அடர்த்தி)
+                    7. Total Weight & Density (எடை அடர்த்தி)
                   </span>
                   <span className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
                     {costing.weightPerMeterGram} g/m
@@ -344,13 +392,23 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
                   <td className="p-2.5 text-muted-foreground">நெசவு Wages (Weaving Wages)</td>
                   <td className="p-2.5 text-right font-mono font-medium text-foreground">₹{costing.weavingTotalWages.toFixed(2)}</td>
                 </tr>
+                <tr className="bg-amber-500/10 font-bold border-y border-amber-500/30">
+                  <td className="p-2.5 text-amber-900 dark:text-amber-200">
+                    <div>Total Cost Before Bleaching (சாம்பல் துணி அடக்கவிலை)</div>
+                    <div className="text-[10px] font-normal text-muted-foreground">பாவு + ஊடை + சைசிங் + நெசவு (Warp + Weft + Sizing + Weaving)</div>
+                  </td>
+                  <td className="p-2.5 text-right font-mono text-amber-700 dark:text-amber-300">
+                    <div className="text-sm font-black">₹{costBeforeBleaching.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                    <div className="text-xs font-bold text-amber-600 dark:text-amber-400">₹{costPerMeterBeforeBleaching.toFixed(2)} / meter</div>
+                  </td>
+                </tr>
                 <tr>
                   <td className="p-2.5 text-muted-foreground">Bleaching Charges (பிளீச்சிங் கட்டணம்)</td>
                   <td className="p-2.5 text-right font-mono font-medium text-foreground">₹{costing.bleachingTotalCharges.toFixed(2)}</td>
                 </tr>
                 <tr className="bg-primary/5 font-bold">
                   <td className="p-3 text-foreground text-sm">
-                    Total Production Cost for {costing.totalLengthMeters} meters
+                    Total Production Cost for {Number(costing.totalLengthMeters).toLocaleString('en-IN', { maximumFractionDigits: 2 })} meters
                   </td>
                   <td className="p-3 text-right font-mono text-base text-primary">
                     ₹{costing.totalProductionCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -358,7 +416,7 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
                 </tr>
                 <tr className="bg-emerald-500/10 font-bold">
                   <td className="p-3 text-emerald-700 dark:text-emerald-300 text-sm">
-                    1 Meter Finished Cost (மீட்டர் அடக்கவிலை)
+                    1 Meter Finished Cost with Bleaching (பிளீச்சிங் சேர்த்த மீட்டர் அடக்கவிலை)
                   </td>
                   <td className="p-3 text-right font-mono text-lg text-emerald-600 dark:text-emerald-400">
                     ₹{costing.costPerMeter.toFixed(2)} / meter

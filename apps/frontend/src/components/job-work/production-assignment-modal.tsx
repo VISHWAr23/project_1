@@ -35,7 +35,8 @@ export type ProductionType =
   | 'MOPING_PAD'
   | 'GAUZE_PAD_PINNING'
   | 'DRYING'
-  | 'PILLOW_BEDSHEET';
+  | 'PILLOW_BEDSHEET'
+  | 'WEAVING';
 
 interface ProductionAssignmentModalProps {
   isOpen: boolean;
@@ -147,9 +148,14 @@ export function ProductionAssignmentModal({
         ? '/gauze-pad-pinning'
         : productionType === 'PILLOW_BEDSHEET'
         ? '/pillow-bedsheet-production'
+        : productionType === 'WEAVING'
+        ? '/job-work/weaving'
         : '/drying';
 
-    const targetUrl = `${basePath}/batches/new?${queryParams.toString()}`;
+    const targetUrl =
+      productionType === 'WEAVING'
+        ? `/job-work/weaving/new?${queryParams.toString()}`
+        : `${basePath}/batches/new?${queryParams.toString()}`;
 
     onClose();
     router.push(targetUrl);
@@ -161,6 +167,7 @@ export function ProductionAssignmentModal({
   const isGauzePadPinning = productionType === 'GAUZE_PAD_PINNING';
   const isDrying = productionType === 'DRYING';
   const isPillowBedsheet = productionType === 'PILLOW_BEDSHEET';
+  const isWeaving = productionType === 'WEAVING';
 
   const titleText = isGauze
     ? 'Gauze Production'
@@ -172,6 +179,8 @@ export function ProductionAssignmentModal({
     ? 'Gauze Pad Pinning'
     : isPillowBedsheet
     ? 'Pillow Cover & Bed Sheet Production'
+    : isWeaving
+    ? 'Weaving Job Work (நெசவு பணி)'
     : 'Drying Process';
 
   const badgeText = isGauze
@@ -184,6 +193,8 @@ export function ProductionAssignmentModal({
     ? 'Pad Sizing, Dual Division & Salary'
     : isPillowBedsheet
     ? 'Roll Weight, GSM & Piece Salary'
+    : isWeaving
+    ? 'Yarn to Fabric, Formulas & In-Pass'
     : 'Pieces Drying, Progress & Meter Salary';
 
   return (
@@ -208,6 +219,8 @@ export function ProductionAssignmentModal({
               ? 'bg-cyan-500/5 border-cyan-500/20 text-cyan-700 dark:text-cyan-300'
               : isPillowBedsheet
               ? 'bg-purple-500/5 border-purple-500/20 text-purple-700 dark:text-purple-300'
+              : isWeaving
+              ? 'bg-lime-500/5 border-lime-500/20 text-lime-700 dark:text-lime-300'
               : 'bg-orange-500/5 border-orange-500/20 text-orange-700 dark:text-orange-300'
           }`}
         >
@@ -223,6 +236,8 @@ export function ProductionAssignmentModal({
                 ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400'
                 : isPillowBedsheet
                 ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400'
+                : isWeaving
+                ? 'bg-lime-500/15 text-lime-600 dark:text-lime-400'
                 : 'bg-orange-500/15 text-orange-600 dark:text-orange-400'
             }`}
           >
@@ -236,6 +251,8 @@ export function ProductionAssignmentModal({
               <Scissors className="h-4 w-4" />
             ) : isPillowBedsheet ? (
               <Bed className="h-4 w-4" />
+            ) : isWeaving ? (
+              <Layers className="h-4 w-4" />
             ) : (
               <Sun className="h-4 w-4" />
             )}

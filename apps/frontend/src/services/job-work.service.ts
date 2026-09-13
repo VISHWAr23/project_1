@@ -5,8 +5,10 @@ import {
   JobWorkCompany,
   RawMaterialItem,
   CreateJobWorkOrderPayload,
+  CreateWeavingJobWorkPayload,
   IssueMaterialsPayload,
   ReceiveReturnPayload,
+  ReceiveWeavingReturnPayload,
   CloseJobWorkOrderPayload,
   JobWorkReturnItem,
 } from '@/types/job-work.types';
@@ -50,6 +52,20 @@ export const jobWorkService = {
 
   async create(payload: CreateJobWorkOrderPayload): Promise<JobWorkOrder> {
     return await apiClient<JobWorkOrder>('/job-work', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async createWeavingOrder(payload: CreateWeavingJobWorkPayload): Promise<JobWorkOrder> {
+    return await apiClient<JobWorkOrder>('/job-work/weaving', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async receiveWeavingReturn(id: string, payload: ReceiveWeavingReturnPayload): Promise<JobWorkOrder> {
+    return await apiClient<JobWorkOrder>(`/job-work/${id}/weaving-return`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });

@@ -42,6 +42,8 @@ export interface GreyFabricCosting {
   bleachingTotalCharges: number;
 
   // Final Costing
+  costBeforeBleaching?: number;
+  costPerMeterBeforeBleaching?: number;
   totalProductionCost: number;
   costPerMeter: number;
 
@@ -88,6 +90,8 @@ export interface FabricCostingCalculationResult {
   sizingTotalWages: number;
   weavingTotalWages: number;
   bleachingTotalCharges: number;
+  costBeforeBleaching: number;
+  costPerMeterBeforeBleaching: number;
   totalProductionCost: number;
   costPerMeter: number;
   constantsUsed: {

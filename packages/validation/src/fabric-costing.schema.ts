@@ -106,9 +106,17 @@ export function computeFabricCosting(input: {
   // 6. Bleaching Charges
   const bleachingTotalCharges = Number((totalWeightKg * input.bleachingRatePerKg).toFixed(2));
 
-  // 7. Total Production Cost & Per-Meter Cost
+  // 7. Cost Before Bleaching (Grey Fabric Production Cost)
+  const costBeforeBleaching = Number(
+    (warpTotalPrice + weftTotalPrice + sizingTotalWages + weavingTotalWages).toFixed(2)
+  );
+  const costPerMeterBeforeBleaching = Number(
+    (costBeforeBleaching / (input.totalLengthMeters || 1)).toFixed(2)
+  );
+
+  // 8. Total Production Cost & Per-Meter Cost (Finished Fabric with Bleaching)
   const totalProductionCost = Number(
-    (warpTotalPrice + weftTotalPrice + sizingTotalWages + weavingTotalWages + bleachingTotalCharges).toFixed(2)
+    (costBeforeBleaching + bleachingTotalCharges).toFixed(2)
   );
   const costPerMeter = Number((totalProductionCost / (input.totalLengthMeters || 1)).toFixed(2));
 
@@ -125,6 +133,8 @@ export function computeFabricCosting(input: {
     sizingTotalWages,
     weavingTotalWages,
     bleachingTotalCharges,
+    costBeforeBleaching,
+    costPerMeterBeforeBleaching,
     totalProductionCost,
     costPerMeter,
     constantsUsed: {

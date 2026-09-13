@@ -182,7 +182,7 @@ export default function GamjeeMastersPage() {
                 onClick={() => setModalState({ type: 'cotton-spec' })}
               >
                 <Plus className="h-3.5 w-3.5" />
-                <span>+ Add Cotton Type</span>
+                <span>Add Cotton Type</span>
               </Button>
             </div>
 

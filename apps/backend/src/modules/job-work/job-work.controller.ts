@@ -5,6 +5,8 @@ import { CreateJobWorkOrderDto } from './dto/create-job-work-order.dto';
 import { IssueMaterialsDto } from './dto/issue-materials.dto';
 import { ReceiveReturnDto } from './dto/receive-return.dto';
 import { CloseJobWorkOrderDto } from './dto/close-job-work.dto';
+import { CreateWeavingJobWorkDto } from './dto/create-weaving-job-work.dto';
+import { ReceiveWeavingReturnDto } from './dto/receive-weaving-return.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { JobWorkStatus } from '@ims/database';
 
@@ -82,6 +84,13 @@ export class JobWorkController {
     return this.jobWorkService.create(dto, userId);
   }
 
+  @Post('weaving')
+  @ApiOperation({ summary: 'Create a new Weaving Job Work Order with calculations & mark breakdown' })
+  async createWeaving(@Body() dto: CreateWeavingJobWorkDto, @Req() req: any) {
+    const userId = req.user?.id;
+    return this.jobWorkService.createWeavingOrder(dto, userId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get single Job Work Order details, roll items, timeline & documents' })
   async findOne(@Param('id') id: string) {
@@ -100,6 +109,13 @@ export class JobWorkController {
   async receiveReturn(@Param('id') id: string, @Body() dto: ReceiveReturnDto, @Req() req: any) {
     const userId = req.user?.id;
     return this.jobWorkService.receiveReturn(id, dto, userId);
+  }
+
+  @Post(':id/weaving-return')
+  @ApiOperation({ summary: 'Receive returned weaving in-pass items directly into dedicated table (bypassing raw materials stock)' })
+  async receiveWeavingReturn(@Param('id') id: string, @Body() dto: ReceiveWeavingReturnDto, @Req() req: any) {
+    const userId = req.user?.id;
+    return this.jobWorkService.receiveWeavingReturn(id, dto, userId);
   }
 
   @Post(':id/close')

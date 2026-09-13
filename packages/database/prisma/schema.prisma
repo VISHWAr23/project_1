@@ -196,6 +196,7 @@ model User {
   approvedMaterialIssues  MaterialIssue[]        @relation("ApprovedByUsers")
   jobWorkStatusHistories  JobWorkStatusHistory[]
   jobWorkReturnItems      JobWorkReturnItem[]
+  weavingReceivedItems    WeavingReceivedItem[]  @relation("WeavingReceivedItems")
   closedJobWorkOrders     JobWorkOrder[]         @relation("ClosedByUsers")
   auditLogs               AuditLog[]
   attendanceLogsCreated   AttendanceLog[]        @relation("AttendanceCreatedByUsers")
@@ -934,6 +935,7 @@ model AuditLog {
 model JobWorkOrder {
   id                 String        @id @default(uuid()) @db.Uuid
   jobWorkNumber      String        @unique @map("job_work_number") @db.VarChar(50)
+  jobWorkType        String        @default("STANDARD") @map("job_work_type") @db.VarChar(50)
   challanNumber      String?       @unique @map("challan_number") @db.VarChar(50)
   expectedReturnDate DateTime      @map("expected_return_date") @db.Date
   status             JobWorkStatus @default(CREATED)
@@ -960,8 +962,8 @@ model JobWorkOrder {
   jobWorkCompanyId String         @map("job_work_company_id") @db.Uuid
   jobWorkCompany   JobWorkCompany @relation(fields: [jobWorkCompanyId], references: [id], onDelete: Cascade)
 
-  rawMaterialId String      @map("raw_material_id") @db.Uuid
-  rawMaterial   RawMaterial @relation("IssuedRawMaterial", fields: [rawMaterialId], references: [id], onDelete: Cascade)
+  rawMaterialId String?      @map("raw_material_id") @db.Uuid
+  rawMaterial   RawMaterial? @relation("IssuedRawMaterial", fields: [rawMaterialId], references: [id], onDelete: SetNull)
 
   finishedProductId String?      @map("finished_product_id") @db.Uuid
   finishedProduct   RawMaterial? @relation("ReturnedFinishedProduct", fields: [finishedProductId], references: [id], onDelete: SetNull)
@@ -969,9 +971,11 @@ model JobWorkOrder {
   closedByUserId String? @map("closed_by_user_id") @db.Uuid
   closedByUser   User?   @relation("ClosedByUsers", fields: [closedByUserId], references: [id], onDelete: SetNull)
 
-  issueItems    JobWorkIssueItem[]
-  returnItems   JobWorkReturnItem[]
-  statusHistory JobWorkStatusHistory[]
+  issueItems           JobWorkIssueItem[]
+  returnItems          JobWorkReturnItem[]
+  statusHistory        JobWorkStatusHistory[]
+  weavingDetail        WeavingJobWorkDetail?
+  weavingReceivedItems WeavingReceivedItem[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1040,6 +1044,64 @@ model JobWorkStatusHistory {
 
   @@index([jobWorkOrderId], map: "idx_jwsh_order")
   @@map("job_work_status_history")
+}
+
+// ==========================================
+// WEAVING JOB WORK & IN-PASS GOODS REGISTER
+// ==========================================
+
+model WeavingJobWorkDetail {
+  id                      String        @id @default(uuid()) @db.Uuid
+  jobWorkOrderId          String        @unique @map("job_work_order_id") @db.Uuid
+  jobWorkOrder            JobWorkOrder  @relation(fields: [jobWorkOrderId], references: [id], onDelete: Cascade)
+
+  ends                    Int
+  reed                    Int
+  pick                    Int
+  totalPaavu              Int           @map("total_paavu")
+  pieceLengthYards        Decimal       @default(112) @map("piece_length_yards") @db.Decimal(10, 2)
+  pieceLengthMeters       Decimal       @default(100) @map("piece_length_meters") @db.Decimal(10, 2)
+  weftCount               Decimal       @map("weft_count") @db.Decimal(10, 2)
+  warpCount               Decimal?      @map("warp_count") @db.Decimal(10, 2)
+  yarnConstant            Decimal       @default(0.54) @map("yarn_constant") @db.Decimal(6, 4)
+  markBreakdown           Json          @map("mark_breakdown")
+  totalPieces             Int           @map("total_pieces")
+  weftWeightPerPieceKg    Decimal       @map("weft_weight_per_piece_kg") @db.Decimal(10, 3)
+  totalWeftWeightKg       Decimal       @map("total_weft_weight_kg") @db.Decimal(12, 3)
+  warpWeightKg            Decimal       @default(0) @map("warp_weight_kg") @db.Decimal(12, 3)
+  totalReceivableWeightKg Decimal       @map("total_receivable_weight_kg") @db.Decimal(12, 3)
+  salaryType              String        @default("Roll") @map("salary_type") @db.VarChar(50)
+  ratePerMeter            Decimal       @default(2.015) @map("rate_per_meter") @db.Decimal(10, 3)
+  baseReedPicks           Int           @default(16) @map("base_reed_picks")
+  salaryPerPiece          Decimal       @map("salary_per_piece") @db.Decimal(10, 3)
+  totalSalary             Decimal       @map("total_salary") @db.Decimal(12, 2)
+
+  createdAt               DateTime      @default(now()) @map("created_at")
+  updatedAt               DateTime      @updatedAt @map("updated_at")
+
+  @@map("weaving_job_work_details")
+}
+
+model WeavingReceivedItem {
+  id                  String        @id @default(uuid()) @db.Uuid
+  jobWorkOrderId      String        @map("job_work_order_id") @db.Uuid
+  jobWorkOrder        JobWorkOrder  @relation(fields: [jobWorkOrderId], references: [id], onDelete: Cascade)
+
+  date                DateTime      @map("date") @db.Date
+  inPassNumber        String        @map("in_pass_number") @db.VarChar(100)
+  description         String        @db.Text
+  weightKg            Decimal       @map("weight_kg") @db.Decimal(12, 3)
+  wastageDescription  String?       @map("wastage_description") @db.Text
+  wastageWeightKg     Decimal       @default(0) @map("wastage_weight_kg") @db.Decimal(12, 3)
+
+  receivedByUserId    String?       @map("received_by_user_id") @db.Uuid
+  receivedByUser      User?         @relation("WeavingReceivedItems", fields: [receivedByUserId], references: [id], onDelete: SetNull)
+
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  @@index([jobWorkOrderId], map: "idx_wri_order")
+  @@map("weaving_received_items")
 }
 
 // ==========================================
@@ -2106,8 +2168,10 @@ model GreyFabricCosting {
   bleachingTotalCharges Float     @map("bleaching_total_charges") // (e.g. ₹1185.20)
 
   // Final Results
-  totalProductionCost   Float     @map("total_production_cost") // (e.g. ₹9677.01)
-  costPerMeter          Float     @map("cost_per_meter")        // (e.g. ₹9.68)
+  costBeforeBleaching         Float?    @map("cost_before_bleaching")
+  costPerMeterBeforeBleaching Float?    @map("cost_per_meter_before_bleaching")
+  totalProductionCost         Float     @map("total_production_cost") // (e.g. ₹9677.01)
+  costPerMeter                Float     @map("cost_per_meter")        // (e.g. ₹9.68)
 
   // Audit Fields
   createdById           String?   @map("created_by_id") @db.Uuid
