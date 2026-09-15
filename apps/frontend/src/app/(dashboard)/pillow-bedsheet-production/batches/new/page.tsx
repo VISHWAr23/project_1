@@ -267,7 +267,7 @@ function CreatePillowBedsheetBatchContent() {
         `${productType === 'BED_SHEET' ? 'Bed Sheet' : 'Pillow Cover'} Batch ${batchNumber} started successfully!`,
         'success'
       );
-      router.push('/job-work');
+      router.push('/pillow-bedsheet-production');
     } catch (err: any) {
       toast('Creation Failed', err?.message || 'Could not start batch', 'error');
     }
@@ -293,8 +293,8 @@ function CreatePillowBedsheetBatchContent() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div className="flex items-center gap-3">
-          <Link href="/job-work">
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
+          <Link href="/pillow-bedsheet-production">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="Back to Pillow & Bedsheet Production">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
@@ -960,7 +960,7 @@ function CreatePillowBedsheetBatchContent() {
 
         {/* Form Actions */}
         <div className="flex items-center justify-end gap-3 pt-2">
-          <Link href="/job-work">
+          <Link href="/pillow-bedsheet-production">
             <Button type="button" variant="outline" size="sm">
               Cancel
             </Button>

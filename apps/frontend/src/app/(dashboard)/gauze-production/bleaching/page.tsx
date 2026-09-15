@@ -13,6 +13,7 @@ import {
   Clock,
   CheckCircle2,
   Layers,
+  ArrowLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -143,11 +144,18 @@ export default function GauzeBleachingJobsPage() {
     <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Truck className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-            Bleaching Subcontractor Register
-          </h1>
+        <div className="flex items-center gap-3">
+          <Link href="/gauze-production">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="Back to Gauze Production">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <Truck className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              Bleaching Subcontractor Register
+            </h1>
+          </div>
         </div>
 
 

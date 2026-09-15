@@ -415,8 +415,11 @@ export default function EditRawMaterialPage() {
               />
 
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-1.5">Pack Item Unit</label>
-                <Select
+                <MasterEntityDropdown
+                  label="Pack Item Unit"
+                  value={formData.packUnit}
+                  onChange={(val) => setFormData({ ...formData, packUnit: val })}
+                  storageKey="material_pack_item_units"
                   options={[
                     { label: 'Pcs (Pieces)', value: 'Pcs' },
                     { label: 'Wipes', value: 'Wipes' },
@@ -424,9 +427,12 @@ export default function EditRawMaterialPage() {
                     { label: 'Rolls', value: 'Rolls' },
                     { label: 'Swabs', value: 'Swabs' },
                     { label: 'Gowns', value: 'Gowns' },
+                    { label: 'Packs', value: 'Packs' },
+                    { label: 'Boxes', value: 'Boxes' },
+                    { label: 'Bottles', value: 'Bottles' },
+                    { label: 'Pairs', value: 'Pairs' },
                   ]}
-                  value={formData.packUnit}
-                  onChange={(e) => setFormData({ ...formData, packUnit: e.target.value })}
+                  placeholder="Select Pack Unit..."
                 />
               </div>
 

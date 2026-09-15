@@ -244,11 +244,14 @@ function CreateWeavingOrderContent() {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border pb-4">
         <div className="flex items-center gap-3">
-          <Link href="/job-work">
-            <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>
-              Back to Job Work
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.back()}
+            leftIcon={<ArrowLeft className="h-4 w-4" />}
+          >
+            Back
+          </Button>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
               <Layers className="h-6 w-6 text-lime-600 dark:text-lime-400" />
@@ -676,11 +679,9 @@ function CreateWeavingOrderContent() {
 
         {/* Form Actions */}
         <div className="flex justify-end gap-3 pt-4 border-t border-border">
-          <Link href="/job-work">
-            <Button variant="ghost" type="button">
-              Cancel
-            </Button>
-          </Link>
+          <Button variant="ghost" type="button" onClick={() => router.back()}>
+            Cancel
+          </Button>
           <Button
             variant="primary"
             type="submit"

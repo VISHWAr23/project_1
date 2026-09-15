@@ -23,6 +23,7 @@ import {
   Settings2,
   TrendingUp,
   Boxes,
+  ArrowLeft,
 } from 'lucide-react';
 import { formatDate } from '@/lib/date-utils';
 import { SkeletonLoader } from '@/components/ui/skeleton-loader';
@@ -38,18 +39,30 @@ export default function GamjeeProductionDashboardPage() {
     <div className="space-y-6 pb-12">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              Gamjee Roll Production
-            </h1>
-            <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              Active Module
-            </span>
+        <div className="flex items-center gap-3">
+          <Link href="/job-work">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="Back to Operations Hub">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+                Gamjee Roll Production
+              </h1>
+              <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                Active Module
+              </span>
+            </div>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <Link href="/job-work">
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs">
+              Operations Hub
+            </Button>
+          </Link>
           <Link href="/gamjee-production/masters">
             <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs">
               <Settings2 className="h-4 w-4" />

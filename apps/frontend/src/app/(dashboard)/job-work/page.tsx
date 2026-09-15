@@ -425,22 +425,6 @@ export default function JobWorkProductionHubPage() {
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Link href="/job-work/new" className="flex-1 sm:flex-initial">
-            <Button variant="primary" size="sm" fullWidth className="h-9 gap-1.5 text-xs min-h-[36px] font-bold shadow-sm">
-              <Plus className="h-4 w-4" />
-              <span>New Job Work Order</span>
-            </Button>
-          </Link>
-          <Button
-            type="button"
-            onClick={() => handleOpenAssignment('BLEACHING')}
-            variant="outline"
-            size="sm"
-            className="flex-1 sm:flex-initial h-9 gap-1.5 text-xs border-indigo-500/30 hover:bg-indigo-500/10 text-foreground min-h-[36px] font-bold"
-          >
-            <Sparkles className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-            <span>New Bleaching Order</span>
-          </Button>
           <Link href="/employees" className="flex-1 sm:flex-initial">
             <Button variant="outline" size="sm" fullWidth className="h-9 gap-1.5 text-xs min-h-[36px]">
               <Users className="h-4 w-4 text-emerald-600" />
@@ -1086,21 +1070,7 @@ export default function JobWorkProductionHubPage() {
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-border/70 flex items-center justify-between">
-                <Link
-                  href="/job-work/bleaching/new"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 px-2.5 text-xs gap-1.5 border-border hover:border-indigo-500/50 hover:bg-indigo-500/5 text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                  >
-                    <span>New Bleaching Order</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </Button>
-                </Link>
+              <div className="mt-4 pt-3 border-t border-border/70 flex items-center justify-end">
                 <Button
                   type="button"
                   size="sm"

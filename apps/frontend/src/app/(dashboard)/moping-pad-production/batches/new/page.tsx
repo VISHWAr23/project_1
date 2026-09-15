@@ -224,7 +224,7 @@ function CreateMopingPadBatchContent() {
       });
 
       toast('Batch Created', `Moping Pad Batch ${batchNumber} started successfully`, 'success');
-      router.push('/job-work');
+      router.push('/moping-pad-production');
     } catch (err: any) {
       toast('Creation Failed', err?.message || 'Could not create batch', 'error');
     }
@@ -235,8 +235,8 @@ function CreateMopingPadBatchContent() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div className="flex items-center gap-3">
-          <Link href="/job-work">
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
+          <Link href="/moping-pad-production">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="Back to Moping Pad Production">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
@@ -253,7 +253,7 @@ function CreateMopingPadBatchContent() {
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Link href="/job-work" className="flex-1 sm:flex-initial">
+          <Link href="/moping-pad-production" className="flex-1 sm:flex-initial">
             <Button variant="outline" size="sm" className="h-8 text-xs w-full justify-center">
               Cancel
             </Button>
@@ -915,7 +915,7 @@ function CreateMopingPadBatchContent() {
 
         {/* Submit Bottom Bar */}
         <div className="flex items-center justify-end gap-2 sm:gap-3 pt-2 w-full">
-          <Link href="/job-work" className="flex-1 sm:flex-initial">
+          <Link href="/moping-pad-production" className="flex-1 sm:flex-initial">
             <Button type="button" variant="outline" size="sm" className="h-9 px-4 text-xs w-full justify-center">
               Cancel
             </Button>

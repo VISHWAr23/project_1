@@ -9,6 +9,7 @@ import {
   Search,
   Filter,
   ArrowRight,
+  ArrowLeft,
   Truck,
   Sparkles,
   Layers,
@@ -57,11 +58,18 @@ export default function GauzeReportsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <FileBarChart className="h-5 w-5 text-teal-600 dark:text-teal-400" />
-            Gauze Production Intelligence & Audit Reports
-          </h1>
+        <div className="flex items-center gap-3">
+          <Link href="/gauze-production">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="Back to Gauze Production">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <FileBarChart className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+              Gauze Production Intelligence & Audit Reports
+            </h1>
+          </div>
         </div>
 
 

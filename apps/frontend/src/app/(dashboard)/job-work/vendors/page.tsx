@@ -252,12 +252,6 @@ export default function JobWorkVendorsPage() {
               <span>Operations Hub</span>
             </Button>
           </Link>
-          <Link href="/job-work/new" className="flex-1 sm:flex-initial">
-            <Button size="sm" className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-sm w-full justify-center whitespace-nowrap font-semibold">
-              <Plus className="h-3.5 w-3.5" />
-              <span>New Job Work Order</span>
-            </Button>
-          </Link>
           <Button
             onClick={handleOpenCreate}
             size="sm"

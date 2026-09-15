@@ -16,6 +16,7 @@ import {
   List,
   LayoutGrid,
   Calendar,
+  ArrowLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -141,14 +142,21 @@ export default function GauzeBatchesListPage() {
     <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Factory className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            Production Batches Register
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Search, filter, and inspect the complete lifecycle for every gauze production batch.
-          </p>
+        <div className="flex items-center gap-3">
+          <Link href="/gauze-production">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="Back to Gauze Production">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <Factory className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              Production Batches Register
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Search, filter, and inspect the complete lifecycle for every gauze production batch.
+            </p>
+          </div>
         </div>
 
         <Link href="/gauze-production/batches/new">

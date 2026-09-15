@@ -75,9 +75,14 @@ export default function PayrollDetailPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div className="flex items-center gap-3">
-          <Link href="/salary/list">
-            <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />} className="px-2" />
-          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.back()}
+            leftIcon={<ArrowLeft className="h-4 w-4" />}
+            className="px-2"
+            title="Back"
+          />
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold font-mono text-foreground">{run.payrollCode}</h1>

@@ -204,8 +204,8 @@ function CreateGamjeeBatchContent() {
     <div className="max-w-4xl mx-auto space-y-6 pb-16">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href="/gamjee-production/batches">
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        <Link href="/gamjee-production">
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Back to Gamjee Production">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
@@ -571,7 +571,7 @@ function CreateGamjeeBatchContent() {
 
         {/* Submit Actions */}
         <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 pt-2">
-          <Link href="/gamjee-production/batches" className="w-full sm:w-auto">
+          <Link href="/gamjee-production" className="w-full sm:w-auto">
             <Button type="button" variant="outline" className="w-full sm:w-auto justify-center">
               Cancel
             </Button>

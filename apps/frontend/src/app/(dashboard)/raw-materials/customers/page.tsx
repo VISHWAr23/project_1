@@ -334,8 +334,8 @@ export default function RawMaterialsCustomersPage() {
       {/* Top Header - Identical to Suppliers module */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-border pb-4 sm:pb-5">
         <div className="flex items-center gap-2 sm:gap-3">
-          <Link href="/raw-materials">
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <Link href="/customer-orders">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Back to Customer Orders">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>

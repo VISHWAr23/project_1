@@ -112,8 +112,8 @@ function CreateGauzeBatchContent() {
       {/* Back Link & Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href="/gauze-production/batches">
-            <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+          <Link href="/gauze-production">
+            <Button variant="outline" size="sm" className="h-8 w-8 p-0" title="Back to Gauze Production">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
@@ -305,7 +305,7 @@ function CreateGauzeBatchContent() {
 
         {/* Action Buttons */}
         <div className="flex items-center justify-end gap-3 pt-2">
-          <Link href="/gauze-production/batches">
+          <Link href="/gauze-production">
             <Button type="button" variant="outline" className="h-10 px-5">
               Cancel
             </Button>

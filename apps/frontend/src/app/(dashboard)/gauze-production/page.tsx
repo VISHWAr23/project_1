@@ -21,6 +21,7 @@ import {
   ArrowDownRight,
   Inbox,
   Scissors,
+  ArrowLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -207,6 +208,11 @@ export default function GauzeProductionDashboardPage() {
       {/* 1. Header with Big Friendly Action Button */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-border/60">
         <div className="flex items-center gap-3">
+          <Link href="/job-work">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="Back to Operations Hub">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
           <div className="p-2.5 rounded-xl bg-blue-600 text-white shadow-md">
             <Factory className="h-6 w-6" />
           </div>
@@ -219,6 +225,11 @@ export default function GauzeProductionDashboardPage() {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5">
+          <Link href="/job-work">
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9">
+              Operations Hub
+            </Button>
+          </Link>
           <Button
             variant="outline"
             size="sm"
