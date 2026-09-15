@@ -7,6 +7,8 @@ import { ReceiveReturnDto } from './dto/receive-return.dto';
 import { CloseJobWorkOrderDto } from './dto/close-job-work.dto';
 import { CreateWeavingJobWorkDto } from './dto/create-weaving-job-work.dto';
 import { ReceiveWeavingReturnDto } from './dto/receive-weaving-return.dto';
+import { CreateBleachingJobWorkDto } from './dto/create-bleaching-job-work.dto';
+import { ReceiveBleachingReturnDto } from './dto/receive-bleaching-return.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { JobWorkStatus } from '@ims/database';
 
@@ -77,6 +79,39 @@ export class JobWorkController {
     return this.jobWorkService.getReturnRegister({ search, page, limit });
   }
 
+  @Get('weaving-returns')
+  @ApiOperation({ summary: 'Get all weaving received in-pass items across all weaving orders' })
+  @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  async getWeavingReturnRegister(
+    @Query('search') search?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.jobWorkService.getWeavingReturnRegister({ search, page, limit });
+  }
+
+  @Get('bleaching-returns')
+  @ApiOperation({ summary: 'Get all bleaching received items across all bleaching orders' })
+  @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  async getBleachingReturnRegister(
+    @Query('search') search?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.jobWorkService.getBleachingReturnRegister({ search, page, limit });
+  }
+
+  @Get('available-weaving-goods')
+  @ApiOperation({ summary: 'Get available Weaving In-Pass Received Products ready to be sourced into Bleaching' })
+  @ApiQuery({ name: 'includeAssigned', required: false })
+  async getAvailableWeavingGoods(@Query('includeAssigned') includeAssigned?: string) {
+    return this.jobWorkService.getAvailableWeavingGoods(includeAssigned === 'true');
+  }
+
   @Post()
   @ApiOperation({ summary: 'Create a new Job Work Order' })
   async create(@Body() dto: CreateJobWorkOrderDto, @Req() req: any) {
@@ -89,6 +124,13 @@ export class JobWorkController {
   async createWeaving(@Body() dto: CreateWeavingJobWorkDto, @Req() req: any) {
     const userId = req.user?.id;
     return this.jobWorkService.createWeavingOrder(dto, userId);
+  }
+
+  @Post('bleaching')
+  @ApiOperation({ summary: 'Create a new Bleaching Job Work Order (Beam Dyeing or Peroxide Bleaching)' })
+  async createBleaching(@Body() dto: CreateBleachingJobWorkDto, @Req() req: any) {
+    const userId = req.user?.id;
+    return this.jobWorkService.createBleachingOrder(dto, userId);
   }
 
   @Get(':id')
@@ -116,6 +158,13 @@ export class JobWorkController {
   async receiveWeavingReturn(@Param('id') id: string, @Body() dto: ReceiveWeavingReturnDto, @Req() req: any) {
     const userId = req.user?.id;
     return this.jobWorkService.receiveWeavingReturn(id, dto, userId);
+  }
+
+  @Post(':id/bleaching-return')
+  @ApiOperation({ summary: 'Receive returned bleached in-pass items directly into dedicated table' })
+  async receiveBleachingReturn(@Param('id') id: string, @Body() dto: ReceiveBleachingReturnDto, @Req() req: any) {
+    const userId = req.user?.id;
+    return this.jobWorkService.receiveBleachingReturn(id, dto, userId);
   }
 
   @Post(':id/close')

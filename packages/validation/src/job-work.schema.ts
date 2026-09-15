@@ -232,3 +232,126 @@ export function computeWeavingJobWork(input: {
   };
 }
 
+// ==========================================
+// BLEACHING JOB WORK SPECIFICATIONS & SCHEMAS
+// ==========================================
+
+export const createBleachingJobWorkSchema = z.object({
+  jobWorkCompanyId: z.string().uuid('Valid Job Working Company is required'),
+  jobWorkType: z.literal('BLEACHING').default('BLEACHING'),
+  expectedReturnDate: z.string().min(1, 'Expected return date is required'),
+  remarks: z.string().optional(),
+
+  // Bleaching Process Specifications
+  bleachingType: z.enum(['BEAM_DYEING', 'PEROXIDE_BLEACHING'], {
+    errorMap: () => ({ message: 'Bleaching type must be Beam Dyeing or Peroxide Bleaching' }),
+  }),
+  rateType: z.enum(['PER_KG', 'PER_METER']).default('PER_KG'),
+  rate: z.number().positive('Rate must be greater than 0'),
+  processLossPercentage: z.number().min(0, 'Process loss percentage cannot be negative').default(3.0),
+  beamNumber: z.string().optional().nullable(),
+  chemicalFormula: z.string().optional().nullable(),
+
+  // Selected Weaving Received Items (Source Materials)
+  selectedWeavingItemIds: z.array(z.string().uuid()).min(1, 'At least one received weaving item must be selected'),
+
+  // Calculated Summary
+  totalInputWeightKg: z.number().positive('Total input weight must be greater than 0'),
+  totalInputLengthMeters: z.number().min(0).optional().nullable(),
+  totalPiecesOrRolls: z.number().int().positive('Total pieces/rolls must be positive'),
+  expectedOutputWeightKg: z.number().positive('Expected output weight must be positive'),
+  totalCost: z.number().positive('Total cost must be positive'),
+});
+
+export type CreateBleachingJobWorkInput = z.infer<typeof createBleachingJobWorkSchema>;
+
+export const receiveBleachingItemSchema = z.object({
+  date: z.string().min(1, 'Return date is required'),
+  inPassNumber: z.string().min(1, 'In-pass/DC number is required'),
+  description: z.string().min(1, 'Bleached fabric description is required'),
+  rollOrThan: z.enum(['Roll', 'Than']).default('Roll'),
+  lengthMeters: z.number().min(0).optional().nullable(),
+  weightKg: z.number().positive('Weight in KG must be greater than 0'),
+  whitenessIndex: z.string().optional().nullable(),
+  wastageDescription: z.string().optional().nullable(),
+  wastageWeightKg: z.number().min(0).default(0),
+});
+
+export type ReceiveBleachingItemInput = z.infer<typeof receiveBleachingItemSchema>;
+
+export const receiveBleachingReturnSchema = z.object({
+  returnedDate: z.string().min(1, 'Return date is required'),
+  items: z.array(receiveBleachingItemSchema).min(1, 'At least one returned item is required'),
+  remarks: z.string().optional().nullable(),
+  isFinal: z.boolean().default(false),
+});
+
+export type ReceiveBleachingReturnInput = z.infer<typeof receiveBleachingReturnSchema>;
+
+/**
+ * Pure calculation engine for Bleaching Job Work (Beam Dyeing vs Peroxide Bleaching)
+ * 1. Default standard rates:
+ *    - Beam Dyeing: ₹57.00 / Kg (or ₹4.50 / Meter)
+ *    - Peroxide Bleaching: ₹20.00 / Kg (or ₹1.60 / Meter)
+ * 2. Process shrinkage/loss calculation:
+ *    Expected Output Weight = Total Input Weight * (1 - loss% / 100)
+ * 3. Total Cost calculation:
+ *    If rateType == 'PER_METER': Total Input Length (m) * Rate
+ *    If rateType == 'PER_KG': Total Input Weight (kg) * Rate
+ */
+export function computeBleachingJobWork(input: {
+  bleachingType: 'BEAM_DYEING' | 'PEROXIDE_BLEACHING';
+  rateType?: 'PER_KG' | 'PER_METER';
+  rate?: number;
+  processLossPercentage?: number;
+  totalInputWeightKg: number;
+  totalInputLengthMeters?: number;
+  totalPiecesOrRolls?: number;
+}) {
+  const rateType = input.rateType ?? 'PER_KG';
+  const defaultRate =
+    input.bleachingType === 'BEAM_DYEING'
+      ? (rateType === 'PER_METER' ? 4.50 : 57.00)
+      : (rateType === 'PER_METER' ? 1.60 : 20.00);
+
+  const rate =
+    input.rate !== undefined && input.rate !== null && !isNaN(Number(input.rate)) && Number(input.rate) > 0
+      ? Number(input.rate)
+      : defaultRate;
+
+  const lossPct =
+    input.processLossPercentage !== undefined &&
+    input.processLossPercentage !== null &&
+    !isNaN(Number(input.processLossPercentage))
+      ? Number(input.processLossPercentage)
+      : 3.0;
+
+  const totalInputWeightKg = Number((input.totalInputWeightKg || 0).toFixed(3));
+  const totalInputLengthMeters = Number((input.totalInputLengthMeters || 0).toFixed(2));
+  const totalPiecesOrRolls = input.totalPiecesOrRolls || 1;
+
+  const expectedOutputWeightKg = Number((totalInputWeightKg * (1 - lossPct / 100)).toFixed(3));
+
+  const totalCost =
+    rateType === 'PER_METER'
+      ? Number((totalInputLengthMeters * rate).toFixed(2))
+      : Number((totalInputWeightKg * rate).toFixed(2));
+
+  const costPerKg = totalInputWeightKg > 0 ? Number((totalCost / totalInputWeightKg).toFixed(2)) : 0;
+  const costPerMeter = totalInputLengthMeters > 0 ? Number((totalCost / totalInputLengthMeters).toFixed(2)) : 0;
+
+  return {
+    bleachingType: input.bleachingType,
+    rateType,
+    rate,
+    processLossPercentage: lossPct,
+    totalInputWeightKg,
+    totalInputLengthMeters,
+    totalPiecesOrRolls,
+    expectedOutputWeightKg,
+    totalCost,
+    costPerKg,
+    costPerMeter,
+  };
+}
+

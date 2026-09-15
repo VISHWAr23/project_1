@@ -252,7 +252,7 @@ function CreateWeavingOrderContent() {
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
               <Layers className="h-6 w-6 text-lime-600 dark:text-lime-400" />
-              <span>Weaving Job Work Order (நெசவு பணி)</span>
+              <span>Weaving Job Work Order</span>
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
               Issue grey fabric weaving order to external subcontractor mills with exact yarn formulas & In-Pass delivery
@@ -281,7 +281,7 @@ function CreateWeavingOrderContent() {
             <span className="text-xs text-muted-foreground block">Order Classification</span>
             <span className="text-xs font-bold text-lime-700 dark:text-lime-300 uppercase tracking-wider bg-lime-500/20 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
               <Layers className="h-3 w-3" />
-              Weaving / நெசவு Subcontract
+              Weaving Subcontract
             </span>
           </div>
         </div>

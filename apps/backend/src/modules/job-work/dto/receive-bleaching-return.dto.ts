@@ -8,20 +8,21 @@ import {
   ValidateNested,
   IsBoolean,
   Min,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class WeavingReceivedItemDto {
+export class BleachingReceivedItemDto {
   @ApiProperty({ description: 'Receipt date (YYYY-MM-DD)' })
   @IsNotEmpty()
   date!: string;
 
-  @ApiProperty({ description: 'In-Pass number / Gate pass number' })
+  @ApiProperty({ description: 'In-Pass number / DC number' })
   @IsNotEmpty()
   @IsString()
   inPassNumber!: string;
 
-  @ApiProperty({ description: 'Description of woven fabric goods received' })
+  @ApiProperty({ description: 'Description of bleached fabric goods received' })
   @IsNotEmpty()
   @IsString()
   description!: string;
@@ -31,8 +32,12 @@ export class WeavingReceivedItemDto {
   @Min(0.001)
   weightKg!: number;
 
-  @ApiPropertyOptional({ description: 'Form of fabric received: Roll or Than', enum: ['Roll', 'Than'], default: 'Roll' })
-  @IsString()
+  @ApiPropertyOptional({
+    description: 'Form of fabric received: Roll or Than',
+    enum: ['Roll', 'Than'],
+    default: 'Roll',
+  })
+  @IsIn(['Roll', 'Than'])
   @IsOptional()
   rollOrThan?: string;
 
@@ -42,7 +47,12 @@ export class WeavingReceivedItemDto {
   @IsOptional()
   lengthMeters?: number;
 
-  @ApiPropertyOptional({ description: 'Description of wastage if any' })
+  @ApiPropertyOptional({ description: 'Whiteness index or QC grade (e.g. 92% CIE / Medical Grade)' })
+  @IsString()
+  @IsOptional()
+  whitenessIndex?: string;
+
+  @ApiPropertyOptional({ description: 'Description of wastage or edge cut pieces if any' })
   @IsString()
   @IsOptional()
   wastageDescription?: string;
@@ -54,23 +64,23 @@ export class WeavingReceivedItemDto {
   wastageWeightKg?: number;
 }
 
-export class ReceiveWeavingReturnDto {
+export class ReceiveBleachingReturnDto {
   @ApiProperty({ description: 'Return receipt date (YYYY-MM-DD)' })
   @IsNotEmpty()
   returnedDate!: string;
 
-  @ApiProperty({ description: 'List of received in-pass items', type: [WeavingReceivedItemDto] })
+  @ApiProperty({ description: 'List of received bleached items', type: [BleachingReceivedItemDto] })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => WeavingReceivedItemDto)
-  items!: WeavingReceivedItemDto[];
+  @Type(() => BleachingReceivedItemDto)
+  items!: BleachingReceivedItemDto[];
 
-  @ApiPropertyOptional({ description: 'General remarks for this return consignment' })
+  @ApiPropertyOptional({ description: 'General remarks for this bleaching return' })
   @IsString()
   @IsOptional()
   remarks?: string;
 
-  @ApiPropertyOptional({ description: 'Mark entire order as completed / final return' })
+  @ApiPropertyOptional({ description: 'Mark entire bleaching order as completed / final return' })
   @IsBoolean()
   @IsOptional()
   isFinal?: boolean;

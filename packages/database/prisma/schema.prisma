@@ -197,6 +197,7 @@ model User {
   jobWorkStatusHistories  JobWorkStatusHistory[]
   jobWorkReturnItems      JobWorkReturnItem[]
   weavingReceivedItems    WeavingReceivedItem[]  @relation("WeavingReceivedItems")
+  bleachingReceivedItems  BleachingReceivedItem[] @relation("BleachingReceivedItems")
   closedJobWorkOrders     JobWorkOrder[]         @relation("ClosedByUsers")
   auditLogs               AuditLog[]
   attendanceLogsCreated   AttendanceLog[]        @relation("AttendanceCreatedByUsers")
@@ -973,9 +974,12 @@ model JobWorkOrder {
 
   issueItems           JobWorkIssueItem[]
   returnItems          JobWorkReturnItem[]
-  statusHistory        JobWorkStatusHistory[]
-  weavingDetail        WeavingJobWorkDetail?
-  weavingReceivedItems WeavingReceivedItem[]
+  statusHistory              JobWorkStatusHistory[]
+  weavingDetail              WeavingJobWorkDetail?
+  weavingReceivedItems       WeavingReceivedItem[]
+  bleachingDetail            BleachingJobWorkDetail?
+  bleachingReceivedItems     BleachingReceivedItem[]
+  bleachingInputWeavingItems WeavingReceivedItem[]   @relation("BleachingInputWeavingItems")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1091,17 +1095,76 @@ model WeavingReceivedItem {
   inPassNumber        String        @map("in_pass_number") @db.VarChar(100)
   description         String        @db.Text
   weightKg            Decimal       @map("weight_kg") @db.Decimal(12, 3)
+  rollOrThan          String?       @default("Roll") @map("roll_or_than") @db.VarChar(20)
+  lengthMeters        Decimal?      @map("length_meters") @db.Decimal(10, 2)
   wastageDescription  String?       @map("wastage_description") @db.Text
   wastageWeightKg     Decimal       @default(0) @map("wastage_weight_kg") @db.Decimal(12, 3)
 
   receivedByUserId    String?       @map("received_by_user_id") @db.Uuid
   receivedByUser      User?         @relation("WeavingReceivedItems", fields: [receivedByUserId], references: [id], onDelete: SetNull)
 
+  bleachingJobWorkOrderId String?       @map("bleaching_job_work_order_id") @db.Uuid
+  bleachingJobWorkOrder   JobWorkOrder? @relation("BleachingInputWeavingItems", fields: [bleachingJobWorkOrderId], references: [id], onDelete: SetNull)
+  isBleached              Boolean       @default(false) @map("is_bleached")
+
   createdAt           DateTime      @default(now()) @map("created_at")
   updatedAt           DateTime      @updatedAt @map("updated_at")
 
   @@index([jobWorkOrderId], map: "idx_wri_order")
+  @@index([bleachingJobWorkOrderId], map: "idx_wri_bleaching_order")
   @@map("weaving_received_items")
+}
+
+// ==========================================
+// BLEACHING JOB WORK (BEAM DYEING & PEROXIDE)
+// ==========================================
+
+model BleachingJobWorkDetail {
+  id                      String        @id @default(uuid()) @db.Uuid
+  jobWorkOrderId          String        @unique @map("job_work_order_id") @db.Uuid
+  jobWorkOrder            JobWorkOrder  @relation(fields: [jobWorkOrderId], references: [id], onDelete: Cascade)
+
+  bleachingType           String        @map("bleaching_type") @db.VarChar(50) // 'BEAM_DYEING' | 'PEROXIDE_BLEACHING'
+  rateType                String        @default("PER_KG") @map("rate_type") @db.VarChar(20) // 'PER_KG' | 'PER_METER'
+  rate                    Decimal       @map("rate") @db.Decimal(10, 3)
+  totalInputWeightKg      Decimal       @map("total_input_weight_kg") @db.Decimal(12, 3)
+  totalInputLengthMeters  Decimal?      @map("total_input_length_meters") @db.Decimal(10, 2)
+  totalPiecesOrRolls      Int           @default(1) @map("total_pieces_or_rolls")
+  processLossPercentage   Decimal       @default(3.00) @map("process_loss_percentage") @db.Decimal(5, 2)
+  expectedOutputWeightKg  Decimal       @map("expected_output_weight_kg") @db.Decimal(12, 3)
+  totalCost               Decimal       @map("total_cost") @db.Decimal(12, 2)
+  beamNumber              String?       @map("beam_number") @db.VarChar(100)
+  chemicalFormula         String?       @map("chemical_formula") @db.Text
+
+  createdAt               DateTime      @default(now()) @map("created_at")
+  updatedAt               DateTime      @updatedAt @map("updated_at")
+
+  @@map("bleaching_job_work_details")
+}
+
+model BleachingReceivedItem {
+  id                  String        @id @default(uuid()) @db.Uuid
+  jobWorkOrderId      String        @map("job_work_order_id") @db.Uuid
+  jobWorkOrder        JobWorkOrder  @relation(fields: [jobWorkOrderId], references: [id], onDelete: Cascade)
+
+  date                DateTime      @map("date") @db.Date
+  inPassNumber        String        @map("in_pass_number") @db.VarChar(100)
+  description         String        @db.Text
+  weightKg            Decimal       @map("weight_kg") @db.Decimal(12, 3)
+  rollOrThan          String?       @default("Roll") @map("roll_or_than") @db.VarChar(20)
+  lengthMeters        Decimal?      @map("length_meters") @db.Decimal(10, 2)
+  whitenessIndex      String?       @map("whiteness_index") @db.VarChar(50)
+  wastageDescription  String?       @map("wastage_description") @db.Text
+  wastageWeightKg     Decimal       @default(0) @map("wastage_weight_kg") @db.Decimal(12, 3)
+
+  receivedByUserId    String?       @map("received_by_user_id") @db.Uuid
+  receivedByUser      User?         @relation("BleachingReceivedItems", fields: [receivedByUserId], references: [id], onDelete: SetNull)
+
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  @@index([jobWorkOrderId], map: "idx_bri_order")
+  @@map("bleaching_received_items")
 }
 
 // ==========================================

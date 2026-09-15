@@ -19,6 +19,7 @@ import {
   Coins,
   Sparkles,
   FileText,
+  PackageCheck,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,17 @@ export default function WeavingProductionPage() {
       jobWorkData?.items?.filter((o: any) => o.jobWorkType === 'WEAVING') || []
     );
   }, [jobWorkData?.items]);
+
+  // Consolidate received items count
+  const totalReceivedCount = useMemo(() => {
+    let count = 0;
+    allWeavingOrders.forEach((o: any) => {
+      if (Array.isArray(o.weavingReceivedItems)) {
+        count += o.weavingReceivedItems.length;
+      }
+    });
+    return count;
+  }, [allWeavingOrders]);
 
   // Apply search and status filter
   const filteredOrders = useMemo(() => {
@@ -103,7 +115,7 @@ export default function WeavingProductionPage() {
             <div className="flex items-center gap-2">
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
                 <Layers className="h-6 w-6 text-lime-600 dark:text-lime-400" />
-                <span>Weaving Production (நெசவு பணி)</span>
+                <span>Weaving Production</span>
               </h1>
               <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-lime-500/10 text-lime-600 dark:text-lime-400 border border-lime-500/20">
                 Yarn to Fabric
@@ -115,13 +127,32 @@ export default function WeavingProductionPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        {/* Top Header Buttons: Weaving Mills | Received Products | New Weaving Order */}
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
           <Link href="/job-work/vendors" className="flex-1 sm:flex-initial">
             <Button variant="outline" size="sm" fullWidth className="h-9 gap-1.5 text-xs">
               <Building2 className="h-4 w-4 text-lime-600 dark:text-lime-400" />
               <span>Weaving Mills</span>
             </Button>
           </Link>
+
+          <Link href="/weaving-production/received" className="flex-1 sm:flex-initial">
+            <Button
+              variant="outline"
+              size="sm"
+              fullWidth
+              className="h-9 gap-1.5 text-xs border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-colors font-medium shadow-2xs"
+            >
+              <PackageCheck className="h-4 w-4 text-emerald-500" />
+              <span>Received Products</span>
+              {totalReceivedCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-mono font-bold">
+                  {totalReceivedCount}
+                </span>
+              )}
+            </Button>
+          </Link>
+
           <Link href="/job-work/weaving/new" className="flex-1 sm:flex-initial">
             <Button size="sm" fullWidth className="h-9 gap-1.5 text-xs bg-lime-600 hover:bg-lime-700 text-white font-bold shadow-xs">
               <Plus className="h-4 w-4" />
@@ -262,52 +293,59 @@ export default function WeavingProductionPage() {
           </div>
         </div>
 
-        {/* Orders Table */}
+        {/* Orders Table with explicit column widths and balanced alignments */}
         <div className="border border-border rounded-lg overflow-x-auto">
-          <table className="w-full text-xs text-left">
-            <thead className="bg-muted/50 border-b border-border text-muted-foreground font-semibold uppercase">
+          <table className="w-full text-xs text-left border-collapse">
+            <thead className="bg-muted/50 border-b border-border text-muted-foreground font-semibold uppercase tracking-wider">
               <tr>
-                <th className="p-3">Order Number</th>
-                <th className="p-3">Subcontractor Mill</th>
-                <th className="p-3">Specifications</th>
-                <th className="p-3 text-center">Paavu & Pieces</th>
-                <th className="p-3 text-right">Weft & Inward Wt</th>
-                <th className="p-3 text-right">Weaving Salary</th>
-                <th className="p-3 text-center">Status</th>
-                <th className="p-3 text-right">Actions</th>
+                <th className="p-3 w-36 text-left">Order Number</th>
+                <th className="p-3 min-w-[180px] text-left">Subcontractor Mill</th>
+                <th className="p-3 min-w-[200px] text-left">Specifications</th>
+                <th className="p-3 w-32 text-center">Paavu & Pieces</th>
+                <th className="p-3 w-36 text-right">Weft & Inward Wt</th>
+                <th className="p-3 w-36 text-right">Weaving Salary</th>
+                <th className="p-3 w-28 text-center">Status</th>
+                <th className="p-3 w-32 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border font-mono">
+            <tbody className="divide-y divide-border">
               {filteredOrders.map((order: any) => {
                 const detail = order.weavingDetail;
                 return (
                   <tr key={order.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="p-3 font-bold text-foreground">
+                    {/* Order Number */}
+                    <td className="p-3 w-36 align-middle font-mono">
                       <Link
                         href={`/job-work/${order.id}`}
-                        className="text-lime-600 dark:text-lime-400 hover:underline flex items-center gap-1 font-mono"
+                        className="text-lime-600 dark:text-lime-400 hover:underline font-bold block"
                       >
                         {order.jobWorkNumber}
                       </Link>
-                      <span className="text-[10px] text-muted-foreground block font-sans">
+                      <span className="text-[10px] text-muted-foreground block font-sans mt-0.5">
                         {formatDate(order.createdAt)}
                       </span>
                     </td>
-                    <td className="p-3 font-sans">
-                      <strong className="text-foreground block">{order.jobWorkCompany?.companyName || 'Subcontractor'}</strong>
+
+                    {/* Subcontractor Mill */}
+                    <td className="p-3 min-w-[180px] align-middle font-sans">
+                      <strong className="text-foreground block font-medium">
+                        {order.jobWorkCompany?.companyName || 'Subcontractor'}
+                      </strong>
                       {order.jobWorkCompany?.phone && (
-                        <span className="text-[10px] text-muted-foreground block font-mono">
+                        <span className="text-[10px] text-muted-foreground font-mono block mt-0.5">
                           {order.jobWorkCompany.phone}
                         </span>
                       )}
                     </td>
-                    <td className="p-3">
+
+                    {/* Specifications */}
+                    <td className="p-3 min-w-[200px] align-middle font-sans">
                       {detail ? (
                         <div>
-                          <span className="font-bold text-foreground block">
+                          <span className="font-bold text-foreground block font-mono">
                             {detail.ends}E × {detail.reed}R × {detail.pick}P
                           </span>
-                          <span className="text-[10px] text-muted-foreground block font-sans">
+                          <span className="text-[10px] text-muted-foreground block mt-0.5">
                             {Number(detail.weftCount).toFixed(0)}s count • {detail.pieceLengthMeters}m ({detail.pieceLengthYards} yds)
                           </span>
                         </div>
@@ -315,41 +353,52 @@ export default function WeavingProductionPage() {
                         <span className="text-muted-foreground">Standard</span>
                       )}
                     </td>
-                    <td className="p-3 text-center">
+
+                    {/* Paavu & Pieces */}
+                    <td className="p-3 w-32 align-middle text-center font-mono">
                       <span className="font-bold text-foreground block text-sm">
                         {detail?.totalPieces || 0} ps
                       </span>
-                      <span className="text-[10px] text-muted-foreground block font-sans">
+                      <span className="text-[10px] text-muted-foreground block font-sans mt-0.5">
                         {detail?.totalPaavu || 0} Paavu
                       </span>
                     </td>
-                    <td className="p-3 text-right">
+
+                    {/* Weft & Inward Wt */}
+                    <td className="p-3 w-36 align-middle text-right font-mono">
                       <span className="font-bold text-foreground block">
                         {Number(detail?.totalReceivableWeightKg || 0).toFixed(2)} Kg
                       </span>
-                      <span className="text-[10px] text-muted-foreground block font-sans">
+                      <span className="text-[10px] text-muted-foreground block font-sans mt-0.5">
                         Weft: {Number(detail?.totalWeftWeightKg || 0).toFixed(2)} Kg
                       </span>
                     </td>
-                    <td className="p-3 text-right">
+
+                    {/* Weaving Salary */}
+                    <td className="p-3 w-36 align-middle text-right font-mono">
                       <span className="font-bold text-emerald-600 dark:text-emerald-400 block text-sm">
                         ₹{Number(detail?.totalSalary || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </span>
-                      <span className="text-[10px] text-muted-foreground block font-sans">
+                      <span className="text-[10px] text-muted-foreground block font-sans mt-0.5">
                         {detail?.salaryType} @ ₹{detail?.ratePerMeter}/m
                       </span>
                     </td>
-                    <td className="p-3 text-center">
+
+                    {/* Status */}
+                    <td className="p-3 w-28 align-middle text-center">
                       <JobWorkStatusBadge status={order.status} />
                     </td>
-                    <td className="p-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5 font-sans">
+
+                    {/* Actions */}
+                    <td className="p-3 w-32 align-middle text-center">
+                      <div className="flex items-center justify-center gap-1.5 font-sans">
                         {order.status !== 'COMPLETED' && order.status !== 'CLOSED' && (
                           <Link href={`/job-work/${order.id}/return`}>
                             <Button
                               size="sm"
                               variant="outline"
                               className="h-7 px-2 text-[11px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 gap-1"
+                              title="Receive in-pass deliveries"
                             >
                               <RefreshCw className="h-3 w-3" />
                               <span>In-Pass</span>
@@ -361,6 +410,7 @@ export default function WeavingProductionPage() {
                             size="sm"
                             variant="ghost"
                             className="h-7 px-2 text-[11px] gap-1"
+                            title="View order details"
                           >
                             <span>View</span>
                             <ExternalLink className="h-3 w-3" />
@@ -386,3 +436,4 @@ export default function WeavingProductionPage() {
     </div>
   );
 }
+

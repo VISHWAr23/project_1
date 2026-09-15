@@ -110,7 +110,7 @@ export interface JobWorkOrder {
   outputProductWidth?: string;
   remarks?: string;
   closedAt?: string;
-  jobWorkType?: 'STANDARD' | 'WEAVING';
+  jobWorkType?: 'STANDARD' | 'WEAVING' | 'BLEACHING';
   jobWorkCompanyId: string;
   jobWorkCompany: JobWorkCompany;
   rawMaterialId?: string | null;
@@ -123,6 +123,9 @@ export interface JobWorkOrder {
   statusHistory?: JobWorkStatusHistory[];
   weavingDetail?: WeavingJobWorkDetail | null;
   weavingReceivedItems?: WeavingReceivedItem[];
+  bleachingDetail?: BleachingJobWorkDetail | null;
+  bleachingReceivedItems?: BleachingReceivedItem[];
+  bleachingInputWeavingItems?: WeavingReceivedItem[];
   createdAt: string;
   updatedAt: string;
 }
@@ -166,13 +169,89 @@ export interface WeavingReceivedItem {
   date: string;
   inPassNumber: string;
   description: string;
+  rollOrThan?: string | null;
+  lengthMeters?: number | null;
   weightKg: number;
   wastageDescription?: string | null;
   wastageWeightKg: number;
   receivedByUserId?: string | null;
-  receivedByUser?: { email: string };
+  receivedByUser?: { id?: string; email: string };
+  bleachingJobWorkOrderId?: string | null;
+  isBleached?: boolean;
+  jobWorkOrder?: Partial<JobWorkOrder> & {
+    id?: string;
+    jobWorkNumber?: string;
+    status?: JobWorkStatus;
+    jobWorkCompany?: Partial<JobWorkCompany>;
+    weavingDetail?: Partial<WeavingJobWorkDetail> | null;
+  };
   createdAt: string;
   updatedAt: string;
+}
+
+export interface WeavingReturnRegisterResponse {
+  items: WeavingReceivedItem[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export type BleachingType = 'BEAM_DYEING' | 'PEROXIDE_BLEACHING';
+
+export interface BleachingJobWorkDetail {
+  id: string;
+  jobWorkOrderId: string;
+  bleachingType: BleachingType;
+  rateType: 'PER_KG' | 'PER_METER';
+  rate: number;
+  totalInputWeightKg: number;
+  totalInputLengthMeters?: number | null;
+  totalPiecesOrRolls: number;
+  processLossPercentage: number;
+  expectedOutputWeightKg: number;
+  totalCost: number;
+  beamNumber?: string | null;
+  chemicalFormula?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BleachingReceivedItem {
+  id: string;
+  jobWorkOrderId: string;
+  date: string;
+  inPassNumber: string;
+  description: string;
+  rollOrThan?: string | null;
+  lengthMeters?: number | null;
+  weightKg: number;
+  whitenessIndex?: string | null;
+  wastageDescription?: string | null;
+  wastageWeightKg: number;
+  receivedByUserId?: string | null;
+  receivedByUser?: { id?: string; email: string };
+  jobWorkOrder?: Partial<JobWorkOrder> & {
+    id?: string;
+    jobWorkNumber?: string;
+    status?: JobWorkStatus;
+    jobWorkCompany?: Partial<JobWorkCompany>;
+    bleachingDetail?: Partial<BleachingJobWorkDetail> | null;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BleachingReturnRegisterResponse {
+  items: BleachingReceivedItem[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 export interface JobWorkStats {
@@ -232,6 +311,8 @@ export interface WeavingReceivedItemPayload {
   date: string;
   inPassNumber: string;
   description: string;
+  rollOrThan?: string;
+  lengthMeters?: number | null;
   weightKg: number;
   wastageDescription?: string;
   wastageWeightKg?: number;
@@ -240,6 +321,50 @@ export interface WeavingReceivedItemPayload {
 export interface ReceiveWeavingReturnPayload {
   returnedDate: string;
   items: WeavingReceivedItemPayload[];
+  remarks?: string;
+  isFinal?: boolean;
+}
+
+export interface CreateBleachingJobWorkPayload {
+  jobWorkCompanyId: string;
+  jobWorkType?: 'BLEACHING';
+  expectedReturnDate: string;
+  remarks?: string;
+
+  // Process Specs
+  bleachingType: BleachingType;
+  rateType: 'PER_KG' | 'PER_METER';
+  rate: number;
+  processLossPercentage?: number;
+  beamNumber?: string;
+  chemicalFormula?: string;
+
+  // Selected Weaving Received Goods
+  selectedWeavingItemIds: string[];
+
+  // Totals
+  totalInputWeightKg: number;
+  totalInputLengthMeters?: number | null;
+  totalPiecesOrRolls: number;
+  expectedOutputWeightKg: number;
+  totalCost: number;
+}
+
+export interface BleachingReceivedItemPayload {
+  date: string;
+  inPassNumber: string;
+  description: string;
+  rollOrThan?: 'Roll' | 'Than';
+  lengthMeters?: number | null;
+  weightKg: number;
+  whitenessIndex?: string;
+  wastageDescription?: string;
+  wastageWeightKg?: number;
+}
+
+export interface ReceiveBleachingReturnPayload {
+  returnedDate: string;
+  items: BleachingReceivedItemPayload[];
   remarks?: string;
   isFinal?: boolean;
 }

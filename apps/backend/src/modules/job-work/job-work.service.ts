@@ -7,6 +7,8 @@ import { ReceiveReturnDto } from './dto/receive-return.dto';
 import { CloseJobWorkOrderDto } from './dto/close-job-work.dto';
 import { CreateWeavingJobWorkDto } from './dto/create-weaving-job-work.dto';
 import { ReceiveWeavingReturnDto } from './dto/receive-weaving-return.dto';
+import { CreateBleachingJobWorkDto } from './dto/create-bleaching-job-work.dto';
+import { ReceiveBleachingReturnDto } from './dto/receive-bleaching-return.dto';
 
 @Injectable()
 export class JobWorkService {
@@ -54,8 +56,11 @@ export class JobWorkService {
           finishedProduct: true,
           weavingDetail: true,
           weavingReceivedItems: true,
+          bleachingDetail: true,
+          bleachingReceivedItems: true,
+          bleachingInputWeavingItems: true,
           _count: {
-            select: { issueItems: true, returnItems: true, weavingReceivedItems: true },
+            select: { issueItems: true, returnItems: true, weavingReceivedItems: true, bleachingReceivedItems: true },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -134,6 +139,24 @@ export class JobWorkService {
         weavingReceivedItems: {
           include: {
             receivedByUser: { select: { id: true, email: true } },
+          },
+          orderBy: { date: 'desc' },
+        },
+        bleachingDetail: true,
+        bleachingReceivedItems: {
+          include: {
+            receivedByUser: { select: { id: true, email: true } },
+          },
+          orderBy: { date: 'desc' },
+        },
+        bleachingInputWeavingItems: {
+          include: {
+            jobWorkOrder: {
+              include: {
+                jobWorkCompany: true,
+                weavingDetail: true,
+              },
+            },
           },
           orderBy: { date: 'desc' },
         },
@@ -308,6 +331,120 @@ export class JobWorkService {
         ...createdOrder,
         weavingDetail,
         jobWorkCompany: company,
+      };
+    });
+
+    return order;
+  }
+
+  /**
+   * Create a new Bleaching Job Work Order (Beam Dyeing or Peroxide Bleaching)
+   * Sourced directly from Weaving In-Pass Received Products
+   */
+  async createBleachingOrder(dto: CreateBleachingJobWorkDto, userId?: string) {
+    const company = await prisma.jobWorkCompany.findUnique({
+      where: { id: dto.jobWorkCompanyId },
+    });
+    if (!company) {
+      throw new BadRequestException('Invalid Job Working Company specified');
+    }
+
+    if (!dto.selectedWeavingItemIds || dto.selectedWeavingItemIds.length === 0) {
+      throw new BadRequestException('At least one received weaving item must be selected for bleaching');
+    }
+
+    // Verify all selected weaving items exist
+    const weavingItems = await prisma.weavingReceivedItem.findMany({
+      where: { id: { in: dto.selectedWeavingItemIds } },
+      include: { jobWorkOrder: true },
+    });
+
+    if (weavingItems.length !== dto.selectedWeavingItemIds.length) {
+      throw new BadRequestException('One or more selected weaving received items could not be found');
+    }
+
+    // Auto-generate Job Work Number e.g. JWO-2026-0043
+    const count = await prisma.jobWorkOrder.count();
+    const year = new Date().getFullYear();
+    const jobWorkNumber = `JWO-${year}-${String(count + 1).padStart(4, '0')}`;
+
+    const order = await prisma.$transaction(async (tx) => {
+      const createdOrder = await tx.jobWorkOrder.create({
+        data: {
+          jobWorkNumber,
+          jobWorkType: 'BLEACHING',
+          jobWorkCompanyId: dto.jobWorkCompanyId,
+          expectedReturnDate: new Date(dto.expectedReturnDate),
+          totalIssuedWeight: dto.totalInputWeightKg,
+          totalIssuedQty: dto.totalPiecesOrRolls,
+          pendingWeight: dto.expectedOutputWeightKg,
+          pendingQty: dto.totalPiecesOrRolls,
+          remarks: dto.remarks,
+          status: JobWorkStatus.MATERIALS_ISSUED, // Sourced materials are immediately assigned & issued
+        },
+      });
+
+      // Create BleachingJobWorkDetail
+      const bleachingDetail = await tx.bleachingJobWorkDetail.create({
+        data: {
+          jobWorkOrderId: createdOrder.id,
+          bleachingType: dto.bleachingType,
+          rateType: dto.rateType || 'PER_KG',
+          rate: dto.rate,
+          totalInputWeightKg: dto.totalInputWeightKg,
+          totalInputLengthMeters: dto.totalInputLengthMeters || null,
+          totalPiecesOrRolls: dto.totalPiecesOrRolls,
+          processLossPercentage: dto.processLossPercentage ?? 3.0,
+          expectedOutputWeightKg: dto.expectedOutputWeightKg,
+          totalCost: dto.totalCost,
+          beamNumber: dto.beamNumber || null,
+          chemicalFormula: dto.chemicalFormula || null,
+        },
+      });
+
+      // Link selected WeavingReceivedItem records to this bleaching order
+      await tx.weavingReceivedItem.updateMany({
+        where: { id: { in: dto.selectedWeavingItemIds } },
+        data: {
+          bleachingJobWorkOrderId: createdOrder.id,
+          isBleached: true,
+        },
+      });
+
+      const typeLabel = dto.bleachingType === 'BEAM_DYEING' ? 'Beam Dyeing' : 'Peroxide Bleaching';
+      const rateLabel = `₹${dto.rate}/${dto.rateType === 'PER_METER' ? 'm' : 'kg'}`;
+
+      // Track timeline history
+      await tx.jobWorkStatusHistory.create({
+        data: {
+          jobWorkOrderId: createdOrder.id,
+          fromStatus: JobWorkStatus.CREATED,
+          toStatus: JobWorkStatus.MATERIALS_ISSUED,
+          notes: `Bleaching Job Work Order created (${typeLabel}): ${dto.totalPiecesOrRolls} rolls (${dto.totalInputWeightKg} kg) sourced from Weaving goods. Rate: ${rateLabel}, Total Cost: ₹${Number(dto.totalCost).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
+          performedByUserId: userId || null,
+        },
+      });
+
+      // Audit log
+      await tx.auditLog.create({
+        data: {
+          action: 'CREATE_BLEACHING_JOB_WORK_ORDER',
+          entityName: 'JobWorkOrder',
+          entityId: createdOrder.id,
+          newValues: {
+            ...createdOrder,
+            bleachingDetail,
+            sourcedWeavingItemIds: dto.selectedWeavingItemIds,
+          } as any,
+          userId: userId || null,
+        },
+      });
+
+      return {
+        ...createdOrder,
+        bleachingDetail,
+        jobWorkCompany: company,
+        bleachingInputWeavingItems: weavingItems,
       };
     });
 
@@ -669,6 +806,8 @@ export class JobWorkService {
             date: new Date(item.date),
             inPassNumber: item.inPassNumber,
             description: item.description,
+            rollOrThan: item.rollOrThan || 'Roll',
+            lengthMeters: item.lengthMeters !== undefined && item.lengthMeters !== null && !isNaN(Number(item.lengthMeters)) ? item.lengthMeters : null,
             weightKg: item.weightKg,
             wastageDescription: item.wastageDescription || null,
             wastageWeightKg: item.wastageWeightKg || 0,
@@ -853,6 +992,261 @@ export class JobWorkService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  /**
+   * Get Weaving Return Register Feed across all weaving orders
+   */
+  async getWeavingReturnRegister(query: { search?: string; page?: number; limit?: number }) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (query.search) {
+      where.OR = [
+        { inPassNumber: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
+        { rollOrThan: { contains: query.search, mode: 'insensitive' } },
+        { jobWorkOrder: { jobWorkNumber: { contains: query.search, mode: 'insensitive' } } },
+        { jobWorkOrder: { jobWorkCompany: { companyName: { contains: query.search, mode: 'insensitive' } } } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.weavingReceivedItem.findMany({
+        where,
+        include: {
+          jobWorkOrder: {
+            include: {
+              jobWorkCompany: true,
+              weavingDetail: true,
+            },
+          },
+          receivedByUser: { select: { id: true, email: true } },
+        },
+        orderBy: { date: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.weavingReceivedItem.count({ where }),
+    ]);
+
+    return {
+      items,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Receive Returned Bleached Goods directly into BleachingReceivedItem table
+   */
+  async receiveBleachingReturn(id: string, dto: ReceiveBleachingReturnDto, userId?: string) {
+    const order = await prisma.jobWorkOrder.findUnique({
+      where: { id },
+      include: {
+        bleachingDetail: true,
+        bleachingReceivedItems: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Job Work Order with ID ${id} not found`);
+    }
+
+    if (order.jobWorkType !== 'BLEACHING') {
+      throw new BadRequestException('Order is not a Bleaching Job Work Order');
+    }
+
+    if (
+      order.status !== JobWorkStatus.CREATED &&
+      order.status !== JobWorkStatus.MATERIALS_ISSUED &&
+      order.status !== JobWorkStatus.IN_PROGRESS &&
+      order.status !== JobWorkStatus.PARTIAL_RETURN
+    ) {
+      throw new BadRequestException(`Cannot receive returns for order in status ${order.status}`);
+    }
+
+    const batchReturnedWeight = dto.items.reduce((sum, i) => sum + Number(i.weightKg || 0), 0);
+    const batchWastageWeight = dto.items.reduce((sum, i) => sum + Number(i.wastageWeightKg || 0), 0);
+
+    const updatedOrder = await prisma.$transaction(async (tx) => {
+      // 1. Create In-Pass records in BleachingReceivedItem table
+      for (const item of dto.items) {
+        await tx.bleachingReceivedItem.create({
+          data: {
+            jobWorkOrderId: order.id,
+            date: new Date(item.date),
+            inPassNumber: item.inPassNumber,
+            description: item.description,
+            rollOrThan: item.rollOrThan || 'Roll',
+            lengthMeters: item.lengthMeters !== undefined && item.lengthMeters !== null && !isNaN(Number(item.lengthMeters)) ? item.lengthMeters : null,
+            weightKg: item.weightKg,
+            whitenessIndex: item.whitenessIndex || null,
+            wastageDescription: item.wastageDescription || null,
+            wastageWeightKg: item.wastageWeightKg || 0,
+            receivedByUserId: userId || null,
+          },
+        });
+      }
+
+      // 2. Cumulative calculation
+      const totalReturnedWeight = Number(order.totalReturnedWeight) + batchReturnedWeight;
+      const totalWastageWeight = Number(order.totalWastageWeight) + batchWastageWeight;
+
+      const expectedWeight = order.bleachingDetail
+        ? Number(order.bleachingDetail.expectedOutputWeightKg)
+        : Number(order.totalIssuedWeight);
+
+      const pendingWeight = Math.max(0, expectedWeight - totalReturnedWeight - totalWastageWeight);
+
+      // Determine order status
+      let nextStatus: JobWorkStatus;
+      if (dto.isFinal || pendingWeight <= 0.001) {
+        nextStatus = JobWorkStatus.COMPLETED;
+      } else {
+        nextStatus = JobWorkStatus.PARTIAL_RETURN;
+      }
+
+      const orderUpdated = await tx.jobWorkOrder.update({
+        where: { id: order.id },
+        data: {
+          totalReturnedWeight,
+          totalWastageWeight,
+          pendingWeight,
+          status: nextStatus,
+          remarks: dto.remarks
+            ? order.remarks
+              ? `${order.remarks}\n${dto.remarks}`
+              : dto.remarks
+            : order.remarks,
+        },
+        include: {
+          jobWorkCompany: true,
+          bleachingDetail: true,
+          bleachingReceivedItems: {
+            include: {
+              receivedByUser: { select: { id: true, email: true } },
+            },
+            orderBy: { date: 'desc' },
+          },
+          bleachingInputWeavingItems: true,
+        },
+      });
+
+      // 3. Track timeline history
+      const inPassNumbers = dto.items.map((i) => i.inPassNumber).join(', ');
+      await tx.jobWorkStatusHistory.create({
+        data: {
+          jobWorkOrderId: order.id,
+          fromStatus: order.status,
+          toStatus: nextStatus,
+          notes: `Received In-Pass Bleached Return: ${dto.items.length} item(s) weighing ${batchReturnedWeight.toFixed(2)} kg (Wastage: ${batchWastageWeight.toFixed(2)} kg). DC/In-Pass: ${inPassNumbers}. Recorded in Bleaching In-Pass Register.`,
+          performedByUserId: userId || null,
+        },
+      });
+
+      // 4. Audit log
+      await tx.auditLog.create({
+        data: {
+          action: 'RECEIVE_BLEACHING_IN_PASS_RETURN',
+          entityName: 'JobWorkOrder',
+          entityId: order.id,
+          newValues: {
+            inPassNumbers,
+            batchReturnedWeight,
+            batchWastageWeight,
+            totalReturnedWeight,
+            totalWastageWeight,
+            pendingWeight,
+            nextStatus,
+          } as any,
+          userId: userId || null,
+        },
+      });
+
+      return orderUpdated;
+    });
+
+    return updatedOrder;
+  }
+
+  /**
+   * Get Bleaching Return Register Feed across all bleaching orders
+   */
+  async getBleachingReturnRegister(query: { search?: string; page?: number; limit?: number }) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (query.search) {
+      where.OR = [
+        { inPassNumber: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
+        { rollOrThan: { contains: query.search, mode: 'insensitive' } },
+        { whitenessIndex: { contains: query.search, mode: 'insensitive' } },
+        { jobWorkOrder: { jobWorkNumber: { contains: query.search, mode: 'insensitive' } } },
+        { jobWorkOrder: { jobWorkCompany: { companyName: { contains: query.search, mode: 'insensitive' } } } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.bleachingReceivedItem.findMany({
+        where,
+        include: {
+          jobWorkOrder: {
+            include: {
+              jobWorkCompany: true,
+              bleachingDetail: true,
+            },
+          },
+          receivedByUser: { select: { id: true, email: true } },
+        },
+        orderBy: { date: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.bleachingReceivedItem.count({ where }),
+    ]);
+
+    return {
+      items,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Get available Weaving In-Pass Received Products ready to be sourced into Bleaching
+   */
+  async getAvailableWeavingGoods(includeAssigned = false) {
+    const where: any = {};
+    if (!includeAssigned) {
+      where.bleachingJobWorkOrderId = null;
+    }
+
+    return prisma.weavingReceivedItem.findMany({
+      where,
+      include: {
+        jobWorkOrder: {
+          include: {
+            jobWorkCompany: true,
+            weavingDetail: true,
+          },
+        },
+      },
+      orderBy: { date: 'desc' },
+    });
   }
 
   /**

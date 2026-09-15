@@ -48,7 +48,7 @@ export default function JobWorkProductionHubPage() {
   const [selectedProduction, setSelectedProduction] = useState<ProductionType | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'all' | 'gauze' | 'gamjee' | 'moping-pad' | 'gauze-pad-pinning' | 'drying' | 'pillow-bedsheet' | 'weaving'
+    'all' | 'gauze' | 'gamjee' | 'moping-pad' | 'gauze-pad-pinning' | 'drying' | 'pillow-bedsheet' | 'weaving' | 'bleaching'
   >('all');
 
   // Queries
@@ -83,6 +83,18 @@ export default function JobWorkProductionHubPage() {
     );
   }, [jobWorkOrdersData?.items]);
 
+  const activeBleachingOrders = useMemo(() => {
+    return (
+      jobWorkOrdersData?.items?.filter(
+        (o: any) =>
+          o.jobWorkType === 'BLEACHING' &&
+          o.status !== 'COMPLETED' &&
+          o.status !== 'CANCELLED' &&
+          o.status !== 'CLOSED'
+      ) || []
+    );
+  }, [jobWorkOrdersData?.items]);
+
   const totalActiveRuns =
     activeGauzeBatches.length +
     activeGamjeeBatches.length +
@@ -90,7 +102,8 @@ export default function JobWorkProductionHubPage() {
     activeGauzePadBatches.length +
     activeDryingBatches.length +
     activePillowBatches.length +
-    activeWeavingOrders.length;
+    activeWeavingOrders.length +
+    activeBleachingOrders.length;
 
   const handleOpenAssignment = (type: ProductionType) => {
     setSelectedProduction(type);
@@ -339,6 +352,38 @@ export default function JobWorkProductionHubPage() {
       });
     });
 
+    // 8. Bleaching Job Work
+    activeBleachingOrders.forEach((order: any) => {
+      const isBeam = order.bleachingDetail?.bleachingType === 'BEAM_DYEING';
+      list.push({
+        id: `bleaching-${order.id}`,
+        batchNumber: order.jobWorkNumber,
+        categoryKey: 'bleaching',
+        typeLabel: isBeam ? 'Bleaching • Beam Dyeing' : 'Bleaching • Peroxide',
+        badgeClasses: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/20',
+        textAccentClass: 'text-indigo-600 dark:text-indigo-400',
+        borderHoverClass: 'hover:border-indigo-500/50',
+        productName: `${isBeam ? 'Beam Dyeing' : 'Peroxide Bleaching'} (${order.totalIssuedQty || 0} rolls/thans)`,
+        dateStr: resolveDisplayDate(order),
+        timestamp: resolveTimestamp(order),
+        metricPrimary: (
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Sourced: <strong className="text-foreground font-mono">{Number(order.totalIssuedWeight).toFixed(1)} kg</strong></span>
+            <span className="px-2 py-0.5 rounded bg-secondary text-[10px] font-mono">{order.status}</span>
+          </div>
+        ),
+        metricSecondary: (
+          <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground bg-secondary/40 px-2 py-1 rounded">
+            <span>Mill: {order.jobWorkCompany?.companyName || 'Bleaching Mill'}</span>
+            <span className="font-semibold text-indigo-600 dark:text-indigo-400 font-mono">
+              ₹{Number(order.bleachingDetail?.totalCost || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+            </span>
+          </div>
+        ),
+        manageUrl: `/job-work/${order.id}`,
+      });
+    });
+
     // Sort descending by timestamp (newest first), with alphanumeric tie-breaker
     return list.sort((a, b) => {
       if (b.timestamp !== a.timestamp) {
@@ -386,6 +431,16 @@ export default function JobWorkProductionHubPage() {
               <span>New Job Work Order</span>
             </Button>
           </Link>
+          <Button
+            type="button"
+            onClick={() => handleOpenAssignment('BLEACHING')}
+            variant="outline"
+            size="sm"
+            className="flex-1 sm:flex-initial h-9 gap-1.5 text-xs border-indigo-500/30 hover:bg-indigo-500/10 text-foreground min-h-[36px] font-bold"
+          >
+            <Sparkles className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            <span>New Bleaching Order</span>
+          </Button>
           <Link href="/employees" className="flex-1 sm:flex-initial">
             <Button variant="outline" size="sm" fullWidth className="h-9 gap-1.5 text-xs min-h-[36px]">
               <Users className="h-4 w-4 text-emerald-600" />
@@ -936,7 +991,7 @@ export default function JobWorkProductionHubPage() {
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-foreground group-hover:text-lime-600 dark:group-hover:text-lime-400 transition-colors">
-                        Weaving Job Work (நெசவு பணி)
+                        Weaving Job Work
                       </h3>
                       <span className="text-[11px] text-muted-foreground block">
                         Ends × Reed × Pick yarn formulations, mark breakdown & in-pass
@@ -980,6 +1035,76 @@ export default function JobWorkProductionHubPage() {
                   type="button"
                   size="sm"
                   className="h-8 px-3 text-xs gap-1.5 bg-lime-600 hover:bg-lime-700 text-white shadow-2xs group-hover:shadow-xs transition-all"
+                >
+                  <span>Assign & Start</span>
+                  <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Card 8: Bleaching Job Work */}
+          <motion.div
+            whileHover={{ y: -2 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            onClick={() => handleOpenAssignment('BLEACHING')}
+            className="group cursor-pointer"
+          >
+            <Card className="relative overflow-hidden p-4 sm:p-5 h-full flex flex-col justify-between border border-border hover:border-indigo-500/60 hover:shadow-md transition-all bg-gradient-to-br from-card via-card to-indigo-500/5">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-cyan-500" />
+
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-2xs shrink-0">
+                      <Sparkles className="h-4.5 w-4.5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        Bleaching Job Work
+                      </h3>
+                      <span className="text-[11px] text-muted-foreground block">
+                        Beam dyeing & peroxide bleaching from weaving returns
+                      </span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 shrink-0">
+                    Beam & Peroxide
+                  </span>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    {activeBleachingOrders.length} WIP Orders
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    Weaving Intake
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    Cost Matrix
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-border/70 flex items-center justify-between">
+                <Link
+                  href="/job-work/bleaching/new"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2.5 text-xs gap-1.5 border-border hover:border-indigo-500/50 hover:bg-indigo-500/5 text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                  >
+                    <span>New Bleaching Order</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </Link>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 px-3 text-xs gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs group-hover:shadow-xs transition-all"
                 >
                   <span>Assign & Start</span>
                   <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -1088,6 +1213,17 @@ export default function JobWorkProductionHubPage() {
               }`}
             >
               Weaving ({activeWeavingOrders.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('bleaching')}
+              className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap shrink-0 min-h-[32px] ${
+                activeTab === 'bleaching'
+                  ? 'bg-background font-semibold text-indigo-600 dark:text-indigo-400 shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Bleaching ({activeBleachingOrders.length})
             </button>
           </div>
         </div>

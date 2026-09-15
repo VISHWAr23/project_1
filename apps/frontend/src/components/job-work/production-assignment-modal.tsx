@@ -36,7 +36,8 @@ export type ProductionType =
   | 'GAUZE_PAD_PINNING'
   | 'DRYING'
   | 'PILLOW_BEDSHEET'
-  | 'WEAVING';
+  | 'WEAVING'
+  | 'BLEACHING';
 
 interface ProductionAssignmentModalProps {
   isOpen: boolean;
@@ -150,11 +151,15 @@ export function ProductionAssignmentModal({
         ? '/pillow-bedsheet-production'
         : productionType === 'WEAVING'
         ? '/job-work/weaving'
+        : productionType === 'BLEACHING'
+        ? '/job-work/bleaching'
         : '/drying';
 
     const targetUrl =
       productionType === 'WEAVING'
         ? `/job-work/weaving/new?${queryParams.toString()}`
+        : productionType === 'BLEACHING'
+        ? `/job-work/bleaching/new?${queryParams.toString()}`
         : `${basePath}/batches/new?${queryParams.toString()}`;
 
     onClose();
@@ -168,6 +173,7 @@ export function ProductionAssignmentModal({
   const isDrying = productionType === 'DRYING';
   const isPillowBedsheet = productionType === 'PILLOW_BEDSHEET';
   const isWeaving = productionType === 'WEAVING';
+  const isBleaching = productionType === 'BLEACHING';
 
   const titleText = isGauze
     ? 'Gauze Production'
@@ -180,7 +186,9 @@ export function ProductionAssignmentModal({
     : isPillowBedsheet
     ? 'Pillow Cover & Bed Sheet Production'
     : isWeaving
-    ? 'Weaving Job Work (நெசவு பணி)'
+    ? 'Weaving Job Work'
+    : isBleaching
+    ? 'Bleaching & Dyeing Job Work'
     : 'Drying Process';
 
   const badgeText = isGauze
@@ -195,6 +203,8 @@ export function ProductionAssignmentModal({
     ? 'Roll Weight, GSM & Piece Salary'
     : isWeaving
     ? 'Yarn to Fabric, Formulas & In-Pass'
+    : isBleaching
+    ? 'Beam Dyeing & Peroxide Bleaching'
     : 'Pieces Drying, Progress & Meter Salary';
 
   return (
@@ -221,6 +231,8 @@ export function ProductionAssignmentModal({
               ? 'bg-purple-500/5 border-purple-500/20 text-purple-700 dark:text-purple-300'
               : isWeaving
               ? 'bg-lime-500/5 border-lime-500/20 text-lime-700 dark:text-lime-300'
+              : isBleaching
+              ? 'bg-indigo-500/5 border-indigo-500/20 text-indigo-700 dark:text-indigo-300'
               : 'bg-orange-500/5 border-orange-500/20 text-orange-700 dark:text-orange-300'
           }`}
         >
@@ -238,6 +250,8 @@ export function ProductionAssignmentModal({
                 ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400'
                 : isWeaving
                 ? 'bg-lime-500/15 text-lime-600 dark:text-lime-400'
+                : isBleaching
+                ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400'
                 : 'bg-orange-500/15 text-orange-600 dark:text-orange-400'
             }`}
           >
@@ -253,6 +267,8 @@ export function ProductionAssignmentModal({
               <Bed className="h-4 w-4" />
             ) : isWeaving ? (
               <Layers className="h-4 w-4" />
+            ) : isBleaching ? (
+              <Sparkles className="h-4 w-4" />
             ) : (
               <Sun className="h-4 w-4" />
             )}

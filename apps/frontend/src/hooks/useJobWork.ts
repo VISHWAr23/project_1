@@ -6,6 +6,8 @@ import {
   IssueMaterialsPayload,
   ReceiveReturnPayload,
   ReceiveWeavingReturnPayload,
+  CreateBleachingJobWorkPayload,
+  ReceiveBleachingReturnPayload,
   CloseJobWorkOrderPayload,
 } from '@/types/job-work.types';
 
@@ -85,6 +87,27 @@ export function useReturnRegister(params?: { search?: string; page?: number; lim
   });
 }
 
+export function useWeavingReturnRegister(params?: { search?: string; page?: number; limit?: number }) {
+  return useQuery({
+    queryKey: ['weavingReturnRegister', params],
+    queryFn: () => jobWorkService.getWeavingReturnRegister(params),
+  });
+}
+
+export function useBleachingReturnRegister(params?: { search?: string; page?: number; limit?: number }) {
+  return useQuery({
+    queryKey: ['bleachingReturnRegister', params],
+    queryFn: () => jobWorkService.getBleachingReturnRegister(params),
+  });
+}
+
+export function useAvailableWeavingGoods(includeAssigned = false) {
+  return useQuery({
+    queryKey: ['availableWeavingGoods', includeAssigned],
+    queryFn: () => jobWorkService.getAvailableWeavingGoods(includeAssigned),
+  });
+}
+
 export function useCreateJobWorkOrder() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -114,6 +137,34 @@ export function useReceiveWeavingReturn() {
       queryClient.invalidateQueries({ queryKey: ['jobWorkOrders'] });
       queryClient.invalidateQueries({ queryKey: ['jobWorkOrder', variables.id] });
       queryClient.invalidateQueries({ queryKey: ['returnRegister'] });
+      queryClient.invalidateQueries({ queryKey: ['weavingReturnRegister'] });
+      queryClient.invalidateQueries({ queryKey: ['availableWeavingGoods'] });
+    },
+  });
+}
+
+export function useCreateBleachingJobWorkOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateBleachingJobWorkPayload) => jobWorkService.createBleachingOrder(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobWorkOrders'] });
+      queryClient.invalidateQueries({ queryKey: ['availableWeavingGoods'] });
+      queryClient.invalidateQueries({ queryKey: ['weavingReturnRegister'] });
+    },
+  });
+}
+
+export function useReceiveBleachingReturn() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: ReceiveBleachingReturnPayload }) =>
+      jobWorkService.receiveBleachingReturn(id, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['jobWorkOrders'] });
+      queryClient.invalidateQueries({ queryKey: ['jobWorkOrder', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['returnRegister'] });
+      queryClient.invalidateQueries({ queryKey: ['bleachingReturnRegister'] });
     },
   });
 }

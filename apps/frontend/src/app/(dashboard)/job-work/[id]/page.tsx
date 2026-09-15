@@ -21,6 +21,9 @@ import {
   Layers,
   Calculator,
   Info,
+  Sparkles,
+  Droplets,
+  Flame,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -59,6 +62,7 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
   const wastageWeight = Number(order.totalWastageWeight) || 0;
   const pendingWeight = Number(order.pendingWeight) || 0;
   const isWeaving = order.jobWorkType === 'WEAVING';
+  const isBleaching = order.jobWorkType === 'BLEACHING';
 
   const handleCloseOrder = async (remarks: string) => {
     try {
@@ -96,7 +100,13 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
               {isWeaving && (
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center gap-1">
                   <Layers className="h-3 w-3" />
-                  Weaving (நெசவு)
+                  Weaving
+                </span>
+              )}
+              {isBleaching && (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  Bleaching ({order.bleachingDetail?.bleachingType === 'BEAM_DYEING' ? 'Beam Dyeing' : 'Peroxide Bleaching'})
                 </span>
               )}
               <JobWorkStatusBadge status={order.status} />
@@ -122,8 +132,22 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
             </Link>
           )}
 
+          {/* Bleaching order: Can receive Bleached goods directly */}
+          {isBleaching && order.status !== 'CLOSED' && order.status !== 'COMPLETED' && (
+            <Link href={`/job-work/${order.id}/return`}>
+              <Button
+                variant="primary"
+                size="sm"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                leftIcon={<RefreshCw className="h-3.5 w-3.5" />}
+              >
+                Receive Bleached Goods
+              </Button>
+            </Link>
+          )}
+
           {/* Standard order: Issue then Return flow */}
-          {!isWeaving && order.status === 'CREATED' && (
+          {!isWeaving && !isBleaching && order.status === 'CREATED' && (
             <Link href={`/job-work/${order.id}/issue`}>
               <Button variant="primary" size="sm" leftIcon={<Send className="h-3.5 w-3.5" />}>
                 Issue Material
@@ -131,7 +155,7 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
             </Link>
           )}
 
-          {!isWeaving && (order.status === 'MATERIALS_ISSUED' || order.status === 'IN_PROGRESS' || order.status === 'PARTIAL_RETURN') && (
+          {!isWeaving && !isBleaching && (order.status === 'MATERIALS_ISSUED' || order.status === 'IN_PROGRESS' || order.status === 'PARTIAL_RETURN') && (
             <Link href={`/job-work/${order.id}/return`}>
               <Button variant="outline" size="sm" className="border-emerald-500/30 text-emerald-400" leftIcon={<RefreshCw className="h-3.5 w-3.5" />}>
                 Receive Return
@@ -370,7 +394,7 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
             <div>
               <span className="text-muted-foreground block">Contract Type:</span>
               <span className="font-semibold text-foreground text-sm">
-                {isWeaving ? 'Weaving Subcontract (நெசவு பணி ஒப்பந்தம்)' : 'Processing / Finishing Job Work'}
+                {isWeaving ? 'Weaving Subcontract' : 'Processing / Finishing Job Work'}
               </span>
             </div>
             {order.rawMaterial ? (
@@ -384,7 +408,49 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
                 <span className="text-muted-foreground block">Inventory Status:</span>
                 <span className="font-medium text-blue-500 text-xs">Direct Weaving (No raw materials issued from store)</span>
               </div>
+            ) : isBleaching ? (
+              <div>
+                <span className="text-muted-foreground block">Material Source:</span>
+                <span className="font-medium text-indigo-500 text-xs">
+                  Sourced from Weaving Job Work ({order.bleachingInputWeavingItems?.length || order.totalIssuedQty || 0} rolls/thans)
+                </span>
+              </div>
             ) : null}
+
+            {isBleaching && order.bleachingDetail && (
+              <div className="p-3 bg-indigo-500/5 rounded-lg border border-indigo-500/20 space-y-2 mt-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Process:</span>
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                    {order.bleachingDetail.bleachingType === 'BEAM_DYEING' ? 'Beam Dyeing' : 'Peroxide Bleaching'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Rate:</span>
+                  <span className="font-mono font-bold text-foreground">
+                    ₹{Number(order.bleachingDetail.rate).toFixed(2)} / {order.bleachingDetail.rateType === 'PER_METER' ? 'm' : 'kg'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Process Loss:</span>
+                  <span className="font-mono text-amber-500">
+                    {Number(order.bleachingDetail.processLossPercentage)}%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Expected Yield:</span>
+                  <span className="font-mono font-bold text-emerald-500">
+                    {Number(order.bleachingDetail.expectedOutputWeightKg).toFixed(2)} kg
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs pt-1.5 border-t border-border">
+                  <span className="text-muted-foreground">Total Cost:</span>
+                  <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-sm">
+                    ₹{Number(order.bleachingDetail.totalCost).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+            )}
             {order.finishedProduct && (
               <div>
                 <span className="text-muted-foreground block">Target Finished Product:</span>
@@ -454,6 +520,7 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
                   <th className="p-3">Receipt Date</th>
                   <th className="p-3">In-Pass Number</th>
                   <th className="p-3">Fabric Description</th>
+                  <th className="p-3 text-center">Form & Length</th>
                   <th className="p-3 text-right">Net Weight (Kg)</th>
                   <th className="p-3">Wastage Description</th>
                   <th className="p-3 text-right">Wastage (Kg)</th>
@@ -473,6 +540,22 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
                       <td className="p-3 font-sans text-foreground font-medium">
                         {item.description}
                       </td>
+                      <td className="p-3 text-center font-sans">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            item.rollOrThan === 'Than'
+                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                              : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                          }`}
+                        >
+                          {item.rollOrThan || 'Roll'}
+                        </span>
+                        {item.lengthMeters ? (
+                          <span className="text-[10px] text-muted-foreground font-mono block mt-0.5">
+                            {Number(item.lengthMeters).toFixed(1)} m
+                          </span>
+                        ) : null}
+                      </td>
                       <td className="p-3 text-right font-bold text-emerald-400 text-sm">
                         {Number(item.weightKg).toFixed(2)} Kg
                       </td>
@@ -486,7 +569,7 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="p-6 text-center text-muted-foreground font-sans">
+                    <td colSpan={8} className="p-6 text-center text-muted-foreground font-sans">
                       <p className="text-xs">No in-pass delivery records registered yet.</p>
                       <Link href={`/job-work/${order.id}/return`} className="mt-2 inline-block">
                         <Button variant="outline" size="sm" className="text-xs mt-2 border-emerald-500/30 text-emerald-400">
@@ -500,7 +583,7 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
               {order.weavingReceivedItems && order.weavingReceivedItems.length > 0 && (
                 <tfoot className="bg-muted/30 font-mono font-bold border-t border-border text-xs">
                   <tr>
-                    <td colSpan={4} className="p-3 text-right text-muted-foreground font-sans">
+                    <td colSpan={5} className="p-3 text-right text-muted-foreground font-sans">
                       Cumulative Total:
                     </td>
                     <td className="p-3 text-right text-emerald-400 text-sm">
@@ -516,6 +599,183 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
             </table>
           </div>
         </Card>
+      ) : isBleaching ? (
+        /* BLEACHING DEDICATED SOURCED MATERIALS & RECEIVED REGISTER */
+        <div className="space-y-6">
+          {/* Sourced Weaving Materials */}
+          <Card className="p-5 bg-card border-border space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div>
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-indigo-500" />
+                  <span>Sourced Weaving Goods ({order.bleachingInputWeavingItems?.length || 0})</span>
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Grey woven fabric rolls/thans issued into this bleaching lot from Weaving In-Pass deliveries
+                </p>
+              </div>
+              <span className="px-2.5 py-1 text-xs font-semibold rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                Total Sourced: {issuedWeight.toFixed(2)} Kg
+              </span>
+            </div>
+
+            <div className="border border-border rounded-lg overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-muted/50 border-b border-border text-muted-foreground font-semibold uppercase">
+                  <tr>
+                    <th className="p-3 w-10 text-center">#</th>
+                    <th className="p-3">In-Pass Number</th>
+                    <th className="p-3">Fabric Description</th>
+                    <th className="p-3">Source Weaving Order</th>
+                    <th className="p-3">Weaving Mill</th>
+                    <th className="p-3 text-center">Form</th>
+                    <th className="p-3 text-right">Net Weight (Kg)</th>
+                    <th className="p-3 text-right">Length</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border font-mono">
+                  {order.bleachingInputWeavingItems && order.bleachingInputWeavingItems.length > 0 ? (
+                    order.bleachingInputWeavingItems.map((item, idx) => (
+                      <tr key={item.id}>
+                        <td className="p-3 text-center text-muted-foreground">{idx + 1}</td>
+                        <td className="p-3 font-bold text-indigo-500">{item.inPassNumber}</td>
+                        <td className="p-3 font-sans text-foreground font-medium">{item.description}</td>
+                        <td className="p-3 text-muted-foreground">
+                          {item.jobWorkOrder?.jobWorkNumber ? (
+                            <Link href={`/job-work/${item.jobWorkOrder.id}`} className="hover:underline text-primary">
+                              {item.jobWorkOrder.jobWorkNumber}
+                            </Link>
+                          ) : '—'}
+                        </td>
+                        <td className="p-3 font-sans text-muted-foreground">
+                          {item.jobWorkOrder?.jobWorkCompany?.companyName || '—'}
+                        </td>
+                        <td className="p-3 text-center font-sans">
+                          <span className="px-2 py-0.5 rounded text-[10px] bg-muted border border-border">
+                            {item.rollOrThan || 'Roll'}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right font-bold text-foreground">
+                          {Number(item.weightKg).toFixed(2)} Kg
+                        </td>
+                        <td className="p-3 text-right text-muted-foreground">
+                          {item.lengthMeters ? `${Number(item.lengthMeters).toFixed(1)} m` : '—'}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={8} className="p-4 text-center text-muted-foreground font-sans">
+                        No individual roll records linked. Total dispatched weight: {issuedWeight.toFixed(2)} Kg.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          {/* Bleached Received Goods Register */}
+          <Card className="p-5 bg-card border-border space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-border pb-3">
+              <div>
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-indigo-500" />
+                  <span>Bleached Goods Received Register ({order.bleachingReceivedItems?.length || 0})</span>
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Processed bleached fabric received back from the mill with In-Pass and whiteness inspection
+                </p>
+              </div>
+
+              {order.status !== 'CLOSED' && order.status !== 'COMPLETED' && (
+                <Link href={`/job-work/${order.id}/return`}>
+                  <Button variant="outline" size="sm" className="h-8 text-xs gap-1 border-indigo-500/30 text-indigo-400">
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    <span>Receive Bleached Goods</span>
+                  </Button>
+                </Link>
+              )}
+            </div>
+
+            <div className="border border-border rounded-lg overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-muted/50 border-b border-border text-muted-foreground font-semibold uppercase">
+                  <tr>
+                    <th className="p-3 w-10 text-center">#</th>
+                    <th className="p-3">Receipt Date</th>
+                    <th className="p-3">In-Pass / DC #</th>
+                    <th className="p-3">Description</th>
+                    <th className="p-3 text-center">Form</th>
+                    <th className="p-3 text-right">Net Weight (Kg)</th>
+                    <th className="p-3 text-right">Length</th>
+                    <th className="p-3">Whiteness / Grade</th>
+                    <th className="p-3 text-right">Wastage (Kg)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border font-mono">
+                  {order.bleachingReceivedItems && order.bleachingReceivedItems.length > 0 ? (
+                    order.bleachingReceivedItems.map((item, idx) => (
+                      <tr key={item.id}>
+                        <td className="p-3 text-center text-muted-foreground">{idx + 1}</td>
+                        <td className="p-3 text-muted-foreground">{new Date(item.date).toLocaleDateString()}</td>
+                        <td className="p-3 font-bold text-indigo-500">{item.inPassNumber}</td>
+                        <td className="p-3 font-sans text-foreground font-medium">{item.description}</td>
+                        <td className="p-3 text-center font-sans">
+                          <span className="px-2 py-0.5 rounded text-[10px] bg-muted border border-border">
+                            {item.rollOrThan || 'Roll'}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right font-bold text-emerald-500">{Number(item.weightKg).toFixed(2)} Kg</td>
+                        <td className="p-3 text-right text-muted-foreground">
+                          {item.lengthMeters ? `${Number(item.lengthMeters).toFixed(1)} m` : '—'}
+                        </td>
+                        <td className="p-3 font-sans">
+                          {item.whitenessIndex ? (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+                              {item.whitenessIndex}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="p-3 text-right text-amber-500">{Number(item.wastageWeightKg).toFixed(2)} Kg</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={9} className="p-6 text-center text-muted-foreground font-sans">
+                        <p className="text-xs">No bleached goods received yet.</p>
+                        <Link href={`/job-work/${order.id}/return`} className="mt-2 inline-block">
+                          <Button variant="outline" size="sm" className="text-xs mt-2 border-indigo-500/30 text-indigo-400">
+                            Receive First Bleached In-Pass
+                          </Button>
+                        </Link>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+                {order.bleachingReceivedItems && order.bleachingReceivedItems.length > 0 && (
+                  <tfoot className="bg-muted/30 font-mono font-bold border-t border-border text-xs">
+                    <tr>
+                      <td colSpan={5} className="p-3 text-right text-muted-foreground font-sans">
+                        Cumulative Total:
+                      </td>
+                      <td className="p-3 text-right text-emerald-500 text-sm">
+                        {returnedWeight.toFixed(2)} Kg
+                      </td>
+                      <td></td>
+                      <td></td>
+                      <td className="p-3 text-right text-amber-500 text-sm">
+                        {wastageWeight.toFixed(2)} Kg
+                      </td>
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </div>
+          </Card>
+        </div>
       ) : (
         /* STANDARD ROLLS AND RETURNS TABLES */
         <>
