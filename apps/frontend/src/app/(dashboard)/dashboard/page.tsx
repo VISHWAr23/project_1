@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import {
   Activity,
   RefreshCw,
-  Plus,
   TrendingUp,
   Package,
   Users,
@@ -16,9 +15,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Modal } from '@/components/ui/modal';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -51,7 +47,6 @@ import { RecentWorkOrdersTable } from '@/components/dashboard/tables/recent-work
 
 import { RecentActivities } from '@/components/dashboard/widgets/recent-activities';
 import { LatestEmployees } from '@/components/dashboard/widgets/latest-employees';
-import { QuickActionsCard } from '@/components/dashboard/widgets/quick-actions-card';
 
 import { DashboardSkeleton } from '@/components/dashboard/states/dashboard-skeleton';
 import { DashboardErrorCard } from '@/components/dashboard/states/dashboard-error-card';
@@ -61,7 +56,6 @@ export default function DashboardPage() {
   const queryClient = useQueryClient();
 
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
 
   // Queries
   const summaryQuery = useDashboardSummary();
@@ -117,14 +111,6 @@ export default function DashboardPage() {
           >
             Sync Ledger
           </Button>
-          {/* <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setIsIssueModalOpen(true)}
-            leftIcon={<Plus className="h-3.5 w-3.5" />}
-          >
-            New Material Issue
-          </Button> */}
         </div>
       </div>
 
@@ -246,48 +232,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 8. Quick Actions Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-3">
-          <QuickActionsCard onOpenMaterialIssueModal={() => setIsIssueModalOpen(true)} />
-        </div>
-      </div>
-
-      {/* New Material Issue Requisition Modal */}
-      <Modal
-        isOpen={isIssueModalOpen}
-        onClose={() => setIsIssueModalOpen(false)}
-        title="New Material Issue Request"
-        description="Disburse raw materials to active shop-floor work order"
-      >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            setIsIssueModalOpen(false);
-            toast('Material Issue Created', 'WO-2026-090 material requisition successfully processed', 'success');
-          }}
-          className="space-y-4"
-        >
-          <Input label="Work Order Reference" placeholder="WO-2026-090" required />
-          <Select
-            label="Select Raw Material SKU"
-            options={[
-              { label: 'RM-YARN-40S - 100% Combed Cotton Grey Yarn 40s', value: 'RM-YARN-40S' },
-              { label: 'PM-BOX-5PLY - 5-Ply Corrugated Outer Box', value: 'PM-BOX-5PLY' },
-              { label: 'PM-TAPE-ROLL - BOPP Packaging Roll Tape 2 Inch', value: 'PM-TAPE-ROLL' },
-            ]}
-          />
-          <Input label="Disbursement Quantity" type="number" placeholder="100" required />
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="ghost" type="button" onClick={() => setIsIssueModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit">
-              Disburse Stock
-            </Button>
-          </div>
-        </form>
-      </Modal>
     </motion.div>
   );
 }
