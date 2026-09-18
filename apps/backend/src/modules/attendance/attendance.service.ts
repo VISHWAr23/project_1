@@ -47,13 +47,13 @@ export class AttendanceService {
       status === AttendanceStatus.HOLIDAY ||
       status === AttendanceStatus.WEEKLY_OFF
     ) {
-      return { workingHours: 0, overtimeHours: 0, otAmount: 0 };
+      return { workingHours: 0, overtimeHours: 0, shortageHours: 0, otAmount: 0 };
     }
 
     const standardRegularHours = status === AttendanceStatus.HALF_DAY ? 4.25 : 8.5;
 
     if (!checkInStr || !checkOutStr) {
-      return { workingHours: standardRegularHours, overtimeHours: 0, otAmount: 0 };
+      return { workingHours: standardRegularHours, overtimeHours: 0, shortageHours: 0, otAmount: 0 };
     }
 
     try {
@@ -83,17 +83,18 @@ export class AttendanceService {
           const workingHours = standardRegularHours;
           const overtimeHours = Math.max(0, Math.round((netWorkedHours - standardRegularHours) * 100) / 100);
           const otAmount = Math.round(overtimeHours * otRatePerHour * 100) / 100;
-          return { workingHours, overtimeHours, otAmount };
+          return { workingHours, overtimeHours, shortageHours: 0, otAmount };
         } else {
-          // If marked PRESENT (Full Day) or regular shift, standard regular hours apply
-          return { workingHours: standardRegularHours, overtimeHours: 0, otAmount: 0 };
+          // Employee worked less than standard regular hours (8.5 hrs or 4.25 hrs for half day)
+          const shortageHours = Math.max(0, Math.round((standardRegularHours - netWorkedHours) * 100) / 100);
+          return { workingHours: netWorkedHours, overtimeHours: 0, shortageHours, otAmount: 0 };
         }
       }
     } catch {
       // Fallback
     }
 
-    return { workingHours: standardRegularHours, overtimeHours: 0, otAmount: 0 };
+    return { workingHours: standardRegularHours, overtimeHours: 0, shortageHours: 0, otAmount: 0 };
   }
 
   /**
@@ -193,7 +194,7 @@ export class AttendanceService {
         date: dateUtc,
         employee: { deletedAt: null },
       },
-      select: { status: true, workingHours: true, overtimeHours: true, otAmount: true },
+      select: { status: true, workingHours: true, overtimeHours: true, shortageHours: true, otAmount: true },
     });
 
     const presentCount = logs.filter((l) => l.status === AttendanceStatus.PRESENT).length;
@@ -202,6 +203,7 @@ export class AttendanceService {
     const leaveCount = logs.filter((l) => l.status === AttendanceStatus.LEAVE).length;
     const unmarkedCount = Math.max(0, activeEmployeesCount - logs.length);
     const totalOvertimeHours = logs.reduce((acc, l) => acc + Number(l.overtimeHours || 0), 0);
+    const totalShortageHours = logs.reduce((acc, l) => acc + Number(l.shortageHours || 0), 0);
     const totalOvertimeAmount = logs.reduce((acc, l) => acc + Number(l.otAmount || 0), 0);
 
     return {
@@ -213,6 +215,7 @@ export class AttendanceService {
       leaveToday: leaveCount,
       unmarkedToday: unmarkedCount,
       totalOvertimeHours: Math.round(totalOvertimeHours * 100) / 100,
+      totalShortageHours: Math.round(totalShortageHours * 100) / 100,
       totalOvertimeAmount: Math.round(totalOvertimeAmount * 100) / 100,
     };
   }
@@ -254,6 +257,7 @@ export class AttendanceService {
       const totalLeave = logs.filter((l) => l.status === AttendanceStatus.LEAVE).length;
       const totalWorkingHours = logs.reduce((acc, l) => acc + Number(l.workingHours || 0), 0);
       const totalOvertimeHours = logs.reduce((acc, l) => acc + Number(l.overtimeHours || 0), 0);
+      const totalShortageHours = logs.reduce((acc, l) => acc + Number(l.shortageHours || 0), 0);
       const totalOtAmount = logs.reduce((acc, l) => acc + Number(l.otAmount || 0), 0);
 
       return {
@@ -270,12 +274,14 @@ export class AttendanceService {
         totalLeave,
         totalWorkingHours: Math.round(totalWorkingHours * 100) / 100,
         totalOvertimeHours: Math.round(totalOvertimeHours * 100) / 100,
+        totalShortageHours: Math.round(totalShortageHours * 100) / 100,
         totalOtAmount: Math.round(totalOtAmount * 100) / 100,
         logs: logs.map((l) => ({
           date: l.date.toISOString().split('T')[0],
           status: l.status,
           workingHours: Number(l.workingHours || 0),
           overtimeHours: Number(l.overtimeHours || 0),
+          shortageHours: Number(l.shortageHours || 0),
           otAmount: Number(l.otAmount || 0),
           checkIn: l.checkIn,
           checkOut: l.checkOut,
@@ -361,6 +367,7 @@ export class AttendanceService {
     
     const workingHours = dto.workingHours !== undefined ? dto.workingHours : computed.workingHours;
     const overtimeHours = dto.overtimeHours !== undefined ? dto.overtimeHours : computed.overtimeHours;
+    const shortageHours = dto.shortageHours !== undefined ? dto.shortageHours : computed.shortageHours;
     const otAmount = dto.otAmount !== undefined ? dto.otAmount : computed.otAmount;
 
     const record = await prisma.attendanceLog.upsert({
@@ -378,6 +385,7 @@ export class AttendanceService {
         lunchEnd,
         workingHours,
         overtimeHours,
+        shortageHours,
         otAmount,
         remarks: dto.remarks,
         createdByUserId: userId || null,
@@ -392,6 +400,7 @@ export class AttendanceService {
         lunchEnd,
         workingHours,
         overtimeHours,
+        shortageHours,
         otAmount,
         remarks: dto.remarks,
         createdByUserId: userId || null,
@@ -440,6 +449,7 @@ export class AttendanceService {
             lunchEnd: item.lunchEnd,
             workingHours: item.workingHours,
             overtimeHours: item.overtimeHours,
+            shortageHours: item.shortageHours,
             otAmount: item.otAmount,
             remarks: item.remarks,
           },
@@ -489,6 +499,7 @@ export class AttendanceService {
 
     dataToUpdate.workingHours = dto.workingHours !== undefined ? dto.workingHours : computed.workingHours;
     dataToUpdate.overtimeHours = dto.overtimeHours !== undefined ? dto.overtimeHours : computed.overtimeHours;
+    dataToUpdate.shortageHours = dto.shortageHours !== undefined ? dto.shortageHours : computed.shortageHours;
     dataToUpdate.otAmount = dto.otAmount !== undefined ? dto.otAmount : computed.otAmount;
     if (dto.remarks !== undefined) dataToUpdate.remarks = dto.remarks;
 

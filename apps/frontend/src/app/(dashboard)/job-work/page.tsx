@@ -1070,7 +1070,21 @@ export default function JobWorkProductionHubPage() {
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-border/70 flex items-center justify-end">
+              <div className="mt-4 pt-3 border-t border-border/70 flex items-center justify-between">
+                <Link
+                  href="/gauze-production/bleaching"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2.5 text-xs gap-1.5 border-border hover:border-indigo-500/50 hover:bg-indigo-500/5 text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                  >
+                    <span>Go to Production</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </Link>
                 <Button
                   type="button"
                   size="sm"

@@ -16,6 +16,7 @@ export interface AttendanceRecord {
   status: AttendanceStatus;
   workingHours: number;
   overtimeHours?: number;
+  shortageHours?: number;
   otAmount?: number;
   remarks?: string | null;
   createdAt: string;
@@ -33,6 +34,7 @@ export interface TodayAttendanceStats {
   leaveToday: number;
   unmarkedToday: number;
   totalOvertimeHours?: number;
+  totalShortageHours?: number;
   totalOvertimeAmount?: number;
 }
 
@@ -46,6 +48,7 @@ export interface CreateAttendancePayload {
   status: AttendanceStatus;
   workingHours?: number;
   overtimeHours?: number;
+  shortageHours?: number;
   otAmount?: number;
   remarks?: string;
 }
@@ -59,6 +62,7 @@ export interface BulkAttendanceItemPayload {
   lunchEnd?: string | null;
   workingHours?: number;
   overtimeHours?: number;
+  shortageHours?: number;
   otAmount?: number;
   remarks?: string;
 }
@@ -86,6 +90,7 @@ export interface MonthSummaryEmployeeLog {
   status: AttendanceStatus;
   workingHours: number;
   overtimeHours?: number;
+  shortageHours?: number;
   otAmount?: number;
   checkIn?: string | null;
   checkOut?: string | null;
@@ -107,6 +112,7 @@ export interface MonthSummaryEmployee {
   totalLeave: number;
   totalWorkingHours: number;
   totalOvertimeHours?: number;
+  totalShortageHours?: number;
   totalOtAmount?: number;
   logs: MonthSummaryEmployeeLog[];
 }

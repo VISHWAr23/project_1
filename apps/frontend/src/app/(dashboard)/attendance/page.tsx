@@ -531,6 +531,7 @@ export default function AttendancePage() {
       render: (row) => {
         const reg = Number(row.workingHours || 0);
         const ot = Number(row.overtimeHours || 0);
+        const shortage = Number(row.shortageHours || 0);
         if (row.status !== 'PRESENT' && row.status !== 'HALF_DAY') {
           return <span className="font-mono text-xs text-muted-foreground">—</span>;
         }
@@ -540,6 +541,11 @@ export default function AttendancePage() {
             {ot > 0 && (
               <span className="inline-block text-[11px] font-bold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-1.5 py-0.2 rounded border border-purple-500/20">
                 +{formatWorkHours(ot)} OT
+              </span>
+            )}
+            {shortage > 0 && (
+              <span className="inline-block text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-1.5 py-0.2 rounded border border-rose-500/20">
+                -{formatWorkHours(shortage)} Less
               </span>
             )}
           </div>
@@ -1032,6 +1038,7 @@ export default function AttendancePage() {
                         <th className="p-3 text-center">Absent</th>
                         <th className="p-3 text-center">Leave</th>
                         <th className="p-3 text-right">Overtime</th>
+                        <th className="p-3 text-right">Shortage</th>
                         <th className="p-3 text-right">Total Hours</th>
                       </tr>
                     </thead>
@@ -1088,6 +1095,13 @@ export default function AttendancePage() {
                           <td className="p-3 text-right">
                             <span className="text-purple-500 font-bold">
                               {emp.totalOvertimeHours > 0 ? `+${formatWorkHours(emp.totalOvertimeHours)}` : '0 hr'}
+                            </span>
+                          </td>
+
+                          {/* Shortage */}
+                          <td className="p-3 text-right">
+                            <span className={Number(emp.totalShortageHours || 0) > 0 ? 'text-rose-500 font-bold' : 'text-muted-foreground'}>
+                              {Number(emp.totalShortageHours || 0) > 0 ? `-${formatWorkHours(emp.totalShortageHours)}` : '0 hr'}
                             </span>
                           </td>
 
@@ -1163,6 +1177,9 @@ export default function AttendancePage() {
                         </th>
                         <th className="p-2 min-w-[60px] border-l border-border bg-secondary/80 text-purple-500 font-bold">
                           OT (h)
+                        </th>
+                        <th className="p-2 min-w-[60px] border-l border-border bg-secondary/80 text-rose-500 font-bold">
+                          Less (h)
                         </th>
                       </tr>
                     </thead>
@@ -1250,6 +1267,9 @@ export default function AttendancePage() {
                             </td>
                             <td className="p-2 border-l border-border font-bold text-purple-600 dark:text-purple-400">
                               {emp.totalOvertimeHours > 0 ? `+${formatWorkHours(emp.totalOvertimeHours)}` : '0 hr'}
+                            </td>
+                            <td className="p-2 border-l border-border font-bold text-rose-600 dark:text-rose-400">
+                              {Number(emp.totalShortageHours || 0) > 0 ? `-${formatWorkHours(emp.totalShortageHours)}` : '0 hr'}
                             </td>
                           </tr>
                         );

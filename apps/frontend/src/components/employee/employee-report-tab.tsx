@@ -477,8 +477,14 @@ export function EmployeeReportTab({ employeeId, employee }: EmployeeReportTabPro
                           <td className="p-3 text-right font-bold text-foreground">
                             {formatWorkHours(log.workingHours, { zeroText: '—' })}
                           </td>
-                          <td className="p-3 text-right font-bold text-purple-500">
-                            {log.overtimeHours > 0 ? `+${formatWorkHours(log.overtimeHours)}` : '—'}
+                          <td className="p-3 text-right font-bold">
+                            {log.overtimeHours > 0 ? (
+                              <span className="text-purple-500">+{formatWorkHours(log.overtimeHours)}</span>
+                            ) : (log as any).shortageHours > 0 ? (
+                              <span className="text-rose-500">-{formatWorkHours((log as any).shortageHours)}</span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
                           </td>
                           <td className="p-3 text-right font-medium text-emerald-500">
                             {log.otAmount > 0 ? `₹${log.otAmount}` : '—'}

@@ -48,6 +48,11 @@ export class CreateAttendanceDto {
   @IsOptional()
   overtimeHours?: number;
 
+  @ApiPropertyOptional({ description: 'Shortage Hours (< 8.5h shift)' })
+  @IsNumber()
+  @IsOptional()
+  shortageHours?: number;
+
   @ApiPropertyOptional({ description: 'Calculated OT Amount (INR)' })
   @IsNumber()
   @IsOptional()

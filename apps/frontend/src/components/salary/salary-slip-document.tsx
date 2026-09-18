@@ -219,7 +219,10 @@ export function SalarySlipDocument({ item }: SalarySlipDocumentProps) {
               )}
               {late > 0 && (
                 <div className="flex justify-between text-slate-700">
-                  <span>Late Arrival Deduction</span>
+                  <span>
+                    Shortage / Under-Hours Deduction
+                    {Number(item.shortageHours || 0) > 0 ? ` (${formatWorkHours(item.shortageHours)})` : ''}
+                  </span>
                   <span>₹ {late.toLocaleString('en-IN')}</span>
                 </div>
               )}

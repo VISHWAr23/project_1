@@ -122,13 +122,18 @@ export function AdjustmentModal({ item, isOpen, onClose }: AdjustmentModalProps)
               <h4 className="text-xs font-bold text-rose-400 uppercase tracking-wider">Deductions & Recoveries</h4>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] text-muted-foreground block">Late Deduction</label>
+                  <label className="text-[10px] text-muted-foreground block">Late / Shortage Deduction (₹)</label>
                   <Input
                     type="number"
                     value={lateDeduction}
                     onChange={(e) => setLateDeduction(Number(e.target.value))}
                     className="text-xs h-8"
                   />
+                  {Number(item.shortageHours || 0) > 0 && (
+                    <span className="text-[9px] text-rose-400 block mt-0.5 font-mono">
+                      {item.shortageHours}h shortage @ hourly rate
+                    </span>
+                  )}
                 </div>
                 <div>
                   <label className="text-[10px] text-muted-foreground block">Salary Advance</label>

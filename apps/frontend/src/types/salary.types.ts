@@ -65,6 +65,7 @@ export interface PayrollItem {
   overtimeHours?: number;
   overtimeRate?: number;
   overtimeSalary?: number;
+  shortageHours?: number;
   grossSalary: number;
   bonusAmount: number;
   incentiveAmount: number;
@@ -166,6 +167,7 @@ export interface GeneratePayrollPayload {
 export interface UpdatePayrollItemAdjustmentPayload {
   overtimeHours?: number;
   overtimeRate?: number;
+  shortageHours?: number;
   bonusAmount?: number;
   incentiveAmount?: number;
   lateDeduction?: number;

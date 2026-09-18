@@ -257,6 +257,7 @@ export class SalaryService {
           overtimeHours: item.overtimeHours,
           overtimeRate: item.overtimeRate,
           overtimeSalary: item.overtimeSalary,
+          shortageHours: item.shortageHours || 0,
           grossSalary: item.grossSalary,
           bonusAmount: item.bonusAmount,
           incentiveAmount: item.incentiveAmount,
@@ -311,6 +312,7 @@ export class SalaryService {
     const incentiveAmount = dto.incentiveAmount !== undefined ? dto.incentiveAmount : Number(item.incentiveAmount);
     const overtimeHours = dto.overtimeHours !== undefined ? dto.overtimeHours : Number(item.overtimeHours);
     const overtimeRate = dto.overtimeRate !== undefined ? dto.overtimeRate : Number(item.overtimeRate);
+    const shortageHours = dto.shortageHours !== undefined ? dto.shortageHours : Number((item as any).shortageHours || 0);
     const overtimeSalary = Math.round(overtimeHours * overtimeRate * 100) / 100;
 
     const lateDeduction = dto.lateDeduction !== undefined ? dto.lateDeduction : Number(item.lateDeduction);
@@ -332,6 +334,7 @@ export class SalaryService {
           overtimeHours,
           overtimeRate,
           overtimeSalary,
+          shortageHours,
           bonusAmount,
           incentiveAmount,
           lateDeduction,

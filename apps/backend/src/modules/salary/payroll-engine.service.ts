@@ -18,6 +18,7 @@ export interface CalculatedPayrollItem {
   overtimeHours: number;
   overtimeRate: number;
   overtimeSalary: number;
+  shortageHours: number;
   grossSalary: number;
   bonusAmount: number;
   incentiveAmount: number;
@@ -96,9 +97,11 @@ export class PayrollEngineService {
       let holidayCount = 0;
       let weeklyOffCount = 0;
       let totalOvertimeHours = 0;
+      let totalShortageHours = 0;
 
       for (const log of attendanceLogs) {
         totalOvertimeHours += Number(log.overtimeHours || 0);
+        totalShortageHours += Number((log as any).shortageHours || 0);
 
         switch (log.status) {
           case AttendanceStatus.PRESENT:
@@ -160,7 +163,10 @@ export class PayrollEngineService {
 
       const bonusAmount = 0;
       const incentiveAmount = 0;
-      const lateDeduction = 0;
+      // Proportional deduction for working less than 8.5h shift (Daily wage / 8.5) without fixed penalty
+      const dailyRate = isDailyWage ? baseWage : (baseWage / (defaultWorkingDays || 26));
+      const hourlyRate = dailyRate > 0 ? (dailyRate / 8.5) : 0;
+      const lateDeduction = Math.round(totalShortageHours * hourlyRate * 100) / 100;
       const loanDeduction = 0;
       const otherDeductions = 0;
 
@@ -184,6 +190,7 @@ export class PayrollEngineService {
         overtimeHours: Math.round(totalOvertimeHours * 100) / 100,
         overtimeRate: otRatePerHour,
         overtimeSalary,
+        shortageHours: Math.round(totalShortageHours * 100) / 100,
         grossSalary: initialGross,
         bonusAmount,
         incentiveAmount,
@@ -277,9 +284,11 @@ export class PayrollEngineService {
       let holidayCount = 0;
       let weeklyOffCount = 0;
       let totalOvertimeHours = 0;
+      let totalShortageHours = 0;
 
       for (const log of attendanceLogs) {
         totalOvertimeHours += Number(log.overtimeHours || 0);
+        totalShortageHours += Number((log as any).shortageHours || 0);
 
         switch (log.status) {
           case AttendanceStatus.PRESENT:
@@ -331,7 +340,10 @@ export class PayrollEngineService {
 
       const bonusAmount = 0;
       const incentiveAmount = 0;
-      const lateDeduction = 0;
+      // Proportional deduction for working less than 8.5h shift (Daily wage / 8.5) without fixed penalty
+      const dailyRate = isDailyWage ? baseWage : (baseWage / workingDaysInWeek);
+      const hourlyRate = dailyRate > 0 ? (dailyRate / 8.5) : 0;
+      const lateDeduction = Math.round(totalShortageHours * hourlyRate * 100) / 100;
       const loanDeduction = 0;
       const pfDeduction = 0;
       const esiDeduction = 0;
@@ -358,6 +370,7 @@ export class PayrollEngineService {
         overtimeHours: Math.round(totalOvertimeHours * 100) / 100,
         overtimeRate: otRatePerHour,
         overtimeSalary,
+        shortageHours: Math.round(totalShortageHours * 100) / 100,
         grossSalary: initialGross,
         bonusAmount,
         incentiveAmount,

@@ -136,9 +136,16 @@ export function PayrollTable({ items, isLoading, onEditAdjustment, onRecordPayme
           <span className="font-mono text-xs font-semibold text-rose-400">
             -₹{Number(row.totalDeductions).toLocaleString('en-IN')}
           </span>
-          <p className="text-[10px] text-amber-400">
-            Adv Ded: ₹{Number(row.advanceDeduction || 0)}
-          </p>
+          {Number(row.shortageHours || 0) > 0 && (
+            <p className="text-[10px] text-rose-400 font-mono font-medium">
+              Shortage: -{formatWorkHours(row.shortageHours)} (-₹{Number(row.lateDeduction || 0)})
+            </p>
+          )}
+          {Number(row.advanceDeduction || 0) > 0 && (
+            <p className="text-[10px] text-amber-400">
+              Adv Ded: ₹{Number(row.advanceDeduction || 0)}
+            </p>
+          )}
         </div>
       ),
     },

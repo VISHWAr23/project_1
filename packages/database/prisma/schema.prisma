@@ -339,6 +339,7 @@ model AttendanceLog {
   status        AttendanceStatus @default(PRESENT)
   workingHours  Decimal          @default(0) @map("working_hours") @db.Decimal(5, 2)
   overtimeHours Decimal          @default(0) @map("overtime_hours") @db.Decimal(5, 2)
+  shortageHours Decimal          @default(0) @map("shortage_hours") @db.Decimal(5, 2)
   otAmount      Decimal          @default(0) @map("ot_amount") @db.Decimal(10, 2)
   remarks       String?          @db.Text
   createdAt     DateTime         @default(now()) @map("created_at")
@@ -456,6 +457,7 @@ model PayrollItem {
   overtimeHours      Decimal       @default(0) @map("overtime_hours") @db.Decimal(6, 2)
   overtimeRate       Decimal       @default(0) @map("overtime_rate") @db.Decimal(10, 2)
   overtimeSalary     Decimal       @default(0) @map("overtime_salary") @db.Decimal(12, 2)
+  shortageHours      Decimal       @default(0) @map("shortage_hours") @db.Decimal(6, 2)
 
   grossSalary        Decimal       @default(0) @map("gross_salary") @db.Decimal(12, 2)
 

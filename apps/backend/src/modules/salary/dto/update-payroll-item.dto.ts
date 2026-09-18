@@ -30,6 +30,12 @@ export class UpdatePayrollItemAdjustmentDto {
   @Type(() => Number)
   @IsNumber()
   @Min(0)
+  shortageHours?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   lateDeduction?: number;
 
   @IsOptional()

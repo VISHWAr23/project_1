@@ -17,6 +17,7 @@ export const UpdatePayrollItemAdjustmentSchema = z.object({
   incentiveAmount: z.number().min(0).optional(),
   overtimeHours: z.number().min(0).optional(),
   overtimeRate: z.number().min(0).optional(),
+  shortageHours: z.number().min(0).optional(),
   lateDeduction: z.number().min(0).optional(),
   advanceDeduction: z.number().min(0).optional(),
   loanDeduction: z.number().min(0).optional(),

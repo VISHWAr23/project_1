@@ -9,6 +9,7 @@ import { SearchInput } from '@/components/ui/search';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Avatar } from '@/components/ui/avatar';
 import { NotificationDropdown } from './NotificationDropdown';
+import { GlobalSearchModal } from './global-search-modal';
 
 const ROUTE_LABELS: Record<string, string> = {
   '/dashboard': 'Executive Dashboard',
@@ -38,30 +39,47 @@ export default function Header({ onMobileMenuOpen }: HeaderProps) {
   const pathname = usePathname();
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const [isSearchOpen, setIsSearchOpen] = React.useState(false);
+
+  // Global Ctrl+K / Cmd+K listener
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const currentPageLabel = ROUTE_LABELS[pathname] || 'Dashboard';
 
   return (
-    <header className="h-14 bg-card border-b border-border px-3 sm:px-5 flex items-center justify-between sticky top-0 z-30 shadow-sm min-w-0">
-      {/* Left: Mobile Menu Button & Search */}
-      <div className="flex items-center gap-2 sm:gap-4 flex-1 max-w-xl min-w-0">
-        {/* Mobile Hamburger Button */}
-        <button
-          onClick={onMobileMenuOpen}
-          className="md:hidden p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0 flex items-center justify-center min-h-[38px] min-w-[38px]"
-          title="Open Navigation Menu"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
+    <>
+      <header className="h-14 bg-card border-b border-border px-3 sm:px-5 flex items-center justify-between sticky top-0 z-30 shadow-sm min-w-0">
+        {/* Left: Mobile Menu Button & Search */}
+        <div className="flex items-center gap-2 sm:gap-4 flex-1 max-w-xl min-w-0">
+          {/* Mobile Hamburger Button */}
+          <button
+            onClick={onMobileMenuOpen}
+            className="md:hidden p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0 flex items-center justify-center min-h-[38px] min-w-[38px]"
+            title="Open Navigation Menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
 
-        <div className="hidden lg:block shrink-0">
-          <Breadcrumb items={[{ label: currentPageLabel }]} />
-        </div>
+          <div className="hidden lg:block shrink-0">
+            <Breadcrumb items={[{ label: currentPageLabel }]} />
+          </div>
 
-        <div className="w-full max-w-[130px] xs:max-w-[180px] sm:max-w-md min-w-0">
-          <SearchInput placeholder="Search..." />
+          <div className="w-full max-w-[130px] xs:max-w-[180px] sm:max-w-md min-w-0">
+            <SearchInput
+              placeholder="Search..."
+              onOpenModal={() => setIsSearchOpen(true)}
+            />
+          </div>
         </div>
-      </div>
 
       {/* Right Actions */}
       <div className="flex items-center gap-1 sm:gap-2 shrink-0">
@@ -93,5 +111,7 @@ export default function Header({ onMobileMenuOpen }: HeaderProps) {
         </div>
       </div>
     </header>
+    <GlobalSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+  </>
   );
 }

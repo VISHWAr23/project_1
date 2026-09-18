@@ -19,6 +19,7 @@ export const createAttendanceSchema = z.object({
   status: attendanceStatusEnum.default('PRESENT'),
   workingHours: z.number().min(0).max(24).optional().default(8.5),
   overtimeHours: z.number().min(0).max(24).optional().default(0),
+  shortageHours: z.number().min(0).max(24).optional().default(0),
   otAmount: z.number().min(0).optional().default(0),
   remarks: z.string().optional().or(z.literal('')),
 });
@@ -32,6 +33,7 @@ export const bulkAttendanceItemSchema = z.object({
   lunchEnd: z.string().optional().or(z.literal('')).nullable(),
   workingHours: z.number().optional().default(8.5),
   overtimeHours: z.number().optional().default(0),
+  shortageHours: z.number().optional().default(0),
   otAmount: z.number().optional().default(0),
   remarks: z.string().optional().or(z.literal('')),
 });
