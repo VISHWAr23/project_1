@@ -24,8 +24,8 @@ import { useTheme } from '@/providers/theme-provider';
 
 export default function LoginPage() {
   const { theme, toggleTheme } = useTheme();
-  const [email, setEmail] = useState('admin@manufacturing.com');
-  const [password, setPassword] = useState('Admin@12345');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -102,7 +102,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@manufacturing.com"
+              placeholder="name@company.com"
               leftIcon={<Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
             />
 

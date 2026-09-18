@@ -17,20 +17,22 @@ interface DailyProductionTrendChartProps {
   height?: number;
 }
 
-const defaultData: DailyProductionTrendItem[] = [
-  { date: '01 Aug', units: 1200 },
-  { date: '02 Aug', units: 1350 },
-  { date: '03 Aug', units: 1450 },
-  { date: '04 Aug', units: 1400 },
-  { date: '05 Aug', units: 1520 },
-  { date: '06 Aug', units: 1600 },
-  { date: '07 Aug', units: 1480 },
-];
-
 export const DailyProductionTrendChart: React.FC<DailyProductionTrendChartProps> = ({
-  data = defaultData,
+  data = [],
   height = 250,
 }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div
+        style={{ width: '100%', height }}
+        className="flex flex-col items-center justify-center text-center p-4 border border-dashed border-border/60 rounded-lg"
+      >
+        <p className="text-xs font-medium text-muted-foreground">No daily production trends recorded</p>
+        <p className="text-[11px] text-muted-foreground/70 font-mono mt-1">Output: Nil Units</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: '100%', height }}>
       <ResponsiveContainer width="100%" height="100%">
@@ -68,3 +70,4 @@ export const DailyProductionTrendChart: React.FC<DailyProductionTrendChartProps>
     </div>
   );
 };
+

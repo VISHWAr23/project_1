@@ -9,17 +9,22 @@ interface MaterialUsageChartProps {
   height?: number;
 }
 
-const defaultData: MaterialUsageItem[] = [
-  { name: 'Raw Metals', value: 45, color: '#3ECF8E' },
-  { name: 'Polymers', value: 25, color: '#3B82F6' },
-  { name: 'Electrical', value: 15, color: '#F59E0B' },
-  { name: 'Fasteners', value: 15, color: '#A855F7' },
-];
-
 export const MaterialUsageChart: React.FC<MaterialUsageChartProps> = ({
-  data = defaultData,
+  data = [],
   height = 220,
 }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div
+        style={{ width: '100%', height }}
+        className="flex flex-col items-center justify-center text-center p-4 border border-dashed border-border/60 rounded-lg"
+      >
+        <p className="text-xs font-medium text-muted-foreground">No material usage breakdown</p>
+        <p className="text-[11px] text-muted-foreground/70 font-mono mt-1">Share: Nil</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: '100%', height }}>
       <ResponsiveContainer width="100%" height="100%">
@@ -64,3 +69,4 @@ export const MaterialUsageChart: React.FC<MaterialUsageChartProps> = ({
     </div>
   );
 };
+

@@ -51,8 +51,6 @@ async function main() {
   await prisma.jobWorkChallan.deleteMany({});
   await prisma.jobWorkCompany.deleteMany({});
 
-  await prisma.materialIssue.deleteMany({});
-  await prisma.workOrder.deleteMany({});
   await prisma.inventoryTransaction.deleteMany({});
   await prisma.inventoryBatch.deleteMany({});
   await prisma.rawMaterial.deleteMany({});

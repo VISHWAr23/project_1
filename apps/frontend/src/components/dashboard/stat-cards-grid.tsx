@@ -25,10 +25,10 @@ export const StatCardsGrid: React.FC<StatCardsGridProps> = ({ summary, isLoading
       {/* 1. Total Employees */}
       <StatCard
         title="Total Employees"
-        value={summary ? `${summary.totalEmployees} Staff` : '112 Staff'}
+        value={summary ? `${summary.totalEmployees} Staff` : '0 Staff'}
         icon={<Users className="h-5 w-5" />}
-        description="98.2% Present Today"
-        trend={{ value: summary?.totalEmployeesChange || 3.8, isPositive: true }}
+        description={summary?.totalEmployees ? `${summary.totalEmployees} Active in System` : 'No employees registered'}
+        trend={summary?.totalEmployeesChange ? { value: summary.totalEmployeesChange, isPositive: true } : undefined}
         colorTheme="emerald"
         isLoading={isLoading}
       />
@@ -36,9 +36,9 @@ export const StatCardsGrid: React.FC<StatCardsGridProps> = ({ summary, isLoading
       {/* 2. Job Working Companies */}
       <StatCard
         title="Job Work Vendors"
-        value={summary ? `${summary.jobWorkCompanies} Vendors` : '14 Vendors'}
+        value={summary ? `${summary.jobWorkCompanies} Vendors` : '0 Vendors'}
         icon={<Building2 className="h-5 w-5" />}
-        description={`${summary?.activeJobChallans || 8} Active Challans`}
+        description={`${summary?.activeJobChallans ?? 0} Active Challans`}
         colorTheme="purple"
         isLoading={isLoading}
       />
@@ -46,12 +46,12 @@ export const StatCardsGrid: React.FC<StatCardsGridProps> = ({ summary, isLoading
       {/* 3. Raw Materials */}
       <StatCard
         title="Raw Materials"
-        value={summary ? `${summary.rawMaterialsCount} SKUs` : '342 SKUs'}
+        value={summary ? `${summary.rawMaterialsCount} SKUs` : '0 SKUs'}
         icon={<Package className="h-5 w-5" />}
         description={
-          summary
+          summary && summary.totalStockValuation > 0
             ? `Valued at ₹ ${(summary.totalStockValuation / 100000).toFixed(2)} Lakhs`
-            : 'Valued at ₹ 48.25 Lakhs'
+            : 'Valued at ₹ 0.00 Lakhs'
         }
         colorTheme="emerald"
         isLoading={isLoading}
@@ -60,9 +60,9 @@ export const StatCardsGrid: React.FC<StatCardsGridProps> = ({ summary, isLoading
       {/* 4. Finished Products */}
       <StatCard
         title="Finished Products"
-        value={summary ? `${summary.finishedProductsCount} Items` : '86 Items'}
+        value={summary ? `${summary.finishedProductsCount} Items` : '0 Items'}
         icon={<Boxes className="h-5 w-5" />}
-        description="Ready for Dispatch"
+        description={summary?.finishedProductsCount ? 'Ready for Dispatch' : 'Nil in Stock'}
         colorTheme="indigo"
         isLoading={isLoading}
       />
@@ -70,10 +70,10 @@ export const StatCardsGrid: React.FC<StatCardsGridProps> = ({ summary, isLoading
       {/* 5. Today's Production */}
       <StatCard
         title="Today's Production"
-        value={summary ? `${summary.todayProduction.toLocaleString()} Units` : '1,450 Units'}
+        value={summary ? `${summary.todayProduction.toLocaleString()} Units` : '0 Units'}
         icon={<TrendingUp className="h-5 w-5" />}
-        description="Target Met"
-        trend={{ value: summary?.todayProductionChange || 12.5, isPositive: true }}
+        description={summary && summary.todayProduction > 0 ? 'Production Recorded' : 'Nil Today'}
+        trend={summary?.todayProductionChange ? { value: summary.todayProductionChange, isPositive: true } : undefined}
         colorTheme="cyan"
         isLoading={isLoading}
       />
@@ -82,12 +82,12 @@ export const StatCardsGrid: React.FC<StatCardsGridProps> = ({ summary, isLoading
       <StatCard
         title="Today's Material Issues"
         value={
-          summary
+          summary && summary.todayMaterialIssues > 0
             ? `₹ ${(summary.todayMaterialIssues / 1000).toFixed(1)}k`
-            : '₹ 128.4k'
+            : '₹ 0.0k'
         }
         icon={<ArrowUpRight className="h-5 w-5" />}
-        description={`${summary?.todayMaterialIssuesCount || 14} Requisitions`}
+        description={`${summary?.todayMaterialIssuesCount ?? 0} Requisitions`}
         colorTheme="amber"
         isLoading={isLoading}
       />
@@ -95,10 +95,9 @@ export const StatCardsGrid: React.FC<StatCardsGridProps> = ({ summary, isLoading
       {/* 7. Product Returns */}
       <StatCard
         title="Product Returns"
-        value={summary ? `${summary.productReturns} Units` : '12 Units'}
+        value={summary ? `${summary.productReturns} Units` : '0 Units'}
         icon={<RotateCcw className="h-5 w-5" />}
-        description={`${summary?.rejectionRate || 0.8}% Rejection Rate`}
-        trend={{ value: -0.2, isPositive: true }}
+        description={`${summary?.rejectionRate ?? 0}% Rejection Rate`}
         colorTheme="rose"
         isLoading={isLoading}
       />
@@ -106,9 +105,9 @@ export const StatCardsGrid: React.FC<StatCardsGridProps> = ({ summary, isLoading
       {/* 8. Pending Work Orders */}
       <StatCard
         title="Pending Work Orders"
-        value={summary ? `${summary.pendingWorkOrders} Orders` : '18 Orders'}
+        value={summary ? `${summary.pendingWorkOrders} Orders` : '0 Orders'}
         icon={<Clock className="h-5 w-5" />}
-        description={`${summary?.highPriorityPendingOrders || 4} High Priority`}
+        description={`${summary?.highPriorityPendingOrders ?? 0} High Priority`}
         colorTheme="orange"
         isLoading={isLoading}
       />
@@ -116,9 +115,9 @@ export const StatCardsGrid: React.FC<StatCardsGridProps> = ({ summary, isLoading
       {/* 9. Completed Work Orders */}
       <StatCard
         title="Completed Work Orders"
-        value={summary ? `${summary.completedWorkOrders} Orders` : '142 Orders'}
+        value={summary ? `${summary.completedWorkOrders} Orders` : '0 Orders'}
         icon={<CheckCircle2 className="h-5 w-5" />}
-        description={`${summary?.completedThisMonth || 38} Completed this month`}
+        description={`${summary?.completedThisMonth ?? 0} Completed this month`}
         colorTheme="green"
         isLoading={isLoading}
       />
@@ -126,12 +125,13 @@ export const StatCardsGrid: React.FC<StatCardsGridProps> = ({ summary, isLoading
       {/* 10. Low Stock Items */}
       <StatCard
         title="Low Stock Items"
-        value={summary ? `${summary.lowStockCount} SKUs` : '7 SKUs'}
+        value={summary ? `${summary.lowStockCount} SKUs` : '0 SKUs'}
         icon={<AlertTriangle className="h-5 w-5" />}
-        description="Action Required: Reorder"
-        colorTheme="red"
+        description={summary && summary.lowStockCount > 0 ? 'Action Required: Reorder' : 'All Stock Healthy'}
+        colorTheme={summary && summary.lowStockCount > 0 ? 'red' : 'emerald'}
         isLoading={isLoading}
       />
     </div>
   );
 };
+

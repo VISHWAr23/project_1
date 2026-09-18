@@ -18,17 +18,22 @@ interface EmployeeProductivityChartProps {
   height?: number;
 }
 
-const defaultData: EmployeeProductivityItem[] = [
-  { department: 'Machining', efficiency: 94, unitsProduced: 4200, hoursLogged: 160 },
-  { department: 'Assembly', efficiency: 88, unitsProduced: 3800, hoursLogged: 152 },
-  { department: 'Quality', efficiency: 98, unitsProduced: 5100, hoursLogged: 168 },
-  { department: 'Packaging', efficiency: 91, unitsProduced: 4600, hoursLogged: 160 },
-];
-
 export const EmployeeProductivityChart: React.FC<EmployeeProductivityChartProps> = ({
-  data = defaultData,
+  data = [],
   height = 250,
 }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div
+        style={{ width: '100%', height }}
+        className="flex flex-col items-center justify-center text-center p-4 border border-dashed border-border/60 rounded-lg"
+      >
+        <p className="text-xs font-medium text-muted-foreground">No employee efficiency records</p>
+        <p className="text-[11px] text-muted-foreground/70 font-mono mt-1">Efficiency: Nil</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: '100%', height }}>
       <ResponsiveContainer width="100%" height="100%">
@@ -52,3 +57,4 @@ export const EmployeeProductivityChart: React.FC<EmployeeProductivityChartProps>
     </div>
   );
 };
+

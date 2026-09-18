@@ -11,38 +11,8 @@ interface RecentWorkOrdersTableProps {
   isLoading?: boolean;
 }
 
-const defaultItems: RecentWorkOrder[] = [
-  {
-    id: 'wo-comp-1',
-    workOrderNumber: 'WO-2026-085',
-    targetProductName: 'Electric Motor Housing',
-    status: 'COMPLETED',
-    plannedQuantity: 1000,
-    completedQuantity: 1000,
-    createdAt: new Date(Date.now() - 259200000).toISOString(),
-  },
-  {
-    id: 'wo-comp-2',
-    workOrderNumber: 'WO-2026-084',
-    targetProductName: 'Brass Connector Fittings',
-    status: 'COMPLETED',
-    plannedQuantity: 2500,
-    completedQuantity: 2500,
-    createdAt: new Date(Date.now() - 345600000).toISOString(),
-  },
-  {
-    id: 'wo-comp-3',
-    workOrderNumber: 'WO-2026-083',
-    targetProductName: 'Automotive Shaft Axle',
-    status: 'APPROVED',
-    plannedQuantity: 800,
-    completedQuantity: 620,
-    createdAt: new Date(Date.now() - 432000000).toISOString(),
-  },
-];
-
 export const RecentWorkOrdersTable: React.FC<RecentWorkOrdersTableProps> = ({
-  items = defaultItems,
+  items = [],
   isLoading = false,
 }) => {
   return (
@@ -57,7 +27,9 @@ export const RecentWorkOrdersTable: React.FC<RecentWorkOrdersTableProps> = ({
             Latest production work order submissions
           </CardDescription>
         </div>
-        <Badge variant="success">Live Log</Badge>
+        <Badge variant={items.length > 0 ? 'success' : 'outline'}>
+          {items.length > 0 ? 'Live Log' : '0 Orders'}
+        </Badge>
       </CardHeader>
       <CardContent className="p-0 flex-1">
         {isLoading ? (
@@ -65,6 +37,10 @@ export const RecentWorkOrdersTable: React.FC<RecentWorkOrdersTableProps> = ({
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-10 bg-muted/40 animate-pulse rounded-md"></div>
             ))}
+          </div>
+        ) : items.length === 0 ? (
+          <div className="p-8 text-center text-xs text-muted-foreground">
+            No completed work orders logged yet.
           </div>
         ) : (
           <div className="overflow-x-auto">

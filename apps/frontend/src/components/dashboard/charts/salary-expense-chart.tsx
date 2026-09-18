@@ -17,19 +17,23 @@ interface SalaryExpenseChartProps {
   data?: SalaryExpenseItem[];
   height?: number;
 }
-const defaultData: SalaryExpenseItem[] = [
-  { month: 'Mar', baseSalary: 950000, deductions: 45000, netSalary: 990000 },
-  { month: 'Apr', baseSalary: 980000, deductions: 48000, netSalary: 1024000 },
-  { month: 'May', baseSalary: 1020000, deductions: 51000, netSalary: 1074000 },
-  { month: 'Jun', baseSalary: 1050000, deductions: 53000, netSalary: 1107000 },
-  { month: 'Jul', baseSalary: 1100000, deductions: 56000, netSalary: 1169000 },
-  { month: 'Aug', baseSalary: 1150000, deductions: 58000, netSalary: 1222000 },
-];
 
 export const SalaryExpenseChart: React.FC<SalaryExpenseChartProps> = ({
-  data = defaultData,
+  data = [],
   height = 250,
 }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div
+        style={{ width: '100%', height }}
+        className="flex flex-col items-center justify-center text-center p-4 border border-dashed border-border/60 rounded-lg"
+      >
+        <p className="text-xs font-medium text-muted-foreground">No payroll runs processed</p>
+        <p className="text-[11px] text-muted-foreground/70 font-mono mt-1">Expense: ₹ 0.00</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: '100%', height }}>
       <ResponsiveContainer width="100%" height="100%">
@@ -71,3 +75,4 @@ export const SalaryExpenseChart: React.FC<SalaryExpenseChartProps> = ({
     </div>
   );
 };
+

@@ -10,51 +10,8 @@ interface RecentActivitiesProps {
   isLoading?: boolean;
 }
 
-const defaultItems: DashboardActivity[] = [
-  {
-    id: 'act-1',
-    action: 'DISBURSED',
-    entityName: 'Material Issue #MI-904',
-    entityId: 'mi-904',
-    details: '100 Kg Combed Cotton Yarn allocated to Loom Batch #42',
-    timestamp: '10 minutes ago',
-    userName: 'Vikram Mehta',
-    userRole: 'Store Manager',
-  },
-  {
-    id: 'act-2',
-    action: 'APPROVED',
-    entityName: 'Work Order #WO-2026-088',
-    entityId: 'wo-88',
-    details: 'Work order approved for floor production',
-    timestamp: '1 hour ago',
-    userName: 'Sanjay Kumar',
-    userRole: 'Plant Manager',
-  },
-  {
-    id: 'act-3',
-    action: 'DISPATCHED',
-    entityName: 'Job Work Challan #JWC-104',
-    entityId: 'jwc-104',
-    details: 'Sent 400 Kg Raw Gauze to Bleaching & Processing Mill',
-    timestamp: '2 hours ago',
-    userName: 'Anil Sharma',
-    userRole: 'Logistics Head',
-  },
-  {
-    id: 'act-4',
-    action: 'COMPLETED',
-    entityName: 'Payroll Run #JUL-2026',
-    entityId: 'pr-jul',
-    details: 'Monthly payroll run processed for 112 staff members',
-    timestamp: '4 hours ago',
-    userName: 'System Administrator',
-    userRole: 'ADMIN',
-  },
-];
-
 export const RecentActivities: React.FC<RecentActivitiesProps> = ({
-  items = defaultItems,
+  items = [],
   isLoading = false,
 }) => {
   const getActionIcon = (action: string) => {
@@ -88,6 +45,10 @@ export const RecentActivities: React.FC<RecentActivitiesProps> = ({
               <div key={i} className="h-12 bg-muted/40 animate-pulse rounded-md"></div>
             ))}
           </div>
+        ) : items.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-6">
+            No recent ledger activities recorded (Nil).
+          </p>
         ) : (
           <div className="relative border-l border-border/80 ml-3 space-y-4 py-1">
             {items.map((item) => (

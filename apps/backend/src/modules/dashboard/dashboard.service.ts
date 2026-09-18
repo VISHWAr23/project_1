@@ -19,20 +19,24 @@ export class DashboardService {
       completedGauzeThisMonth,
       completedGamjeeThisMonth,
       materialIssuesToday,
+      finishedProductsCount,
+      completedGauzeToday,
+      completedGamjeeToday,
+      completedWorkOrders,
     ] = await Promise.all([
       prisma.employee.count({
         where: { status: EmployeeStatus.ACTIVE, deletedAt: null },
-      }).catch(() => 42),
+      }).catch(() => 0),
 
       prisma.jobWorkCompany.count({
         where: { isActive: true },
-      }).catch(() => 6),
+      }).catch(() => 0),
 
       prisma.jobWorkOrder.count({
         where: {
           status: { in: [JobWorkStatus.IN_PROGRESS, JobWorkStatus.MATERIALS_ISSUED, JobWorkStatus.PARTIAL_RETURN] },
         },
-      }).catch(() => 4),
+      }).catch(() => 0),
 
       prisma.rawMaterial.findMany({
         where: { isActive: true },
@@ -45,23 +49,23 @@ export class DashboardService {
 
       prisma.gauzeProductionBatch.count({
         where: { status: { notIn: ['COMPLETED', 'CANCELLED'] } },
-      }).catch(() => 3),
+      }).catch(() => 0),
 
       prisma.gamjeeProductionBatch.count({
         where: { status: { notIn: ['COMPLETED', 'CANCELLED'] } },
-      }).catch(() => 2),
+      }).catch(() => 0),
 
       prisma.customerOrder.count({
         where: { status: { notIn: ['DELIVERED', 'CANCELLED'] } },
-      }).catch(() => 5),
+      }).catch(() => 0),
 
       prisma.gauzeProductionBatch.count({
         where: { status: 'COMPLETED', updatedAt: { gte: startOfMonth } },
-      }).catch(() => 18),
+      }).catch(() => 0),
 
       prisma.gamjeeProductionBatch.count({
         where: { status: 'COMPLETED', updatedAt: { gte: startOfMonth } },
-      }).catch(() => 14),
+      }).catch(() => 0),
 
       prisma.inventoryTransaction.aggregate({
         _sum: { quantity: true },
@@ -71,6 +75,27 @@ export class DashboardService {
           createdAt: { gte: startOfToday },
         },
       }).catch(() => ({ _sum: { quantity: null }, _count: { id: 0 } })),
+
+      prisma.rawMaterial.count({
+        where: {
+          category: { name: { contains: 'Finished', mode: 'insensitive' } },
+          isActive: true,
+        },
+      }).catch(() => 0),
+
+      prisma.gauzeProductionBatch.aggregate({
+        _sum: { currentQuantity: true },
+        where: { status: 'COMPLETED', updatedAt: { gte: startOfToday } },
+      }).catch(() => ({ _sum: { currentQuantity: null } })),
+
+      prisma.gamjeeProductionBatch.aggregate({
+        _sum: { currentQuantity: true },
+        where: { status: 'COMPLETED', updatedAt: { gte: startOfToday } },
+      }).catch(() => ({ _sum: { currentQuantity: null } })),
+
+      prisma.jobWorkOrder.count({
+        where: { status: JobWorkStatus.COMPLETED },
+      }).catch(() => 0),
     ]);
 
     const totalStockValuation = rawMaterials.reduce((acc, curr) => {
@@ -83,25 +108,28 @@ export class DashboardService {
 
     const pendingProduction = activeGauzeBatches + activeGamjeeBatches;
     const completedThisMonth = completedGauzeThisMonth + completedGamjeeThisMonth;
+    const todayProduction =
+      Number(completedGauzeToday._sum.currentQuantity || 0) +
+      Number(completedGamjeeToday._sum.currentQuantity || 0);
 
     return {
-      totalEmployees: totalEmployees || 38,
-      totalEmployeesChange: 4.5,
-      jobWorkCompanies: jobWorkCompanies || 6,
-      activeJobChallans: activeJobChallans || 4,
-      rawMaterialsCount: rawMaterials.length || 16,
-      totalStockValuation: totalStockValuation > 0 ? Math.round(totalStockValuation) : 2450000,
-      finishedProductsCount: 12,
-      todayProduction: 1850,
-      todayProductionChange: 8.4,
-      todayMaterialIssues: Number(materialIssuesToday._sum.quantity) || 450,
-      todayMaterialIssuesCount: materialIssuesToday._count.id || 6,
-      productReturns: 2,
-      rejectionRate: 0.3,
-      pendingWorkOrders: pendingProduction || 5,
-      highPriorityPendingOrders: pendingCustomerOrders || 3,
-      completedWorkOrders: 64,
-      completedThisMonth: completedThisMonth || 32,
+      totalEmployees: totalEmployees || 0,
+      totalEmployeesChange: 0,
+      jobWorkCompanies: jobWorkCompanies || 0,
+      activeJobChallans: activeJobChallans || 0,
+      rawMaterialsCount: rawMaterials.length,
+      totalStockValuation: totalStockValuation > 0 ? Math.round(totalStockValuation) : 0,
+      finishedProductsCount: finishedProductsCount || 0,
+      todayProduction: todayProduction || 0,
+      todayProductionChange: 0,
+      todayMaterialIssues: Number(materialIssuesToday._sum.quantity) || 0,
+      todayMaterialIssuesCount: materialIssuesToday._count.id || 0,
+      productReturns: 0,
+      rejectionRate: 0,
+      pendingWorkOrders: pendingProduction || 0,
+      highPriorityPendingOrders: pendingCustomerOrders || 0,
+      completedWorkOrders: completedWorkOrders || 0,
+      completedThisMonth: completedThisMonth || 0,
       lowStockCount: lowStockCount,
     };
   }
@@ -117,7 +145,7 @@ export class DashboardService {
     }).catch(() => []);
 
     const materialColors = ['#059669', '#2563EB', '#D97706', '#9333EA', '#0891B2', '#DC2626'];
-    let materialUsage = categories.map((cat: any, idx: number) => {
+    const materialUsage = categories.map((cat: any, idx: number) => {
       const val = (cat.rawMaterials || []).reduce(
         (sum: number, rm: any) => sum + Math.max(0, Number(rm.currentStockBalance) * Number(rm.unitCost)),
         0,
@@ -129,16 +157,6 @@ export class DashboardService {
       };
     }).filter((c: any) => c.value > 0);
 
-    if (materialUsage.length === 0) {
-      materialUsage = [
-        { name: 'Cotton & Yarn', value: 850000, color: '#059669' },
-        { name: 'Bleached Gauze Fabric', value: 540000, color: '#2563EB' },
-        { name: 'Non-Woven SMS', value: 320000, color: '#0891B2' },
-        { name: 'Packaging Supplies', value: 210000, color: '#D97706' },
-        { name: 'Finished Dressing Goods', value: 530000, color: '#9333EA' },
-      ];
-    }
-
     // 2. Fetch actual payroll runs if any
     const payrollRuns = await prisma.payrollRun.findMany({
       take: 6,
@@ -146,23 +164,12 @@ export class DashboardService {
     }).catch(() => []);
 
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    let salaryExpense = payrollRuns.reverse().map((pr) => ({
+    const salaryExpense = payrollRuns.reverse().map((pr) => ({
       month: `${monthNames[(pr.month || 1) - 1]} ${pr.year}`,
-      baseSalary: Math.round(Number(pr.totalGross) || 550000),
-      deductions: Math.round(Number(pr.totalDeductions) || 35000),
-      netSalary: Math.round(Number(pr.totalNet) || 515000),
+      baseSalary: Math.round(Number(pr.totalGross) || 0),
+      deductions: Math.round(Number(pr.totalDeductions) || 0),
+      netSalary: Math.round(Number(pr.totalNet) || 0),
     }));
-
-    if (salaryExpense.length === 0) {
-      salaryExpense = [
-        { month: 'Mar 2026', baseSalary: 480000, deductions: 28000, netSalary: 452000 },
-        { month: 'Apr 2026', baseSalary: 495000, deductions: 29500, netSalary: 465500 },
-        { month: 'May 2026', baseSalary: 510000, deductions: 31000, netSalary: 479000 },
-        { month: 'Jun 2026', baseSalary: 525000, deductions: 32000, netSalary: 493000 },
-        { month: 'Jul 2026', baseSalary: 540000, deductions: 33500, netSalary: 506500 },
-        { month: 'Aug 2026', baseSalary: 560000, deductions: 35000, netSalary: 525000 },
-      ];
-    }
 
     // 3. Category Stock Breakdown
     const inventoryStatus = categories.map((cat: any) => {
@@ -175,52 +182,16 @@ export class DashboardService {
         lowStock,
         outOfStock,
       };
-    });
+    }).filter((cat: any) => cat.inStock > 0 || cat.lowStock > 0 || cat.outOfStock > 0);
 
     return {
-      monthlyProduction: [
-        { month: 'Mar', planned: 24000, completed: 23200 },
-        { month: 'Apr', planned: 26000, completed: 25400 },
-        { month: 'May', planned: 28000, completed: 27800 },
-        { month: 'Jun', planned: 30000, completed: 29500 },
-        { month: 'Jul', planned: 32000, completed: 31800 },
-        { month: 'Aug', planned: 35000, completed: 34600 },
-      ],
-      dailyProductionTrend: [
-        { date: '25 Aug', units: 1200 },
-        { date: '26 Aug', units: 1350 },
-        { date: '27 Aug', units: 1420 },
-        { date: '28 Aug', units: 1380 },
-        { date: '29 Aug', units: 1510 },
-        { date: '30 Aug', units: 1600 },
-        { date: '31 Aug', units: 1490 },
-        { date: '01 Sep', units: 1650 },
-        { date: '02 Sep', units: 1720 },
-      ],
+      monthlyProduction: [],
+      dailyProductionTrend: [],
       materialUsage,
-      employeeProductivity: [
-        { department: 'Gauze Weaving Floor', efficiency: 96, unitsProduced: 12500, hoursLogged: 168 },
-        { department: 'Gamjee & Rolling Unit', efficiency: 93, unitsProduced: 8400, hoursLogged: 160 },
-        { department: 'Bleaching & Chemical Prep', efficiency: 97, unitsProduced: 9600, hoursLogged: 164 },
-        { department: 'Quality & Absorbency Lab', efficiency: 99, unitsProduced: 15200, hoursLogged: 172 },
-        { department: 'Cleanroom Packaging & Sealing', efficiency: 94, unitsProduced: 11000, hoursLogged: 160 },
-      ],
+      employeeProductivity: [],
       salaryExpense,
-      inventoryStatus: inventoryStatus.length > 0 ? inventoryStatus : [
-        { category: 'Raw Cotton & Yarn', inStock: 3, lowStock: 0, outOfStock: 0 },
-        { category: 'Bleached Gauze Fabric', inStock: 3, lowStock: 0, outOfStock: 0 },
-        { category: 'Packaging Supplies', inStock: 4, lowStock: 1, outOfStock: 0 },
-        { category: 'Non-Wovens & SMS', inStock: 2, lowStock: 0, outOfStock: 0 },
-        { category: 'Finished Goods', inStock: 4, lowStock: 0, outOfStock: 0 },
-      ],
-      monthlyPurchaseTrend: [
-        { month: 'Mar', purchaseAmount: 650000, ordersCount: 14 },
-        { month: 'Apr', purchaseAmount: 720000, ordersCount: 18 },
-        { month: 'May', purchaseAmount: 680000, ordersCount: 15 },
-        { month: 'Jun', purchaseAmount: 840000, ordersCount: 22 },
-        { month: 'Jul', purchaseAmount: 920000, ordersCount: 24 },
-        { month: 'Aug', purchaseAmount: 980000, ordersCount: 26 },
-      ],
+      inventoryStatus,
+      monthlyPurchaseTrend: [],
     };
   }
 
@@ -283,7 +254,7 @@ export class DashboardService {
           workOrderNumber: gb.batchNumber,
           targetProductName: 'Medical Gauze Fabric Weaving',
           status: 'IN_PROGRESS',
-          plannedQuantity: Number(gb.inputQuantity || 1000),
+          plannedQuantity: Number(gb.inputQuantity || 0),
           completedQuantity: Number(gb.currentQuantity || 0),
           createdAt: gb.createdAt.toISOString(),
         });
@@ -295,7 +266,7 @@ export class DashboardService {
           workOrderNumber: gmb.batchNumber,
           targetProductName: 'Surgical Gamjee Absorbent Roll',
           status: 'IN_PROGRESS',
-          plannedQuantity: Number(gmb.plannedFabricMeters || 500),
+          plannedQuantity: Number(gmb.plannedFabricMeters || 0),
           completedQuantity: 0,
           createdAt: gmb.createdAt.toISOString(),
         });
@@ -313,42 +284,12 @@ export class DashboardService {
         });
       });
 
-      if (jobs.length > 0) {
-        return jobs.slice(0, 6);
-      }
+      return jobs.slice(0, 6);
     } catch (e) {
-      // fallback
+      // return empty array if query fails
     }
 
-    return [
-      {
-        id: 'wo-1',
-        workOrderNumber: 'GB-2026-001',
-        targetProductName: 'Gauze Weaving 48" 24x20 Bleached Roll',
-        status: 'IN_PROGRESS',
-        plannedQuantity: 2000,
-        completedQuantity: 1400,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 'wo-2',
-        workOrderNumber: 'GMJ-2026-004',
-        targetProductName: 'Gamjee Roll 10cm x 3m (Absorbent Cotton)',
-        status: 'APPROVED',
-        plannedQuantity: 800,
-        completedQuantity: 450,
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-      },
-      {
-        id: 'wo-3',
-        workOrderNumber: 'JW-2026-012',
-        targetProductName: 'External Bleaching Subcontract (Sri Balaji Mills)',
-        status: 'IN_PROGRESS',
-        plannedQuantity: 1200,
-        completedQuantity: 800,
-        createdAt: new Date(Date.now() - 172800000).toISOString(),
-      },
-    ];
+    return [];
   }
 
   async getRecentWorkOrders() {
@@ -373,8 +314,8 @@ export class DashboardService {
           workOrderNumber: gb.batchNumber,
           targetProductName: 'Medical Gauze 48" Roll',
           status: 'COMPLETED',
-          plannedQuantity: Number(gb.inputQuantity || 1000),
-          completedQuantity: Number(gb.inputQuantity || 1000),
+          plannedQuantity: Number(gb.inputQuantity || 0),
+          completedQuantity: Number(gb.inputQuantity || 0),
           createdAt: gb.createdAt.toISOString(),
         });
       });
@@ -384,39 +325,18 @@ export class DashboardService {
           workOrderNumber: gmb.batchNumber,
           targetProductName: 'Gamjee Roll 15cm x 3m',
           status: 'COMPLETED',
-          plannedQuantity: Number(gmb.plannedFabricMeters || 500),
-          completedQuantity: Number(gmb.plannedFabricMeters || 500),
+          plannedQuantity: Number(gmb.plannedFabricMeters || 0),
+          completedQuantity: Number(gmb.plannedFabricMeters || 0),
           createdAt: gmb.createdAt.toISOString(),
         });
       });
 
-      if (list.length > 0) {
-        return list;
-      }
+      return list;
     } catch (e) {
-      // fallback
+      // return empty array if query fails
     }
 
-    return [
-      {
-        id: 'wo-comp-1',
-        workOrderNumber: 'GB-2026-008',
-        targetProductName: 'Sterile Gauze Swabs 10x10cm (12 Ply)',
-        status: 'COMPLETED',
-        plannedQuantity: 1500,
-        completedQuantity: 1500,
-        createdAt: new Date(Date.now() - 259200000).toISOString(),
-      },
-      {
-        id: 'wo-comp-2',
-        workOrderNumber: 'GMJ-2026-003',
-        targetProductName: 'Surgical Gamjee Pad 20x20cm (Sterile Pack)',
-        status: 'COMPLETED',
-        plannedQuantity: 2400,
-        completedQuantity: 2400,
-        createdAt: new Date(Date.now() - 345600000).toISOString(),
-      },
-    ];
+    return [];
   }
 
   async getActivities() {
@@ -463,38 +383,7 @@ export class DashboardService {
       // fallback
     }
 
-    return [
-      {
-        id: 'act-1',
-        action: 'WORK_ORDER_ISSUE',
-        entityName: 'RM-COT-001 Combed Cotton',
-        entityId: 'act-1',
-        details: 'Issued 250 Kg Raw Cotton to Gauze Weaving Batch #GB-001',
-        timestamp: new Date().toISOString(),
-        userName: 'Store Incharge',
-        userRole: 'WAREHOUSE_INCHARGE',
-      },
-      {
-        id: 'act-2',
-        action: 'JOB_WORK_DISPATCH',
-        entityName: 'DC-2026-0014 Bleaching Challan',
-        entityId: 'act-2',
-        details: 'Dispatched 500 Kg Grey Fabric to Subcontractor Bleaching Mill',
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-        userName: 'Logistics Head',
-        userRole: 'JOB_WORK_MANAGER',
-      },
-      {
-        id: 'act-3',
-        action: 'QC_APPROVED',
-        entityName: 'Bleached Gauze Roll Lot #B-409',
-        entityId: 'act-3',
-        details: 'Absorbency & Whiteness Tests PASSED (Compliant with IP 2022)',
-        timestamp: new Date(Date.now() - 7200000).toISOString(),
-        userName: 'QC Lead',
-        userRole: 'QC_INSPECTOR',
-      },
-    ];
+    return [];
   }
 
   async getLatestEmployees() {

@@ -88,14 +88,6 @@ enum TransactionType {
   MANUAL_CORRECTION
 }
 
-enum WorkOrderStatus {
-  DRAFT
-  PENDING_APPROVAL
-  APPROVED
-  REJECTED
-  COMPLETED
-}
-
 enum ChallanStatus {
   DISPATCHED
   PARTIALLY_RETURNED
@@ -192,8 +184,6 @@ model User {
   employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
 
   inventoryTransactions   InventoryTransaction[]
-  requestedMaterialIssues MaterialIssue[]        @relation("RequestedByUsers")
-  approvedMaterialIssues  MaterialIssue[]        @relation("ApprovedByUsers")
   jobWorkStatusHistories  JobWorkStatusHistory[]
   jobWorkReturnItems      JobWorkReturnItem[]
   weavingReceivedItems    WeavingReceivedItem[]  @relation("WeavingReceivedItems")
@@ -783,7 +773,6 @@ model RawMaterial {
 
   inventoryBatches      InventoryBatch[]
   inventoryTransactions InventoryTransaction[]
-  materialIssues        MaterialIssue[]
   jobWorkChallans       JobWorkChallan[]
 
   issuedJobWorkOrders   JobWorkOrder[]      @relation("IssuedRawMaterial")
@@ -855,42 +844,7 @@ model InventoryTransaction {
   @@map("inventory_transactions")
 }
 
-model WorkOrder {
-  id                String          @id @default(uuid()) @db.Uuid
-  workOrderNumber   String          @unique @map("work_order_number") @db.VarChar(50)
-  targetProductName String          @map("target_product_name") @db.VarChar(255)
-  status            WorkOrderStatus @default(DRAFT)
-  plannedQuantity   Decimal         @map("planned_quantity") @db.Decimal(12, 3)
-  completedQuantity Decimal         @default(0) @map("completed_quantity") @db.Decimal(12, 3)
-  createdAt         DateTime        @default(now()) @map("created_at")
-  updatedAt         DateTime        @updatedAt @map("updated_at")
 
-  materialIssues MaterialIssue[]
-
-  @@map("work_orders")
-}
-
-model MaterialIssue {
-  id                String    @id @default(uuid()) @db.Uuid
-  requestedQuantity Decimal   @map("requested_quantity") @db.Decimal(12, 3)
-  issuedQuantity    Decimal   @default(0) @map("issued_quantity") @db.Decimal(12, 3)
-  issuedAt          DateTime? @map("issued_at")
-  createdAt         DateTime  @default(now()) @map("created_at")
-
-  workOrderId String    @map("work_order_id") @db.Uuid
-  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
-
-  rawMaterialId String      @map("raw_material_id") @db.Uuid
-  rawMaterial   RawMaterial @relation(fields: [rawMaterialId], references: [id], onDelete: Cascade)
-
-  requestedByUserId String @map("requested_by_user_id") @db.Uuid
-  requestedBy       User   @relation("RequestedByUsers", fields: [requestedByUserId], references: [id])
-
-  approvedByUserId String? @map("approved_by_user_id") @db.Uuid
-  approvedBy       User?   @relation("ApprovedByUsers", fields: [approvedByUserId], references: [id])
-
-  @@map("material_issues")
-}
 
 model JobWorkChallan {
   id                      String        @id @default(uuid()) @db.Uuid
@@ -1208,7 +1162,6 @@ model CottonRoll {
 
   statusHistory    RollStatusHistory[]
   qcInspections    QCInspection[]
-  packingItems     PackingBundleItem[]
 
   @@index([rollNumber], map: "idx_roll_number")
   @@index([batchNumber], map: "idx_roll_batch")
@@ -1259,7 +1212,6 @@ model ProductMaster {
   variantType    String?   @map("variant_type") @db.VarChar(100)
 
   cottonRolls    CottonRoll[]
-  bomHeader      BillOfMaterial?
 
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
@@ -1267,34 +1219,7 @@ model ProductMaster {
   @@map("product_masters")
 }
 
-model BillOfMaterial {
-  id             String         @id @default(uuid()) @db.Uuid
-  bomNumber      String         @unique @map("bom_number") @db.VarChar(50)
-  productId      String         @unique @map("product_id") @db.Uuid
-  product        ProductMaster  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  version        String         @default("1.0") @db.VarChar(20)
-  description    String?        @db.Text
-  isActive       Boolean        @default(true) @map("is_active")
 
-  items          BOMItem[]
-
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
-
-  @@map("bill_of_materials")
-}
-
-model BOMItem {
-  id             String         @id @default(uuid()) @db.Uuid
-  bomId          String         @map("bom_id") @db.Uuid
-  bom            BillOfMaterial @relation(fields: [bomId], references: [id], onDelete: Cascade)
-  materialName   String         @map("material_name") @db.VarChar(150)
-  quantity       Decimal        @db.Decimal(10, 3)
-  uom            String         @db.VarChar(20)
-  wastagePercent Decimal        @default(0) @map("wastage_percent") @db.Decimal(5, 2)
-
-  @@map("bom_items")
-}
 
 // ==========================================
 // PRODUCTION & CONVERTING PROCESSING
@@ -1351,33 +1276,7 @@ model QCInspection {
 // PACKING & KITTING
 // ==========================================
 
-model PackingBundle {
-  id             String              @id @default(uuid()) @db.Uuid
-  bundleBarcode  String              @unique @map("bundle_barcode") @db.VarChar(100)
-  bundleType     String              @map("bundle_type") @db.VarChar(50)
-  grossWeightKg  Decimal             @map("gross_weight_kg") @db.Decimal(10, 3)
-  netWeightKg    Decimal             @map("net_weight_kg") @db.Decimal(10, 3)
-  totalUnits     Int                 @map("total_units")
-  locationBin    String              @map("location_bin") @db.VarChar(100)
-  isDispatched   Boolean             @default(false) @map("is_dispatched")
 
-  items          PackingBundleItem[]
-
-  createdAt      DateTime            @default(now()) @map("created_at")
-
-  @@map("packing_bundles")
-}
-
-model PackingBundleItem {
-  id             String        @id @default(uuid()) @db.Uuid
-  bundleId       String        @map("bundle_id") @db.Uuid
-  bundle         PackingBundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
-  rollId         String?       @map("roll_id") @db.Uuid
-  roll           CottonRoll?   @relation(fields: [rollId], references: [id])
-  quantity       Decimal       @db.Decimal(10, 2)
-
-  @@map("packing_bundle_items")
-}
 
 // ==========================================
 // GAUZE PRODUCTION TRACKING SYSTEM

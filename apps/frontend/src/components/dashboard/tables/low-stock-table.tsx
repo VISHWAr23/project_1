@@ -13,41 +13,8 @@ interface LowStockTableProps {
   isLoading?: boolean;
 }
 
-const defaultItems: LowStockItem[] = [
-  {
-    id: 'rm-1',
-    sku: 'RM-YARN-40S',
-    name: '100% Combed Cotton Grey Yarn 40s',
-    category: 'Cotton & Yarn',
-    currentStockBalance: 120,
-    minimumStockLevel: 500,
-    unit: 'Kg',
-    unitCost: 280,
-  },
-  {
-    id: 'rm-2',
-    sku: 'PM-BOX-5PLY',
-    name: '5-Ply Corrugated Outer Box 50x35x25cm',
-    category: 'Packaging Supplies',
-    currentStockBalance: 45,
-    minimumStockLevel: 200,
-    unit: 'Boxes',
-    unitCost: 45,
-  },
-  {
-    id: 'rm-3',
-    sku: 'PM-TAPE-ROLL',
-    name: 'BOPP Packaging Roll Tape 2 Inch',
-    category: 'Packaging Supplies',
-    currentStockBalance: 18,
-    minimumStockLevel: 50,
-    unit: 'Rolls',
-    unitCost: 85,
-  },
-];
-
 export const LowStockTable: React.FC<LowStockTableProps> = ({
-  items = defaultItems,
+  items = [],
   isLoading = false,
 }) => {
   const { toast } = useToast();
@@ -61,14 +28,16 @@ export const LowStockTable: React.FC<LowStockTableProps> = ({
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <div>
           <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertTriangle className={`h-4 w-4 ${items.length > 0 ? 'text-amber-500' : 'text-emerald-500'}`} />
             <span>Low Stock Inventory Alerts</span>
           </CardTitle>
           <CardDescription className="text-xs mt-0.5">
             Raw materials below designated safety threshold
           </CardDescription>
         </div>
-        <Badge variant="warning">Action Required</Badge>
+        <Badge variant={items.length > 0 ? 'warning' : 'outline'}>
+          {items.length > 0 ? 'Action Required' : '0 Alerts'}
+        </Badge>
       </CardHeader>
       <CardContent className="p-0 flex-1">
         {isLoading ? (
@@ -79,7 +48,7 @@ export const LowStockTable: React.FC<LowStockTableProps> = ({
           </div>
         ) : items.length === 0 ? (
           <div className="p-8 text-center text-xs text-muted-foreground">
-            All inventory balances are within safe threshold levels.
+            All inventory balances are within safe threshold levels (0 alerts).
           </div>
         ) : (
           <div className="overflow-x-auto">

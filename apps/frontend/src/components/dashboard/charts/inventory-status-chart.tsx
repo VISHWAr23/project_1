@@ -18,17 +18,22 @@ interface InventoryStatusChartProps {
   height?: number;
 }
 
-const defaultData: InventoryStatusItem[] = [
-  { category: 'Raw Metals', inStock: 180, lowStock: 3, outOfStock: 0 },
-  { category: 'Polymers', inStock: 95, lowStock: 2, outOfStock: 1 },
-  { category: 'Electrical', inStock: 60, lowStock: 1, outOfStock: 0 },
-  { category: 'Fasteners', inStock: 120, lowStock: 1, outOfStock: 0 },
-];
-
 export const InventoryStatusChart: React.FC<InventoryStatusChartProps> = ({
-  data = defaultData,
+  data = [],
   height = 250,
 }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div
+        style={{ width: '100%', height }}
+        className="flex flex-col items-center justify-center text-center p-4 border border-dashed border-border/60 rounded-lg"
+      >
+        <p className="text-xs font-medium text-muted-foreground">No inventory stock records</p>
+        <p className="text-[11px] text-muted-foreground/70 font-mono mt-1">Stock: 0 SKUs</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: '100%', height }}>
       <ResponsiveContainer width="100%" height="100%">
@@ -54,3 +59,4 @@ export const InventoryStatusChart: React.FC<InventoryStatusChartProps> = ({
     </div>
   );
 };
+

@@ -18,21 +18,22 @@ interface MonthlyProductionChartProps {
   height?: number;
 }
 
-const defaultData: MonthlyProductionItem[] = [
-  { month: 'Jan', planned: 4000, completed: 3800 },
-  { month: 'Feb', planned: 4500, completed: 4200 },
-  { month: 'Mar', planned: 4200, completed: 4100 },
-  { month: 'Apr', planned: 5000, completed: 4850 },
-  { month: 'May', planned: 4800, completed: 4700 },
-  { month: 'Jun', planned: 5200, completed: 5100 },
-  { month: 'Jul', planned: 5500, completed: 5400 },
-  { month: 'Aug', planned: 5800, completed: 5650 },
-];
-
 export const MonthlyProductionChart: React.FC<MonthlyProductionChartProps> = ({
-  data = defaultData,
+  data = [],
   height = 250,
 }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div
+        style={{ width: '100%', height }}
+        className="flex flex-col items-center justify-center text-center p-4 border border-dashed border-border/60 rounded-lg"
+      >
+        <p className="text-xs font-medium text-muted-foreground">No monthly production output recorded</p>
+        <p className="text-[11px] text-muted-foreground/70 font-mono mt-1">Planned: 0 • Actual: 0 Units</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: '100%', height }}>
       <ResponsiveContainer width="100%" height="100%">
@@ -57,3 +58,4 @@ export const MonthlyProductionChart: React.FC<MonthlyProductionChartProps> = ({
     </div>
   );
 };
+

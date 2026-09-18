@@ -25,6 +25,11 @@ export class CreateBleachingJobWorkDto {
   @IsOptional()
   remarks?: string;
 
+  @ApiPropertyOptional({ description: 'Job Work Type identifier', enum: ['BLEACHING'], default: 'BLEACHING' })
+  @IsString()
+  @IsOptional()
+  jobWorkType?: string;
+
   // Bleaching Process Specifications
   @ApiProperty({
     description: 'Bleaching type: BEAM_DYEING or PEROXIDE_BLEACHING',

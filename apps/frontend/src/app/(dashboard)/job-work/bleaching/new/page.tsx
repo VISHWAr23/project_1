@@ -29,6 +29,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { MasterEntityDropdown } from '@/components/ui/master-entity-dropdown';
 import { useToast } from '@/components/ui/toast';
 import {
   useJobWorkCompanies,
@@ -85,7 +86,7 @@ function CreateBleachingOrderContent() {
   const [rate, setRate] = useState<number | ''>(20.00);
   const [processLossPercentage, setProcessLossPercentage] = useState<number | ''>(3.0);
   const [beamNumber, setBeamNumber] = useState('');
-  const [chemicalFormula, setChemicalFormula] = useState('Hydrogen Peroxide (H2O2) + Wetting Agent + Soda Ash');
+  const [manualLengthMeters, setManualLengthMeters] = useState<number | ''>('');
 
   // Weaving Materials Selection
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
@@ -97,12 +98,8 @@ function CreateBleachingOrderContent() {
     setBleachingType(type);
     if (type === 'BEAM_DYEING') {
       setRate(rateType === 'PER_METER' ? 4.50 : 57.00);
-      if (!chemicalFormula || chemicalFormula.includes('Hydrogen Peroxide')) {
-        setChemicalFormula('Direct Dyestuff / Optical Brightening + Carrier Auxiliary');
-      }
     } else {
       setRate(rateType === 'PER_METER' ? 1.60 : 20.00);
-      setChemicalFormula('Hydrogen Peroxide (H2O2) + Wetting Agent + Soda Ash');
     }
   };
 
@@ -145,9 +142,16 @@ function CreateBleachingOrderContent() {
     return selectedWeavingItems.reduce((sum: number, item: WeavingReceivedItem) => sum + Number(item.weightKg || 0), 0);
   }, [selectedWeavingItems]);
 
-  const totalInputLengthMeters = useMemo(() => {
+  const derivedLengthMeters = useMemo(() => {
     return selectedWeavingItems.reduce((sum: number, item: WeavingReceivedItem) => sum + Number(item.lengthMeters || 0), 0);
   }, [selectedWeavingItems]);
+
+  const totalInputLengthMeters = useMemo(() => {
+    if (manualLengthMeters !== '' && !isNaN(Number(manualLengthMeters))) {
+      return Number(manualLengthMeters);
+    }
+    return derivedLengthMeters;
+  }, [manualLengthMeters, derivedLengthMeters]);
 
   const totalPiecesOrRolls = selectedWeavingItems.length;
 
@@ -203,10 +207,19 @@ function CreateBleachingOrderContent() {
       return;
     }
 
+    if (rateType === 'PER_METER' && (!calculations.totalInputLengthMeters || calculations.totalInputLengthMeters <= 0)) {
+      toast('Length Required', 'Please enter total input length in meters when rate basis is ₹/Meter', 'error');
+      return;
+    }
+
+    if (!calculations.totalCost || calculations.totalCost <= 0) {
+      toast('Invalid Total Cost', 'Calculated bleaching cost must be greater than ₹0. Please verify the rate and quantity/meters.', 'error');
+      return;
+    }
+
     try {
       const payload = {
         jobWorkCompanyId: effectiveCompanyId,
-        jobWorkType: 'BLEACHING' as const,
         expectedReturnDate,
         remarks: remarks.trim() || undefined,
         bleachingType,
@@ -214,10 +227,9 @@ function CreateBleachingOrderContent() {
         rate: calculations.rate,
         processLossPercentage: calculations.processLossPercentage,
         beamNumber: beamNumber.trim() || undefined,
-        chemicalFormula: chemicalFormula.trim() || undefined,
         selectedWeavingItemIds: selectedItemIds,
         totalInputWeightKg: calculations.totalInputWeightKg,
-        totalInputLengthMeters: calculations.totalInputLengthMeters || undefined,
+        totalInputLengthMeters: calculations.totalInputLengthMeters > 0 ? calculations.totalInputLengthMeters : undefined,
         totalPiecesOrRolls: calculations.totalPiecesOrRolls,
         expectedOutputWeightKg: calculations.expectedOutputWeightKg,
         totalCost: calculations.totalCost,
@@ -282,19 +294,23 @@ function CreateBleachingOrderContent() {
       <form id="bleaching-order-form" onSubmit={handleSubmit} className="space-y-6">
         {/* Step 1: Processing Mill & Delivery Schedule */}
         <Card className="p-5 border-border bg-card/60 backdrop-blur">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-4 border-b border-border">
-            <div className="flex items-center gap-2 text-foreground font-semibold text-sm">
-              <Building2 className="h-4 w-4 text-indigo-500" />
-              <span>1. Bleaching Schedule & Dispatch Instructions</span>
-            </div>
-
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-xs font-medium text-indigo-600 dark:text-indigo-400">
-              <CheckCircle2 className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
-              <span>Assigned Subcontractor: <strong className="text-foreground">{displayCompanyName}</strong></span>
-            </div>
+          <div className="flex items-center gap-2 pb-3 mb-4 border-b border-border text-foreground font-semibold text-sm">
+            <Building2 className="h-4 w-4 text-indigo-500" />
+            <span>1. Bleaching Schedule & Subcontractor Mill</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <MasterEntityDropdown
+              label="Job Working Company / Bleaching Mill *"
+              entityType="jobWorkCompany"
+              placeholder="Select bleaching subcontractor mill..."
+              options={companies.map((c: any) => ({ label: c.companyName, value: c.id, raw: c }))}
+              value={jobWorkCompanyId}
+              onChange={(val) => setJobWorkCompanyId(val)}
+              disabled={isLoadingCompanies}
+              required
+            />
+
             <div>
               <label className="text-xs font-medium text-foreground block mb-1.5">
                 Expected Return Date <span className="text-rose-500">*</span>
@@ -307,7 +323,7 @@ function CreateBleachingOrderContent() {
               />
             </div>
 
-            <div>
+            <div className="md:col-span-2">
               <label className="text-xs font-medium text-foreground block mb-1.5">
                 Remarks / Dispatch Instructions
               </label>
@@ -490,16 +506,28 @@ function CreateBleachingOrderContent() {
               />
             </div>
 
-            <div className="md:col-span-4">
-              <label className="text-xs font-medium text-foreground block mb-1.5">
-                Chemical Formula / Process Recipe Notes
-              </label>
-              <Input
-                placeholder="Chemical bleaching formulation..."
-                value={chemicalFormula}
-                onChange={(e) => setChemicalFormula(e.target.value)}
-              />
-            </div>
+            {rateType === 'PER_METER' && (
+              <div className="md:col-span-4 p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-foreground block">
+                    Total Input Length (Meters) *
+                  </label>
+                  <p className="text-[11px] text-muted-foreground">
+                    Derived from selected goods or enter manually if goods have no length recorded.
+                  </p>
+                </div>
+                <div className="w-full sm:w-48">
+                  <Input
+                    type="number"
+                    step="1"
+                    min="1"
+                    placeholder={derivedLengthMeters > 0 ? String(derivedLengthMeters) : "e.g. 1000"}
+                    value={manualLengthMeters !== '' ? manualLengthMeters : (derivedLengthMeters > 0 ? derivedLengthMeters : '')}
+                    onChange={(e) => setManualLengthMeters(e.target.value === '' ? '' : Number(e.target.value))}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </Card>
 

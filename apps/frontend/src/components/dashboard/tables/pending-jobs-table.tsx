@@ -11,38 +11,8 @@ interface PendingJobsTableProps {
   isLoading?: boolean;
 }
 
-const defaultItems: PendingJobWorkOrder[] = [
-  {
-    id: 'wo-1',
-    workOrderNumber: 'WO-2026-089',
-    targetProductName: 'Heavy Duty Gear Assembly',
-    status: 'PENDING_APPROVAL',
-    plannedQuantity: 500,
-    completedQuantity: 0,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'wo-2',
-    workOrderNumber: 'WO-2026-088',
-    targetProductName: 'Precision Aluminum Enclosure',
-    status: 'APPROVED',
-    plannedQuantity: 1200,
-    completedQuantity: 450,
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: 'wo-3',
-    workOrderNumber: 'WO-2026-087',
-    targetProductName: 'Stainless Hydraulic Valve Body',
-    status: 'DRAFT',
-    plannedQuantity: 300,
-    completedQuantity: 0,
-    createdAt: new Date(Date.now() - 172800000).toISOString(),
-  },
-];
-
 export const PendingJobsTable: React.FC<PendingJobsTableProps> = ({
-  items = defaultItems,
+  items = [],
   isLoading = false,
 }) => {
   return (
@@ -57,7 +27,7 @@ export const PendingJobsTable: React.FC<PendingJobsTableProps> = ({
             Active shop-floor orders awaiting completion
           </CardDescription>
         </div>
-        <Badge variant="outline">In Progress</Badge>
+        <Badge variant="outline">{items.length} Active</Badge>
       </CardHeader>
       <CardContent className="p-0 flex-1">
         {isLoading ? (
@@ -65,6 +35,10 @@ export const PendingJobsTable: React.FC<PendingJobsTableProps> = ({
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-10 bg-muted/40 animate-pulse rounded-md"></div>
             ))}
+          </div>
+        ) : items.length === 0 ? (
+          <div className="p-8 text-center text-xs text-muted-foreground">
+            No active or pending work orders (Nil).
           </div>
         ) : (
           <div className="overflow-x-auto">

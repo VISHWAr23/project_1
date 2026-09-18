@@ -13,6 +13,21 @@ import { ReceiveBleachingReturnDto } from './dto/receive-bleaching-return.dto';
 @Injectable()
 export class JobWorkService {
   /**
+   * Safe collision-proof generator for Job Work Numbers e.g. JWO-2026-0006
+   */
+  private async generateNextJobWorkNumber(): Promise<string> {
+    const year = new Date().getFullYear();
+    const count = await prisma.jobWorkOrder.count();
+    let seq = count + 1;
+    let jobWorkNumber = `JWO-${year}-${String(seq).padStart(4, '0')}`;
+    while (await prisma.jobWorkOrder.findUnique({ where: { jobWorkNumber } })) {
+      seq++;
+      jobWorkNumber = `JWO-${year}-${String(seq).padStart(4, '0')}`;
+    }
+    return jobWorkNumber;
+  }
+
+  /**
    * List all Job Work Orders with search, filtering, and pagination
    */
   async findAll(query: {
@@ -189,9 +204,7 @@ export class JobWorkService {
     }
 
     // Auto-generate Job Work Number e.g. JWO-2026-0042
-    const count = await prisma.jobWorkOrder.count();
-    const year = new Date().getFullYear();
-    const jobWorkNumber = `JWO-${year}-${String(count + 1).padStart(4, '0')}`;
+    const jobWorkNumber = await this.generateNextJobWorkNumber();
 
     const order = await prisma.$transaction(async (tx) => {
       const createdOrder = await tx.jobWorkOrder.create({
@@ -258,9 +271,7 @@ export class JobWorkService {
     }
 
     // Auto-generate Job Work Number e.g. JWO-2026-0042
-    const count = await prisma.jobWorkOrder.count();
-    const year = new Date().getFullYear();
-    const jobWorkNumber = `JWO-${year}-${String(count + 1).padStart(4, '0')}`;
+    const jobWorkNumber = await this.generateNextJobWorkNumber();
 
     const order = await prisma.$transaction(async (tx) => {
       const createdOrder = await tx.jobWorkOrder.create({
@@ -364,9 +375,7 @@ export class JobWorkService {
     }
 
     // Auto-generate Job Work Number e.g. JWO-2026-0043
-    const count = await prisma.jobWorkOrder.count();
-    const year = new Date().getFullYear();
-    const jobWorkNumber = `JWO-${year}-${String(count + 1).padStart(4, '0')}`;
+    const jobWorkNumber = await this.generateNextJobWorkNumber();
 
     const order = await prisma.$transaction(async (tx) => {
       const createdOrder = await tx.jobWorkOrder.create({

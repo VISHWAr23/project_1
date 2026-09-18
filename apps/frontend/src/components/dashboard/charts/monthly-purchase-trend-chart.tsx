@@ -19,19 +19,22 @@ interface MonthlyPurchaseTrendChartProps {
   height?: number;
 }
 
-const defaultData: MonthlyPurchaseTrendItem[] = [
-  { month: 'Mar', purchaseAmount: 1850000, ordersCount: 24 },
-  { month: 'Apr', purchaseAmount: 2100000, ordersCount: 28 },
-  { month: 'May', purchaseAmount: 1950000, ordersCount: 22 },
-  { month: 'Jun', purchaseAmount: 2400000, ordersCount: 31 },
-  { month: 'Jul', purchaseAmount: 2650000, ordersCount: 35 },
-  { month: 'Aug', purchaseAmount: 2800000, ordersCount: 38 },
-];
-
 export const MonthlyPurchaseTrendChart: React.FC<MonthlyPurchaseTrendChartProps> = ({
-  data = defaultData,
+  data = [],
   height = 250,
 }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div
+        style={{ width: '100%', height }}
+        className="flex flex-col items-center justify-center text-center p-4 border border-dashed border-border/60 rounded-lg"
+      >
+        <p className="text-xs font-medium text-muted-foreground">No procurement purchase orders recorded</p>
+        <p className="text-[11px] text-muted-foreground/70 font-mono mt-1">Spend: ₹ 0.00 • Orders: 0</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: '100%', height }}>
       <ResponsiveContainer width="100%" height="100%">
@@ -74,3 +77,4 @@ export const MonthlyPurchaseTrendChart: React.FC<MonthlyPurchaseTrendChartProps>
     </div>
   );
 };
+
