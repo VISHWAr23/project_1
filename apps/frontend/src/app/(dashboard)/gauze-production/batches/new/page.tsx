@@ -263,10 +263,11 @@ function CreateGauzeBatchContent() {
               required
             />
 
-            <Select
+            <MasterEntityDropdown
               label="Unit of Measure (UOM)"
               value={inputUom}
-              onChange={(e) => setInputUom(e.target.value)}
+              onChange={setInputUom}
+              storageKey="gauze_batch_uoms"
               options={[
                 { value: 'meter', label: 'meter (m)' },
                 { value: 'kg', label: 'Kilogram (Kg)' },

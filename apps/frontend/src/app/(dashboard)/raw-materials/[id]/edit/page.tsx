@@ -273,19 +273,14 @@ export default function EditRawMaterialPage() {
               value={formData.categoryId}
               onChange={(val) => setFormData({ ...formData, categoryId: val })}
             />
-            <div>
-              <label className="block text-xs font-semibold text-foreground mb-1.5">
-                Primary Unit of Measure (Base UOM)
-              </label>
-              <Select
-                options={[
-                  { label: 'Select Primary Unit...', value: '' },
-                  ...(units?.map((u) => ({ label: `${u.name} (${u.abbreviation})`, value: u.id })) || []),
-                ]}
-                value={formData.unitId}
-                onChange={(e) => setFormData({ ...formData, unitId: e.target.value })}
-              />
-            </div>
+            <MasterEntityDropdown
+              label="Primary Unit of Measure (Base UOM)"
+              entityType="unit"
+              placeholder="Select Primary Unit..."
+              options={units?.map((u) => ({ label: `${u.name} (${u.abbreviation})`, value: u.id, raw: u })) || []}
+              value={formData.unitId}
+              onChange={(val) => setFormData({ ...formData, unitId: val })}
+            />
           </div>
 
           {/* Dual Unit / Multi-Unit Measurement Option */}
@@ -314,20 +309,17 @@ export default function EditRawMaterialPage() {
             {hasDualUnit && (
               <div className="pt-2 border-t border-blue-500/10 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-foreground mb-1">
-                    Secondary / Alternate Unit
-                  </label>
-                  <Select
-                    options={[
-                      { label: 'Select Secondary Unit...', value: '' },
-                      ...(units?.map((u) => ({ label: `${u.name} (${u.abbreviation})`, value: u.id })) || []),
-                    ]}
+                  <MasterEntityDropdown
+                    label="Secondary / Alternate Unit"
+                    entityType="unit"
+                    placeholder="Select Secondary Unit..."
+                    options={units?.map((u) => ({ label: `${u.name} (${u.abbreviation})`, value: u.id, raw: u })) || []}
                     value={formData.secondaryUnitId}
-                    onChange={(e) => {
-                      const selected = units?.find((u) => u.id === e.target.value);
+                    onChange={(val) => {
+                      const selected = units?.find((u) => u.id === val);
                       setFormData({
                         ...formData,
-                        secondaryUnitId: e.target.value,
+                        secondaryUnitId: val,
                         secondaryUnitName: selected?.name || '',
                       });
                     }}
@@ -529,13 +521,13 @@ export default function EditRawMaterialPage() {
           </div>
         </div>
 
-        {/* Section 3: Primary Vendor */}
+        {/* Section 3: Vendor & Storage Location */}
         <div className="bg-secondary/20 border border-border rounded-xl p-5 space-y-4">
           <h2 className="text-sm font-bold text-foreground tracking-tight border-b border-border pb-2">
-            3. Primary Vendor Assignment
+            3. Primary Vendor & Storage Location Assignment
           </h2>
 
-          <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <MasterEntityDropdown
               label="Primary Supplier"
               entityType="supplier"
@@ -543,6 +535,15 @@ export default function EditRawMaterialPage() {
               options={suppliers?.map((s) => ({ label: `${s.name} (${s.code})`, value: s.id, raw: s })) || []}
               value={formData.supplierId}
               onChange={(val) => setFormData({ ...formData, supplierId: val })}
+            />
+
+            <MasterEntityDropdown
+              label="Storage Location / Warehouse"
+              entityType="location"
+              placeholder="Select Storage Location..."
+              options={locations?.map((l) => ({ label: `${l.name} (${l.code})`, value: l.id, raw: l })) || []}
+              value={formData.storageLocationId}
+              onChange={(val) => setFormData({ ...formData, storageLocationId: val })}
             />
           </div>
         </div>

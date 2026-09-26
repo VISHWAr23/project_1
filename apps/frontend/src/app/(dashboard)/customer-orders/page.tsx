@@ -25,6 +25,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { MasterEntityDropdown } from '@/components/ui/master-entity-dropdown';
 import { Modal } from '@/components/ui/modal';
 import { Table, Column } from '@/components/ui/table';
 import { Pagination } from '@/components/ui/pagination';
@@ -882,19 +883,15 @@ export default function CustomerOrdersPage() {
               2. Customer, Regulatory & Transport Information
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1.5">
-                  Select Customer Account *
-                </label>
-                <Select
-                  options={[
-                    { label: 'Select Client...', value: '' },
-                    ...customers.map((c) => ({ label: `${c.name} (${c.code})`, value: c.id })),
-                  ]}
-                  value={orderFormData.customerId}
-                  onChange={(e) => handleCustomerSelect(e.target.value)}
-                />
-              </div>
+              <MasterEntityDropdown
+                label="Select Customer Account *"
+                entityType="customer"
+                placeholder="Select Client..."
+                options={customers.map((c) => ({ label: `${c.name} (${c.code})`, value: c.id, raw: c }))}
+                value={orderFormData.customerId}
+                onChange={(val) => handleCustomerSelect(val)}
+                required
+              />
 
               <Input
                 label="Order Date"
@@ -942,18 +939,17 @@ export default function CustomerOrdersPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1.5">Transport Mode</label>
-                <Select
-                  options={[
-                    { label: 'Road Transport', value: 'ROAD' },
-                    { label: 'Express Courier', value: 'COURIER' },
-                    { label: 'Local Factory Dispatch', value: 'LOCAL_DELIVERY' },
-                  ]}
-                  value={orderFormData.transportMode}
-                  onChange={(e) => setOrderFormData({ ...orderFormData, transportMode: e.target.value })}
-                />
-              </div>
+              <MasterEntityDropdown
+                label="Transport Mode"
+                value={orderFormData.transportMode}
+                onChange={(val) => setOrderFormData({ ...orderFormData, transportMode: val })}
+                storageKey="order_transport_modes"
+                options={[
+                  { label: 'Road Transport', value: 'ROAD' },
+                  { label: 'Express Courier', value: 'COURIER' },
+                  { label: 'Local Factory Dispatch', value: 'LOCAL_DELIVERY' },
+                ]}
+              />
 
               <Input
                 label="Vehicle / Tracking #"
@@ -1046,9 +1042,15 @@ export default function CustomerOrdersPage() {
                       required
                     />
 
-                    <div>
-                      <label className="block text-[10px] text-muted-foreground mb-1">UOM</label>
-                      <Select
+                      <MasterEntityDropdown
+                        label="UOM"
+                        value={item.uom || ''}
+                        onChange={(val) => {
+                          const updated = [...lineItems];
+                          updated[idx].uom = val;
+                          setLineItems(updated);
+                        }}
+                        storageKey="order_item_uoms"
                         options={[
                           { label: 'Boxes', value: 'Boxes' },
                           { label: 'Rolls', value: 'Rolls' },
@@ -1057,14 +1059,7 @@ export default function CustomerOrdersPage() {
                           { label: 'Bags', value: 'Bags' },
                           { label: 'Meters', value: 'Meters' },
                         ]}
-                        value={item.uom}
-                        onChange={(e) => {
-                          const updated = [...lineItems];
-                          updated[idx].uom = e.target.value;
-                          setLineItems(updated);
-                        }}
                       />
-                    </div>
 
                     <Input
                       label="Unit Rate (₹)"

@@ -124,6 +124,19 @@ export const rawMaterialsService = {
     });
   },
 
+  async updateUnit(id: string, name: string, abbreviation: string): Promise<UnitOfMeasure> {
+    return await apiClient<UnitOfMeasure>(`/raw-materials/units/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name, abbreviation }),
+    });
+  },
+
+  async deleteUnit(id: string): Promise<any> {
+    return await apiClient<any>(`/raw-materials/units/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
   async getSuppliers(search?: string): Promise<Supplier[]> {
     const query = search ? `?search=${encodeURIComponent(search)}` : '';
     return await apiClient<Supplier[]>(`/suppliers${query}`);

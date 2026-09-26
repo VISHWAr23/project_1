@@ -12,6 +12,7 @@ import {
   useDeleteCategory,
   useDeleteSupplier,
   useDeleteStorageLocation,
+  useDeleteUnit,
 } from '@/hooks/useRawMaterials';
 import {
   useDeleteDepartment,
@@ -19,6 +20,8 @@ import {
 } from '@/hooks/useEmployees';
 import { useDeleteJobWorkCompany } from '@/hooks/useJobWork';
 import { useManageGauzeMasters } from '@/hooks/useGauzeProduction';
+import { useDeleteCustomer } from '@/hooks/useCustomers';
+import { useDeleteGamjeeSize } from '@/hooks/useGamjeeProduction';
 
 export interface DropdownOption {
   value: string;
@@ -155,12 +158,15 @@ export function MasterEntityDropdown({
 
   // Deletion mutations for backend entity types
   const deleteCategory = useDeleteCategory();
+  const deleteUnit = useDeleteUnit();
   const deleteSupplier = useDeleteSupplier();
   const deleteLocation = useDeleteStorageLocation();
+  const deleteCustomer = useDeleteCustomer();
   const deleteDepartment = useDeleteDepartment();
   const deleteDesignation = useDeleteDesignation();
   const deleteCompany = useDeleteJobWorkCompany();
   const { deleteType, deleteSize, deleteBleaching, deleteOperation } = useManageGauzeMasters();
+  const deleteGamjeeSize = useDeleteGamjeeSize();
 
   // Effective list of options
   const currentOptions: DropdownOption[] = entityType
@@ -228,11 +234,17 @@ export function MasterEntityDropdown({
           case 'category':
             await deleteCategory.mutateAsync(value);
             break;
+          case 'unit':
+            await deleteUnit.mutateAsync(value);
+            break;
           case 'supplier':
             await deleteSupplier.mutateAsync(value);
             break;
           case 'location':
             await deleteLocation.mutateAsync(value);
+            break;
+          case 'customer':
+            await deleteCustomer.mutateAsync(value);
             break;
           case 'jobWorkCompany':
             await deleteCompany.mutateAsync(value);
@@ -254,6 +266,9 @@ export function MasterEntityDropdown({
             break;
           case 'operationType':
             await deleteOperation.mutateAsync(value);
+            break;
+          case 'gamjeeSize':
+            await deleteGamjeeSize.mutateAsync(value);
             break;
         }
         onChange('');
@@ -312,15 +327,18 @@ export function MasterEntityDropdown({
 
   const isDeleting =
     deleteCategory.isPending ||
+    deleteUnit.isPending ||
     deleteSupplier.isPending ||
     deleteLocation.isPending ||
+    deleteCustomer.isPending ||
     deleteDepartment.isPending ||
     deleteDesignation.isPending ||
     deleteCompany.isPending ||
     deleteType.isPending ||
     deleteSize.isPending ||
     deleteBleaching.isPending ||
-    deleteOperation.isPending;
+    deleteOperation.isPending ||
+    deleteGamjeeSize.isPending;
 
   return (
     <div className={`space-y-1.5 ${className}`}>
@@ -352,27 +370,36 @@ export function MasterEntityDropdown({
           )}
 
           <div className="flex items-center gap-1.5 shrink-0 ml-auto">
-            {/* Edit Current Item Button (Only shown when an item is selected) */}
-            {allowEdit && Boolean(value) && (
+            {/* Edit Current Item Button */}
+            {allowEdit && (
               <button
                 type="button"
                 onClick={handleOpenEdit}
-                title={`Edit selected ${label}`}
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-500/10 dark:hover:bg-amber-900/30 transition-colors"
+                disabled={!value}
+                title={value ? `Edit selected ${label}` : `Select an option to edit`}
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                  value
+                    ? 'text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-500/10 dark:hover:bg-amber-900/30 cursor-pointer'
+                    : 'text-muted-foreground/35 cursor-not-allowed pointer-events-none'
+                }`}
               >
                 <Edit2 className="h-3 w-3 stroke-[2.5]" />
                 <span>Edit</span>
               </button>
             )}
 
-            {/* Delete Current Item Button (Only shown when an item is selected) */}
-            {allowDelete && Boolean(value) && (
+            {/* Delete Current Item Button */}
+            {allowDelete && (
               <button
                 type="button"
                 onClick={handleDeleteInline}
-                disabled={isDeleting}
-                title={`Delete selected ${label}`}
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-500/10 dark:hover:bg-rose-900/30 transition-colors disabled:opacity-50"
+                disabled={!value || isDeleting}
+                title={value ? `Delete selected ${label}` : `Select an option to delete`}
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                  value
+                    ? 'text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-500/10 dark:hover:bg-rose-900/30 cursor-pointer'
+                    : 'text-muted-foreground/35 cursor-not-allowed pointer-events-none'
+                }`}
               >
                 <Trash2 className="h-3 w-3 stroke-[2.5]" />
                 <span>Delete</span>
@@ -385,7 +412,7 @@ export function MasterEntityDropdown({
                 type="button"
                 onClick={handleOpenAdd}
                 title={`Add new ${label}`}
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-500/10 dark:hover:bg-emerald-900/30 transition-colors"
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-500/10 dark:hover:bg-emerald-900/30 transition-colors cursor-pointer"
               >
                 <Plus className="h-3 w-3 stroke-[2.5]" />
                 <span>Add New</span>

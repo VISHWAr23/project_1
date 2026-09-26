@@ -88,6 +88,18 @@ export class RawMaterialsController {
     return this.rawMaterialsService.createUnit(body.name, body.abbreviation);
   }
 
+  @Patch('units/:id')
+  @ApiOperation({ summary: 'Update unit of measure' })
+  async updateUnit(@Param('id') id: string, @Body() body: { name?: string; abbreviation?: string }) {
+    return this.rawMaterialsService.updateUnit(id, body.name, body.abbreviation);
+  }
+
+  @Delete('units/:id')
+  @ApiOperation({ summary: 'Delete unit of measure' })
+  async deleteUnit(@Param('id') id: string) {
+    return this.rawMaterialsService.deleteUnit(id);
+  }
+
   @Get('history')
   @ApiOperation({ summary: 'Get global stock movement history ledger' })
   @ApiQuery({ name: 'rawMaterialId', required: false })

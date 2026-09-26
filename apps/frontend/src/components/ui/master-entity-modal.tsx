@@ -15,6 +15,9 @@ import {
   useCreateStorageLocation,
   useUpdateStorageLocation,
   useDeleteStorageLocation,
+  useCreateUnit,
+  useUpdateUnit,
+  useDeleteUnit,
 } from '@/hooks/useRawMaterials';
 import {
   useCreateDepartment,
@@ -30,19 +33,32 @@ import {
   useDeleteJobWorkCompany,
 } from '@/hooks/useJobWork';
 import { useManageGauzeMasters } from '@/hooks/useGauzeProduction';
+import {
+  useCreateCustomer,
+  useUpdateCustomer,
+  useDeleteCustomer,
+} from '@/hooks/useCustomers';
+import {
+  useCreateGamjeeSize,
+  useUpdateGamjeeSize,
+  useDeleteGamjeeSize,
+} from '@/hooks/useGamjeeProduction';
 import { Trash2 } from 'lucide-react';
 
 export type MasterEntityType =
   | 'category'
+  | 'unit'
   | 'supplier'
   | 'location'
+  | 'customer'
   | 'jobWorkCompany'
   | 'department'
   | 'designation'
   | 'gauzeType'
   | 'gauzeSize'
   | 'bleachingType'
-  | 'operationType';
+  | 'operationType'
+  | 'gamjeeSize';
 
 export interface MasterEntityModalProps {
   isOpen: boolean;
@@ -67,6 +83,13 @@ export function MasterEntityModal({
   const [code, setCode] = useState('');
   const [description, setDescription] = useState('');
 
+  // Unit Specific State
+  const [abbreviation, setAbbreviation] = useState('');
+
+  // Customer Specific States
+  const [dlNo, setDlNo] = useState('');
+  const [customerType, setCustomerType] = useState('HOSPITAL');
+
   // Supplier & Company Specific States
   const [contactPerson, setContactPerson] = useState('');
   const [phone, setPhone] = useState('');
@@ -78,7 +101,7 @@ export function MasterEntityModal({
   // Location Specific State
   const [locationType, setLocationType] = useState('WAREHOUSE');
 
-  // Gauze Size Specific States
+  // Gauze / Gamjee Size Specific States
   const [width, setWidth] = useState<number>(100);
   const [widthUom, setWidthUom] = useState('cm');
   const [length, setLength] = useState<number>(100);
@@ -87,10 +110,14 @@ export function MasterEntityModal({
   // Operation Type Specific State
   const [sequence, setSequence] = useState<number>(1);
 
-  // Raw Material Category / Supplier / Location Mutations
+  // Raw Material Category / Supplier / Location / Unit Mutations
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
   const deleteCategory = useDeleteCategory();
+
+  const createUnit = useCreateUnit();
+  const updateUnit = useUpdateUnit();
+  const deleteUnit = useDeleteUnit();
 
   const createSupplier = useCreateSupplier();
   const updateSupplier = useUpdateSupplier();
@@ -99,6 +126,11 @@ export function MasterEntityModal({
   const createLocation = useCreateStorageLocation();
   const updateLocation = useUpdateStorageLocation();
   const deleteLocation = useDeleteStorageLocation();
+
+  // Customer Mutations
+  const createCustomer = useCreateCustomer();
+  const updateCustomer = useUpdateCustomer();
+  const deleteCustomer = useDeleteCustomer();
 
   // Employee Department & Designation Mutations
   const createDepartment = useCreateDepartment();
@@ -130,11 +162,19 @@ export function MasterEntityModal({
     deleteOperation,
   } = useManageGauzeMasters();
 
+  // Gamjee Size Mutations
+  const createGamjeeSize = useCreateGamjeeSize();
+  const updateGamjeeSize = useUpdateGamjeeSize();
+  const deleteGamjeeSize = useDeleteGamjeeSize();
+
   useEffect(() => {
     if (initialData) {
       setName(initialData.name || initialData.companyName || '');
       setCode(initialData.code || '');
       setDescription(initialData.description || '');
+      setAbbreviation(initialData.abbreviation || initialData.raw?.abbreviation || '');
+      setDlNo(initialData.dlNo || '');
+      setCustomerType(initialData.customerType || 'HOSPITAL');
       setContactPerson(initialData.contactPerson || '');
       setPhone(initialData.phone || '');
       setEmail(initialData.email || '');
@@ -151,6 +191,9 @@ export function MasterEntityModal({
       setName('');
       setCode('');
       setDescription('');
+      setAbbreviation('');
+      setDlNo('');
+      setCustomerType('HOSPITAL');
       setContactPerson('');
       setPhone('');
       setEmail('');
@@ -169,8 +212,10 @@ export function MasterEntityModal({
   const getEntityTitle = () => {
     const titles: Record<MasterEntityType, string> = {
       category: 'Raw Material Category',
+      unit: 'Unit of Measure (UOM)',
       supplier: 'Raw Material Supplier',
       location: 'Storage Location',
+      customer: 'Customer Account',
       jobWorkCompany: 'Job Work Vendor / Mill',
       department: 'Department',
       designation: 'Designation',
@@ -178,6 +223,7 @@ export function MasterEntityModal({
       gauzeSize: 'Gauze Dimensions / Size',
       bleachingType: 'Bleaching Process Type',
       operationType: 'Production Operation Step',
+      gamjeeSize: 'Gamjee Roll Size Specification',
     };
     const prefix = isEdit ? 'Edit' : 'Add New';
     return `${prefix} ${titles[entityType] || 'Master Record'}`;
@@ -198,6 +244,57 @@ export function MasterEntityModal({
             result = await updateCategory.mutateAsync({ id: initialData.id, name, description });
           } else {
             result = await createCategory.mutateAsync({ name, description });
+          }
+          break;
+
+        case 'unit':
+          if (!abbreviation.trim()) {
+            toast('Required', 'Please enter a unit abbreviation/symbol (e.g. Kg, m, pc)', 'warning');
+            return;
+          }
+          if (isEdit) {
+            result = await updateUnit.mutateAsync({ id: initialData.id, name, abbreviation });
+          } else {
+            result = await createUnit.mutateAsync({ name, abbreviation });
+          }
+          break;
+
+        case 'customer':
+          const customerPayload = {
+            name,
+            code: code || name.substring(0, 6).toUpperCase().replace(/\s+/g, ''),
+            contactPerson,
+            phone,
+            email,
+            address,
+            gstin,
+            dlNo,
+            customerType: customerType as any,
+          };
+          if (isEdit) {
+            result = await updateCustomer.mutateAsync({ id: initialData.id, payload: customerPayload });
+          } else {
+            result = await createCustomer.mutateAsync(customerPayload as any);
+          }
+          break;
+
+        case 'gamjeeSize':
+          const gamjeeSizeName = name || `${width}cm x ${length}m`;
+          const gamjeePayload = {
+            name: gamjeeSizeName,
+            width: Number(width),
+            length: Number(length),
+            widthUom: 'cm',
+            lengthUom: 'm',
+            active: true,
+          };
+          if (isEdit) {
+            result = await updateGamjeeSize.mutateAsync({
+              id: initialData.id,
+              payload: gamjeePayload,
+            });
+          } else {
+            result = await createGamjeeSize.mutateAsync(gamjeePayload);
           }
           break;
 
@@ -345,6 +442,15 @@ export function MasterEntityModal({
         case 'category':
           await deleteCategory.mutateAsync(initialData.id);
           break;
+        case 'unit':
+          await deleteUnit.mutateAsync(initialData.id);
+          break;
+        case 'customer':
+          await deleteCustomer.mutateAsync(initialData.id);
+          break;
+        case 'gamjeeSize':
+          await deleteGamjeeSize.mutateAsync(initialData.id);
+          break;
         case 'supplier':
           await deleteSupplier.mutateAsync(initialData.id);
           break;
@@ -385,6 +491,15 @@ export function MasterEntityModal({
     createCategory.isPending ||
     updateCategory.isPending ||
     deleteCategory.isPending ||
+    createUnit.isPending ||
+    updateUnit.isPending ||
+    deleteUnit.isPending ||
+    createCustomer.isPending ||
+    updateCustomer.isPending ||
+    deleteCustomer.isPending ||
+    createGamjeeSize.isPending ||
+    updateGamjeeSize.isPending ||
+    deleteGamjeeSize.isPending ||
     createSupplier.isPending ||
     updateSupplier.isPending ||
     deleteSupplier.isPending ||
@@ -414,13 +529,42 @@ export function MasterEntityModal({
     deleteOperation.isPending;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={getEntityTitle()} maxWidth={entityType === 'supplier' || entityType === 'jobWorkCompany' ? 'lg' : 'md'}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={getEntityTitle()}
+      maxWidth={entityType === 'supplier' || entityType === 'jobWorkCompany' || entityType === 'customer' ? 'lg' : 'md'}
+    >
       <div className="space-y-4 text-xs font-mono">
-        {/* Name & Code Row */}
-        {entityType !== 'gauzeSize' && (
+        {/* Unit of Measure Fields */}
+        {entityType === 'unit' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
-              label={entityType === 'jobWorkCompany' || entityType === 'supplier' ? 'Company Name *' : 'Name / Title *'}
+              label="Unit Full Name *"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Kilogram, Meter, Piece, Bale, Roll"
+              required
+            />
+            <Input
+              label="Unit Abbreviation / Symbol *"
+              value={abbreviation}
+              onChange={(e) => setAbbreviation(e.target.value)}
+              placeholder="e.g. Kg, m, pc, ble, rl"
+              required
+            />
+          </div>
+        )}
+
+        {/* Name & Code Row for Other Types */}
+        {entityType !== 'gauzeSize' && entityType !== 'unit' && entityType !== 'gamjeeSize' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label={
+                entityType === 'jobWorkCompany' || entityType === 'supplier' || entityType === 'customer'
+                  ? 'Company / Account Name *'
+                  : 'Name / Title *'
+              }
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Lakshmi Cotton Spinning Mills"
@@ -433,6 +577,71 @@ export function MasterEntityModal({
               placeholder="e.g. SUP-001 or PROD"
             />
           </div>
+        )}
+
+        {/* Customer Specific Details */}
+        {entityType === 'customer' && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label="Contact Person"
+                value={contactPerson}
+                onChange={(e) => setContactPerson(e.target.value)}
+                placeholder="Dr. Ramesh Kumar"
+              />
+              <Input
+                label="Phone Number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+91 98450 12345"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label="Email Address"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="procurement@hospital.com"
+              />
+              <Input
+                label="GSTIN"
+                value={gstin}
+                onChange={(e) => setGstin(e.target.value)}
+                placeholder="33AAAAA0000A1Z5"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label="D.L. No. / Regd. No."
+                value={dlNo}
+                onChange={(e) => setDlNo(e.target.value)}
+                placeholder="DL-20B/21B-4492"
+              />
+              <div>
+                <label className="block text-xs font-semibold text-foreground mb-1.5">Client Type</label>
+                <select
+                  value={customerType}
+                  onChange={(e) => setCustomerType(e.target.value)}
+                  className="w-full bg-secondary/50 border border-border text-xs rounded-lg px-3 py-2 text-foreground focus:outline-none"
+                >
+                  <option value="HOSPITAL">Hospital / Medical Center</option>
+                  <option value="PHARMACY_CHAIN">Pharmacy Chain</option>
+                  <option value="DISTRIBUTOR">Distributor / Stockist</option>
+                  <option value="WHOLESALER">Wholesaler / Trader</option>
+                  <option value="CLINIC">Clinic / Nursing Home</option>
+                  <option value="EXPORTER">Export Buyer</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+            </div>
+            <Input
+              label="Shipping / Office Address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Full delivery / billing address..."
+            />
+          </>
         )}
 
         {/* Contact & GST Fields for Supplier / Job Work Company */}
@@ -497,6 +706,38 @@ export function MasterEntityModal({
               placeholder="e.g. WAREHOUSE, FLOOR, RACK"
             />
           </div>
+        )}
+
+        {/* Gamjee Size Form */}
+        {entityType === 'gamjeeSize' && (
+          <>
+            <Input
+              label="Size Name (Optional label)"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. 10cm x 10m Standard Roll"
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Width Dimension (cm)"
+                type="number"
+                value={width}
+                onChange={(e) => setWidth(Number(e.target.value))}
+                min={0.1}
+                step="any"
+                required
+              />
+              <Input
+                label="Length Dimension (meters)"
+                type="number"
+                value={length}
+                onChange={(e) => setLength(Number(e.target.value))}
+                min={0.1}
+                step="any"
+                required
+              />
+            </div>
+          </>
         )}
 
         {/* Gauze Dimensions Form */}

@@ -23,6 +23,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { MasterEntityDropdown } from '@/components/ui/master-entity-dropdown';
 import { Modal } from '@/components/ui/modal';
 import { Table, Column } from '@/components/ui/table';
 import { Pagination } from '@/components/ui/pagination';
@@ -473,22 +474,21 @@ export default function RawMaterialsCustomersPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-foreground mb-1.5">Client Type</label>
-              <Select
-                options={[
-                  { label: 'Hospital / Medical Center', value: 'HOSPITAL' },
-                  { label: 'Pharmacy Chain', value: 'PHARMACY_CHAIN' },
-                  { label: 'Distributor / Stockist', value: 'DISTRIBUTOR' },
-                  { label: 'Wholesaler / Trader', value: 'WHOLESALER' },
-                  { label: 'Clinic / Nursing Home', value: 'CLINIC' },
-                  { label: 'Export Buyer', value: 'EXPORTER' },
-                  { label: 'Other', value: 'OTHER' },
-                ]}
-                value={formData.customerType}
-                onChange={(e) => setFormData({ ...formData, customerType: e.target.value })}
-              />
-            </div>
+            <MasterEntityDropdown
+              label="Client Type"
+              value={formData.customerType}
+              onChange={(val) => setFormData({ ...formData, customerType: val })}
+              storageKey="customer_client_types"
+              options={[
+                { label: 'Hospital / Medical Center', value: 'HOSPITAL' },
+                { label: 'Pharmacy Chain', value: 'PHARMACY_CHAIN' },
+                { label: 'Distributor / Stockist', value: 'DISTRIBUTOR' },
+                { label: 'Wholesaler / Trader', value: 'WHOLESALER' },
+                { label: 'Clinic / Nursing Home', value: 'CLINIC' },
+                { label: 'Export Buyer', value: 'EXPORTER' },
+                { label: 'Other', value: 'OTHER' },
+              ]}
+            />
             <Input
               label="Contact Person"
               placeholder="Dr. Ramesh Kumar"

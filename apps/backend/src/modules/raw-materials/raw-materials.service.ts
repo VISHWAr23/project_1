@@ -837,4 +837,48 @@ export class RawMaterialsService {
       data: { name, abbreviation },
     });
   }
+
+  async updateUnit(id: string, name?: string, abbreviation?: string) {
+    const unit = await prisma.unitOfMeasure.findUnique({ where: { id } });
+    if (!unit) {
+      throw new NotFoundException(`Unit with ID ${id} not found.`);
+    }
+    if (name && name !== unit.name) {
+      const exists = await prisma.unitOfMeasure.findUnique({ where: { name } });
+      if (exists) {
+        throw new ConflictException(`Unit "${name}" already exists.`);
+      }
+    }
+    if (abbreviation && abbreviation !== unit.abbreviation) {
+      const existsAbbr = await prisma.unitOfMeasure.findUnique({ where: { abbreviation } });
+      if (existsAbbr) {
+        throw new ConflictException(`Unit abbreviation "${abbreviation}" already exists.`);
+      }
+    }
+    return await prisma.unitOfMeasure.update({
+      where: { id },
+      data: {
+        ...(name !== undefined ? { name } : {}),
+        ...(abbreviation !== undefined ? { abbreviation } : {}),
+      },
+    });
+  }
+
+  async deleteUnit(id: string) {
+    const unit = await prisma.unitOfMeasure.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { rawMaterials: true, secondaryRawMaterials: true } },
+      },
+    });
+    if (!unit) {
+      throw new NotFoundException(`Unit with ID ${id} not found.`);
+    }
+    if (unit._count.rawMaterials > 0 || unit._count.secondaryRawMaterials > 0) {
+      throw new BadRequestException(
+        `Cannot delete unit "${unit.name}" as it is associated with ${unit._count.rawMaterials + unit._count.secondaryRawMaterials} raw material(s).`
+      );
+    }
+    return await prisma.unitOfMeasure.delete({ where: { id } });
+  }
 }

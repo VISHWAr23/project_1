@@ -203,3 +203,37 @@ export function useDeleteStorageLocation() {
     },
   });
 }
+
+export function useCreateUnit() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ name, abbreviation }: { name: string; abbreviation: string }) =>
+      rawMaterialsService.createUnit(name, abbreviation),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rawMaterialUnits'] });
+    },
+  });
+}
+
+export function useUpdateUnit() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, name, abbreviation }: { id: string; name: string; abbreviation: string }) =>
+      rawMaterialsService.updateUnit(id, name, abbreviation),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rawMaterialUnits'] });
+      queryClient.invalidateQueries({ queryKey: ['rawMaterials'] });
+    },
+  });
+}
+
+export function useDeleteUnit() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => rawMaterialsService.deleteUnit(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rawMaterialUnits'] });
+      queryClient.invalidateQueries({ queryKey: ['rawMaterials'] });
+    },
+  });
+}

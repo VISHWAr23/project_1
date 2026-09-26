@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MasterEntityDropdown } from '@/components/ui/master-entity-dropdown';
 import { useCreateGamjeeBatch, useGamjeeMasters } from '@/hooks/useGamjeeProduction';
 import { useRawMaterials } from '@/hooks/useRawMaterials';
 import { toast } from '@/components/ui/toast';
@@ -284,23 +285,18 @@ function CreateGamjeeBatchContent() {
               </select>
             </div>
 
-            <div>
-              <label className="flex items-center h-5 text-xs font-semibold text-foreground mb-1.5 whitespace-nowrap">
-                Gamjee Roll Size Specification
-              </label>
-              <select
-                value={gamjeeSizeId}
-                onChange={(e) => setGamjeeSizeId(e.target.value)}
-                className="w-full h-10 rounded-md border border-input bg-background px-3 py-1.5 text-xs focus:outline-hidden focus:ring-1 focus:ring-ring"
-              >
-                <option value="">Select Roll Size</option>
-                {sizes.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.width}cm x {s.length}m)
-                  </option>
-                ))}
-              </select>
-            </div>
+            <MasterEntityDropdown
+              label="Gamjee Roll Size Specification"
+              value={gamjeeSizeId}
+              onChange={(val) => setGamjeeSizeId(val)}
+              entityType="gamjeeSize"
+              placeholder="Select Roll Size..."
+              options={sizes.map((s) => ({
+                value: s.id,
+                label: `${s.name} (${s.width}cm x ${s.length}m)`,
+                raw: s,
+              }))}
+            />
           </div>
         </Card>
 
