@@ -21,13 +21,19 @@ import {
   Tag,
   Receipt,
   RefreshCw,
+  RotateCcw,
+  CheckCircle2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs } from '@/components/ui/tabs';
 import { Table, Column } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
-import { useRawMaterialDetail, useDeleteRawMaterial } from '@/hooks/useRawMaterials';
+import {
+  useRawMaterialDetail,
+  useDeleteRawMaterial,
+  useToggleMaterialStatus,
+} from '@/hooks/useRawMaterials';
 import { StockStatusBadge } from '@/components/raw-materials/StockStatusBadge';
 import { StockAdjustmentDialog } from '@/components/raw-materials/StockAdjustmentDialog';
 import { MaterialStockChart } from '@/components/raw-materials/MaterialStockChart';
@@ -41,15 +47,30 @@ export default function MaterialDetailPage() {
 
   const { data: material, isLoading, refetch } = useRawMaterialDetail(id);
   const deleteMaterial = useDeleteRawMaterial();
+  const toggleStatus = useToggleMaterialStatus();
 
   const [activeTab, setActiveTab] = useState('overview');
   const [isAdjustmentOpen, setIsAdjustmentOpen] = useState(false);
 
+  const handleToggleActive = async (targetActive: boolean) => {
+    try {
+      await toggleStatus.mutateAsync({ id, isActive: targetActive });
+      toast(
+        targetActive ? 'Material Reactivated' : 'Material Deactivated',
+        `Material ${material?.sku} is now ${targetActive ? 'active' : 'deactivated'}.`,
+        'success'
+      );
+      refetch();
+    } catch (err: any) {
+      toast('Action Failed', err.message || 'Could not update material status', 'error');
+    }
+  };
+
   const handleDelete = async () => {
-    if (confirm(`Are you sure you want to delete / deactivate raw material ${material?.sku}?`)) {
+    if (confirm(`Are you sure you want to permanently delete material ${material?.sku}? If historical operational records exist, it will be safely deactivated instead.`)) {
       try {
         const res = await deleteMaterial.mutateAsync(id);
-        toast('Material Deleted', res.message, 'success');
+        toast('Operation Completed', res.message, 'success');
         router.push('/raw-materials');
       } catch (err: any) {
         toast('Action Failed', err.message || 'Could not delete raw material', 'error');
@@ -134,6 +155,28 @@ export default function MaterialDetailPage() {
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight font-mono">{material.sku}</h1>
               <StockStatusBadge status={material.computedStatus} />
+              {!material.isActive ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
+                  ✕ DEACTIVATED
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  ✓ ACTIVE
+                </span>
+              )}
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold border ${
+                material.classification === 'PM' || material.isPackagingMaterial
+                  ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                  : material.classification === 'FG' || material.isFinishedGood
+                  ? 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+                  : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+              }`}>
+                {material.classification === 'PM' || material.isPackagingMaterial
+                  ? '📦 PACKAGING'
+                  : material.classification === 'FG' || material.isFinishedGood
+                  ? '🏭 FINISHED GOOD'
+                  : '🌿 RAW MATERIAL'}
+              </span>
               {material.itemSource === 'TRADED' ? (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
                   🛒 Direct Buy & Sell (Traded)
@@ -162,13 +205,34 @@ export default function MaterialDetailPage() {
               Edit Master
             </Button>
           </Link>
+          {material.isActive ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleToggleActive(false)}
+              className="text-amber-600 border-amber-500/30 hover:bg-amber-500/10"
+              leftIcon={<RotateCcw className="h-3.5 w-3.5" />}
+            >
+              Deactivate
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleToggleActive(true)}
+              className="text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10"
+              leftIcon={<CheckCircle2 className="h-3.5 w-3.5" />}
+            >
+              Reactivate
+            </Button>
+          )}
           <Button
             variant="danger"
             size="sm"
             onClick={handleDelete}
             leftIcon={<Trash2 className="h-3.5 w-3.5" />}
           >
-            Deactivate / Delete
+            Delete
           </Button>
         </div>
       </div>

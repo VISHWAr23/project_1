@@ -22,6 +22,9 @@ import {
   RefreshCw,
   UserCheck,
   Archive,
+  RotateCcw,
+  Trash2,
+  CheckCircle2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,11 +32,14 @@ import { Select } from '@/components/ui/select';
 import { Table, Column } from '@/components/ui/table';
 import { Pagination } from '@/components/ui/pagination';
 import { useToast } from '@/components/ui/toast';
+import { Modal } from '@/components/ui/modal';
 import {
   useRawMaterials,
   useRawMaterialCategories,
   useSuppliers,
   useStorageLocations,
+  useDeleteRawMaterial,
+  useToggleMaterialStatus,
 } from '@/hooks/useRawMaterials';
 import { RawMaterial } from '@/types/raw-materials.types';
 import { StockStatusBadge } from '@/components/raw-materials/StockStatusBadge';
@@ -48,10 +54,16 @@ export default function RawMaterialsPage() {
   const [selectedStatus, setSelectedStatus] = useState('');
   const [typeTab, setTypeTab] = useState<'ALL' | 'RM' | 'PM' | 'FG'>('ALL');
   const [itemSourceFilter, setItemSourceFilter] = useState<'ALL' | 'MANUFACTURED' | 'TRADED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ACTIVE' | 'INACTIVE' | 'ALL'>('ACTIVE');
   const [currentPage, setCurrentPage] = useState(1);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   const [adjustmentMaterial, setAdjustmentMaterial] = useState<RawMaterial | null>(null);
+  const [itemToDeleteOrDeactivate, setItemToDeleteOrDeactivate] = useState<RawMaterial | null>(null);
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
+
+  const deleteMaterial = useDeleteRawMaterial();
+  const toggleMaterialStatus = useToggleMaterialStatus();
 
   const { data, isLoading, refetch } = useRawMaterials({
     search: searchTerm || undefined,
@@ -61,6 +73,7 @@ export default function RawMaterialsPage() {
     stockStatus: selectedStatus || undefined,
     type: typeTab,
     itemSource: typeTab === 'FG' && itemSourceFilter !== 'ALL' ? itemSourceFilter : undefined,
+    status: statusFilter,
     page: currentPage,
     limit: 10,
   });
@@ -79,7 +92,54 @@ export default function RawMaterialsPage() {
     packagingValuation: 0,
   };
 
+  const handleToggleActive = async (material: RawMaterial, targetActive: boolean) => {
+    setIsProcessingAction(true);
+    try {
+      await toggleMaterialStatus.mutateAsync({ id: material.id, isActive: targetActive });
+      toast(
+        targetActive ? 'Material Reactivated' : 'Material Deactivated',
+        `Material ${material.sku} is now ${targetActive ? 'active' : 'deactivated'}.`,
+        'success'
+      );
+      refetch();
+    } catch (err: any) {
+      toast('Action Failed', err.message || 'Could not update material status', 'error');
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
+  const handleConfirmDeactivate = async (material: RawMaterial) => {
+    setIsProcessingAction(true);
+    try {
+      await toggleMaterialStatus.mutateAsync({ id: material.id, isActive: false });
+      toast('Material Deactivated', `Material ${material.sku} has been deactivated.`, 'success');
+      setItemToDeleteOrDeactivate(null);
+      refetch();
+    } catch (err: any) {
+      toast('Action Failed', err.message || 'Could not deactivate material', 'error');
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
+  const handleConfirmDelete = async (material: RawMaterial) => {
+    setIsProcessingAction(true);
+    try {
+      const res = await deleteMaterial.mutateAsync(material.id);
+      toast('Operation Completed', res.message, 'success');
+      setItemToDeleteOrDeactivate(null);
+      refetch();
+    } catch (err: any) {
+      toast('Action Failed', err.message || 'Could not delete raw material', 'error');
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
   const isItemPM = (row: RawMaterial) => {
+    if (row.classification === 'PM') return true;
+    if (row.classification === 'RM' || row.classification === 'FG') return false;
     if (row.isPackagingMaterial !== undefined) return row.isPackagingMaterial;
     const sku = row.sku || '';
     if (
@@ -114,6 +174,8 @@ export default function RawMaterialsPage() {
   };
 
   const isItemFG = (row: RawMaterial) => {
+    if (row.classification === 'FG') return true;
+    if (row.classification === 'RM' || row.classification === 'PM') return false;
     if (row.isFinishedGood !== undefined) return row.isFinishedGood;
     if (isItemPM(row)) return false;
     if (row.sku?.startsWith('FP-') || row.sku?.startsWith('FG-') || row.sku?.startsWith('PROD-')) return true;
@@ -141,12 +203,19 @@ export default function RawMaterialsPage() {
       sortable: true,
       width: '140px',
       render: (row) => (
-        <Link
-          href={`/raw-materials/${row.id}`}
-          className="font-mono font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
-        >
-          {row.sku}
-        </Link>
+        <div className="flex flex-col items-start gap-1">
+          <Link
+            href={`/raw-materials/${row.id}`}
+            className="font-mono font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+          >
+            {row.sku}
+          </Link>
+          {!row.isActive && (
+            <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
+              DEACTIVATED
+            </span>
+          )}
+        </div>
       ),
     },
     {
@@ -167,7 +236,7 @@ export default function RawMaterialsPage() {
           const isTraded = row.itemSource === 'TRADED';
           return (
             <div className="flex flex-col gap-1 items-start">
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                 FINISHED GOOD
               </span>
               {isTraded ? (
@@ -304,6 +373,38 @@ export default function RawMaterialsPage() {
               <Edit className="h-3.5 w-3.5 text-muted-foreground" />
             </Button>
           </Link>
+          {row.isActive ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setItemToDeleteOrDeactivate(row)}
+              title="Deactivate or Delete Item"
+              className="text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          ) : (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleToggleActive(row, true)}
+                title="Reactivate Item"
+                className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setItemToDeleteOrDeactivate(row)}
+                title="Permanently Delete Item"
+                className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
         </div>
       ),
     },
@@ -341,61 +442,109 @@ export default function RawMaterialsPage() {
         </div>
       </div>
 
-      {/* Classification Tabs */}
-      <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto touch-scroll no-scrollbar py-0.5">
-        <button
-          onClick={() => {
-            setTypeTab('ALL');
-            setCurrentPage(1);
-          }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0 min-h-[36px] ${
-            typeTab === 'ALL'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-          }`}
-        >
-          All Inventory
-        </button>
-        <button
-          onClick={() => {
-            setTypeTab('RM');
-            setCurrentPage(1);
-          }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0 min-h-[36px] ${
-            typeTab === 'RM'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-          }`}
-        >
-          Raw Materials (RM)
-        </button>
-        <button
-          onClick={() => {
-            setTypeTab('PM');
-            setCurrentPage(1);
-          }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 min-h-[36px] ${
-            typeTab === 'PM'
-              ? 'bg-amber-600 text-white shadow-sm'
-              : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-          }`}
-        >
-          <Archive className="h-3.5 w-3.5" />
-          Packaging Materials
-        </button>
-        <button
-          onClick={() => {
-            setTypeTab('FG');
-            setCurrentPage(1);
-          }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0 min-h-[36px] ${
-            typeTab === 'FG'
-              ? 'bg-emerald-600 text-white shadow-sm'
-              : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-          }`}
-        >
-          Finished Goods (FG)
-        </button>
+      {/* Classification Tabs and Status Filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-2">
+        <div className="flex items-center gap-2 overflow-x-auto touch-scroll no-scrollbar py-0.5">
+          <button
+            onClick={() => {
+              setTypeTab('ALL');
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0 min-h-[36px] ${
+              typeTab === 'ALL'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+            }`}
+          >
+            All Inventory
+          </button>
+          <button
+            onClick={() => {
+              setTypeTab('RM');
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0 min-h-[36px] ${
+              typeTab === 'RM'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+            }`}
+          >
+            Raw Materials (RM)
+          </button>
+          <button
+            onClick={() => {
+              setTypeTab('PM');
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 min-h-[36px] ${
+              typeTab === 'PM'
+                ? 'bg-amber-600 text-white shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+            }`}
+          >
+            <Archive className="h-3.5 w-3.5" />
+            Packaging Materials
+          </button>
+          <button
+            onClick={() => {
+              setTypeTab('FG');
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0 min-h-[36px] ${
+              typeTab === 'FG'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+            }`}
+          >
+            Finished Goods (FG)
+          </button>
+        </div>
+
+        {/* Status Filter (Active / Deactivated / All) */}
+        <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-lg border border-border shrink-0 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => {
+              setStatusFilter('ACTIVE');
+              setCurrentPage(1);
+            }}
+            className={`px-2.5 py-1 rounded text-xs font-semibold transition-all ${
+              statusFilter === 'ACTIVE'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Active Only
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setStatusFilter('INACTIVE');
+              setCurrentPage(1);
+            }}
+            className={`px-2.5 py-1 rounded text-xs font-semibold transition-all ${
+              statusFilter === 'INACTIVE'
+                ? 'bg-rose-600 text-white shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Deactivated
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setStatusFilter('ALL');
+              setCurrentPage(1);
+            }}
+            className={`px-2.5 py-1 rounded text-xs font-semibold transition-all ${
+              statusFilter === 'ALL'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            All
+          </button>
+        </div>
       </div>
 
       {/* Finished Goods Sourcing Sub-Tabs (In-House Manufactured vs Direct Buy & Sell) */}
@@ -593,6 +742,7 @@ export default function RawMaterialsPage() {
               setSelectedSupplier('');
               setSelectedLocation('');
               setSelectedStatus('');
+              setStatusFilter('ACTIVE');
               refetch();
             }}
           >
@@ -660,7 +810,9 @@ export default function RawMaterialsPage() {
         data={materials}
         isLoading={isLoading}
         emptyMessage={
-          typeTab === 'FG'
+          statusFilter === 'INACTIVE'
+            ? 'No deactivated materials found.'
+            : typeTab === 'FG'
             ? 'No finished goods match the selected filters.'
             : typeTab === 'RM'
             ? 'No raw materials match the selected filters.'
@@ -684,6 +836,140 @@ export default function RawMaterialsPage() {
           onClose={() => setAdjustmentMaterial(null)}
           material={adjustmentMaterial}
         />
+      )}
+
+      {/* Deactivate or Delete Confirmation Dialog */}
+      {itemToDeleteOrDeactivate && (
+        <Modal
+          isOpen={Boolean(itemToDeleteOrDeactivate)}
+          onClose={() => setItemToDeleteOrDeactivate(null)}
+          title={itemToDeleteOrDeactivate.isActive ? 'Deactivate or Delete Item' : 'Permanent Deletion'}
+          size="md"
+        >
+          <div className="space-y-4 pt-2">
+            <div className="p-3.5 bg-secondary/40 border border-border rounded-lg space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-mono font-bold text-sm text-foreground">
+                  {itemToDeleteOrDeactivate.sku}
+                </span>
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                    itemToDeleteOrDeactivate.isActive
+                      ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                      : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
+                  }`}
+                >
+                  {itemToDeleteOrDeactivate.isActive ? 'ACTIVE' : 'DEACTIVATED'}
+                </span>
+              </div>
+              <p className="text-xs text-foreground font-medium">{itemToDeleteOrDeactivate.name}</p>
+              <div className="flex items-center gap-3 text-[11px] text-muted-foreground pt-1">
+                <span>
+                  Stock:{' '}
+                  <strong className="font-mono text-foreground">
+                    {Number(itemToDeleteOrDeactivate.currentStockBalance).toFixed(2)}{' '}
+                    {itemToDeleteOrDeactivate.unit?.abbreviation || 'Units'}
+                  </strong>
+                </span>
+                <span>
+                  Type:{' '}
+                  <strong className="text-foreground">
+                    {itemToDeleteOrDeactivate.classification ||
+                      (isItemPM(itemToDeleteOrDeactivate)
+                        ? 'Packaging'
+                        : isItemFG(itemToDeleteOrDeactivate)
+                        ? 'Finished Good'
+                        : 'Raw Material')}
+                  </strong>
+                </span>
+              </div>
+            </div>
+
+            {itemToDeleteOrDeactivate.isActive ? (
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/5 space-y-2">
+                  <div className="flex items-center gap-2 text-amber-500 font-semibold text-xs">
+                    <RotateCcw className="h-4 w-4 shrink-0" />
+                    <span>Option 1: Safe Deactivation (Recommended)</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Hides this material from the active catalog, purchase orders, work orders, and production batches. All stock ledger entries, bills of materials, and financial records are completely preserved. You can reactivate this item at any time.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-amber-500 border-amber-500/30 hover:bg-amber-500/10 font-medium text-xs mt-1"
+                    disabled={isProcessingAction}
+                    onClick={() => handleConfirmDeactivate(itemToDeleteOrDeactivate)}
+                  >
+                    Deactivate Item
+                  </Button>
+                </div>
+
+                <div className="p-3 rounded-lg border border-rose-500/30 bg-rose-500/5 space-y-2">
+                  <div className="flex items-center gap-2 text-rose-500 font-semibold text-xs">
+                    <Trash2 className="h-4 w-4 shrink-0" />
+                    <span>Option 2: Permanent Delete</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Completely deletes this material. If any historical records (job work, production batches, purchase transactions, or order lines) reference this item, the system will safely deactivate it instead to prevent data loss.
+                  </p>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    className="w-full font-medium text-xs mt-1"
+                    disabled={isProcessingAction}
+                    onClick={() => handleConfirmDelete(itemToDeleteOrDeactivate)}
+                  >
+                    Delete Permanently
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  This item is currently deactivated. You can attempt to permanently remove it, or reactivate it to resume operations.
+                </p>
+                <div className="flex items-center gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10"
+                    disabled={isProcessingAction}
+                    onClick={() => {
+                      handleToggleActive(itemToDeleteOrDeactivate, true);
+                      setItemToDeleteOrDeactivate(null);
+                    }}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                    Reactivate
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    className="flex-1"
+                    disabled={isProcessingAction}
+                    onClick={() => handleConfirmDelete(itemToDeleteOrDeactivate)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    Delete Permanently
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2 border-t border-border">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setItemToDeleteOrDeactivate(null)}
+                disabled={isProcessingAction}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </motion.div>
   );

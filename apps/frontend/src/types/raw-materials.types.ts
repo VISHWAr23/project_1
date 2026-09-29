@@ -221,4 +221,5 @@ export interface CreateRawMaterialPayload {
   masterCartonQty?: number;
   features?: string;
   variantType?: string;
+  classification?: 'RM' | 'PM' | 'FG';
 }

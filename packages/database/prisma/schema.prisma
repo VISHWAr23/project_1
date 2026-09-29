@@ -752,6 +752,7 @@ model RawMaterial {
 
   // Sourcing & Procurement Classification (MANUFACTURED vs TRADED)
   itemSource          String?  @default("MANUFACTURED") @map("item_source") @db.VarChar(50) // "MANUFACTURED" | "TRADED"
+  classification      String?  @default("RM") @map("classification") @db.VarChar(20) // "RM" | "PM" | "FG"
 
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")

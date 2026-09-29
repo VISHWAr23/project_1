@@ -23,6 +23,7 @@ export class RawMaterialsController {
   @ApiQuery({ name: 'stockStatus', required: false, enum: ['OPTIMAL', 'LOW_STOCK', 'OVERSTOCK', 'OUT_OF_STOCK'] })
   @ApiQuery({ name: 'type', required: false, enum: ['ALL', 'RM', 'PM', 'FG'] })
   @ApiQuery({ name: 'itemSource', required: false, enum: ['ALL', 'MANUFACTURED', 'TRADED'] })
+  @ApiQuery({ name: 'status', required: false, enum: ['ACTIVE', 'INACTIVE', 'ALL'] })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   async findAll(
@@ -33,6 +34,7 @@ export class RawMaterialsController {
     @Query('stockStatus') stockStatus?: 'OPTIMAL' | 'LOW_STOCK' | 'OVERSTOCK' | 'OUT_OF_STOCK',
     @Query('type') type?: 'ALL' | 'RM' | 'PM' | 'FG',
     @Query('itemSource') itemSource?: 'ALL' | 'MANUFACTURED' | 'TRADED',
+    @Query('status') status?: 'ACTIVE' | 'INACTIVE' | 'ALL',
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
@@ -44,6 +46,7 @@ export class RawMaterialsController {
       stockStatus,
       type,
       itemSource,
+      status,
       page,
       limit,
     });
@@ -150,6 +153,17 @@ export class RawMaterialsController {
   async update(@Param('id') id: string, @Body() dto: UpdateRawMaterialDto, @Req() req: any) {
     const userId = req.user?.id;
     return this.rawMaterialsService.update(id, dto, userId);
+  }
+
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Update material active status (Activate / Deactivate)' })
+  async updateStatus(
+    @Param('id') id: string,
+    @Body('isActive') isActive: boolean,
+    @Req() req: any,
+  ) {
+    const userId = req.user?.id;
+    return this.rawMaterialsService.update(id, { isActive }, userId);
   }
 
   @Delete(':id')

@@ -91,6 +91,18 @@ export function useDeleteRawMaterial() {
   });
 }
 
+export function useToggleMaterialStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      rawMaterialsService.toggleStatus(id, isActive),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['rawMaterials'] });
+      queryClient.invalidateQueries({ queryKey: ['rawMaterial', variables.id] });
+    },
+  });
+}
+
 export function useRecordStockTransaction() {
   const queryClient = useQueryClient();
   return useMutation({

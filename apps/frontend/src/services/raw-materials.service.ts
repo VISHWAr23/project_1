@@ -19,6 +19,7 @@ export interface MaterialQueryFilters {
   stockStatus?: string;
   type?: 'ALL' | 'RM' | 'PM' | 'FG';
   itemSource?: 'ALL' | 'MANUFACTURED' | 'TRADED';
+  status?: 'ACTIVE' | 'INACTIVE' | 'ALL';
   page?: number;
   limit?: number;
 }
@@ -33,6 +34,7 @@ export const rawMaterialsService = {
     if (params?.stockStatus) query.append('stockStatus', params.stockStatus);
     if (params?.type && params.type !== 'ALL') query.append('type', params.type);
     if (params?.itemSource && params.itemSource !== 'ALL') query.append('itemSource', params.itemSource);
+    if (params?.status) query.append('status', params.status);
     if (params?.page) query.append('page', String(params.page));
     if (params?.limit) query.append('limit', String(params.limit));
 
@@ -57,8 +59,15 @@ export const rawMaterialsService = {
     });
   },
 
-  async delete(id: string): Promise<{ message: string }> {
-    return await apiClient<{ message: string }>(`/raw-materials/${id}`, {
+  async toggleStatus(id: string, isActive: boolean): Promise<RawMaterial> {
+    return await apiClient<RawMaterial>(`/raw-materials/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isActive }),
+    });
+  },
+
+  async delete(id: string): Promise<{ message: string; isSoftDeleted?: boolean }> {
+    return await apiClient<{ message: string; isSoftDeleted?: boolean }>(`/raw-materials/${id}`, {
       method: 'DELETE',
     });
   },

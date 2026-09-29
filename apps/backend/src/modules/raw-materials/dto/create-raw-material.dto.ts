@@ -129,4 +129,8 @@ export class CreateRawMaterialDto {
   @IsString()
   @IsOptional()
   itemSource?: 'MANUFACTURED' | 'TRADED';
+
+  @IsString()
+  @IsOptional()
+  classification?: 'RM' | 'PM' | 'FG';
 }

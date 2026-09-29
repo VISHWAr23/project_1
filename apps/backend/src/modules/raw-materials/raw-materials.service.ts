@@ -36,6 +36,7 @@ export class RawMaterialsService {
     stockStatus?: 'OPTIMAL' | 'LOW_STOCK' | 'OVERSTOCK' | 'OUT_OF_STOCK';
     type?: 'ALL' | 'RM' | 'PM' | 'FG';
     itemSource?: 'ALL' | 'MANUFACTURED' | 'TRADED';
+    status?: 'ACTIVE' | 'INACTIVE' | 'ALL';
     page?: number;
     limit?: number;
   }) {
@@ -44,6 +45,15 @@ export class RawMaterialsService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.RawMaterialWhereInput = {};
+
+    // Filter by Active / Inactive status (defaults to active items only)
+    if (query.status === 'INACTIVE') {
+      where.isActive = false;
+    } else if (query.status === 'ALL') {
+      // no filter on isActive
+    } else {
+      where.isActive = true;
+    }
 
     if (query.categoryId) {
       where.categoryId = query.categoryId;
@@ -164,9 +174,23 @@ export class RawMaterialsService {
           status = 'OVERSTOCK';
         }
 
-        const isPM = isItemPM(item);
-        const isFG = !isPM && isItemFG(item);
-        const isRM = !isPM && !isFG;
+        let isPM = false;
+        let isFG = false;
+        let isRM = false;
+
+        if (item.classification === 'PM') {
+          isPM = true;
+        } else if (item.classification === 'FG') {
+          isFG = true;
+        } else if (item.classification === 'RM') {
+          isRM = true;
+        } else {
+          isPM = isItemPM(item);
+          isFG = !isPM && isItemFG(item);
+          isRM = !isPM && !isFG;
+        }
+
+        const finalClassification = isPM ? 'PM' : isFG ? 'FG' : 'RM';
 
         return {
           ...item,
@@ -184,7 +208,7 @@ export class RawMaterialsService {
           isPackagingMaterial: isPM,
           isFinishedGood: isFG,
           isRawMaterial: isRM,
-          classification: isPM ? 'PM' : isFG ? 'FG' : 'RM',
+          classification: finalClassification,
           itemSource: (item.itemSource || 'MANUFACTURED') as 'MANUFACTURED' | 'TRADED',
         };
       })
@@ -224,12 +248,13 @@ export class RawMaterialsService {
       const val = current * cost;
       totalValuation += val;
 
-      if (isItemPM(m)) {
+      const isPM = m.classification ? m.classification === 'PM' : isItemPM(m);
+      const isFG = m.classification ? m.classification === 'FG' : (!isPM && isItemFG(m));
+      if (isPM) {
         packagingSkusCount++;
         packagingValuation += val;
       }
 
-      const isFG = !isItemPM(m) && isItemFG(m);
       if (isFG) {
         if (m.itemSource === 'TRADED') {
           tradedFgCount++;
@@ -375,6 +400,7 @@ export class RawMaterialsService {
           isActive: dto.isActive ?? true,
           brand: dto.brand,
           itemSource: dto.itemSource || 'MANUFACTURED',
+          classification: dto.classification || (sku.startsWith('FG-') ? 'FG' : sku.startsWith('PM-') ? 'PM' : 'RM'),
           size: dto.size,
           dimensionInches: dto.dimensionInches,
           dimensionCm: dto.dimensionCm,
@@ -481,6 +507,7 @@ export class RawMaterialsService {
           isActive: dto.isActive,
           brand: dto.brand,
           itemSource: dto.itemSource !== undefined ? dto.itemSource : undefined,
+          classification: dto.classification !== undefined ? dto.classification : undefined,
           size: dto.size,
           dimensionInches: dto.dimensionInches,
           dimensionCm: dto.dimensionCm,
@@ -524,7 +551,7 @@ export class RawMaterialsService {
   }
 
   /**
-   * Delete or soft-delete raw material
+   * Delete or soft-delete raw material with comprehensive relation safety checks
    */
   async remove(id: string, userId: string) {
     const existing = await prisma.rawMaterial.findUnique({
@@ -534,6 +561,17 @@ export class RawMaterialsService {
           select: {
             inventoryTransactions: true,
             issuedJobWorkOrders: true,
+            returnedJobWorkOrders: true,
+            returnedItems: true,
+            gauzeBatches: true,
+            gauzeRawMaterials: true,
+            gauzePackingEntries: true,
+            gamjeeFinishedBatches: true,
+            gamjeeMaterialInputs: true,
+            gamjeeFinishedRolls: true,
+            customerOrderItems: true,
+            inventoryBatches: true,
+            jobWorkChallans: true,
           },
         },
       },
@@ -543,9 +581,11 @@ export class RawMaterialsService {
       throw new NotFoundException(`Raw material with ID ${id} not found.`);
     }
 
-    // Strict safety check: If material has history, prevent hard deletion
-    if (existing._count.inventoryTransactions > 0 || existing._count.issuedJobWorkOrders > 0) {
-      // Perform soft delete by setting isActive: false
+    const counts = existing._count || {};
+    const totalLinkedRecords = Object.values(counts).reduce((acc: number, val) => acc + (Number(val) || 0), 0);
+
+    // Strict safety check: If material has history or linked operations, soft-deactivate it
+    if (totalLinkedRecords > 0) {
       const deactivated = await prisma.rawMaterial.update({
         where: { id },
         data: { isActive: false },
@@ -556,32 +596,50 @@ export class RawMaterialsService {
           action: 'DEACTIVATE_RAW_MATERIAL',
           entityName: 'RawMaterial',
           entityId: id,
-          oldValues: { note: 'Soft deleted because transactions exist' },
+          oldValues: {
+            note: `Deactivated because ${totalLinkedRecords} linked operation(s) exist across inventory, production, or orders`,
+            counts,
+          },
           userId,
         },
       });
 
       return {
-        message: 'Material deactivated (soft deleted) because transaction history exists.',
+        message: `Material deactivated successfully (retained historical data across ${totalLinkedRecords} linked operational record(s)).`,
         material: deactivated,
+        isSoftDeleted: true,
       };
     }
 
-    return await prisma.$transaction(async (tx) => {
-      const deleted = await tx.rawMaterial.delete({ where: { id } });
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const deleted = await tx.rawMaterial.delete({ where: { id } });
 
-      await tx.auditLog.create({
-        data: {
-          action: 'DELETE_RAW_MATERIAL',
-          entityName: 'RawMaterial',
-          entityId: id,
-          oldValues: JSON.parse(JSON.stringify(existing)),
-          userId,
-        },
+        await tx.auditLog.create({
+          data: {
+            action: 'DELETE_RAW_MATERIAL',
+            entityName: 'RawMaterial',
+            entityId: id,
+            oldValues: JSON.parse(JSON.stringify(existing)),
+            userId,
+          },
+        });
+
+        return { message: 'Raw material permanently deleted successfully.', material: deleted, isSoftDeleted: false };
+      });
+    } catch (err: any) {
+      // Fallback gracefully to soft-deactivate if any unexpected foreign key constraint triggers
+      const deactivated = await prisma.rawMaterial.update({
+        where: { id },
+        data: { isActive: false },
       });
 
-      return { message: 'Raw material deleted successfully', material: deleted };
-    });
+      return {
+        message: 'Material deactivated safely to preserve database integrity.',
+        material: deactivated,
+        isSoftDeleted: true,
+      };
+    }
   }
 
   /**

@@ -124,6 +124,7 @@ export default function NewRawMaterialPage() {
         remarks: formData.remarks || undefined,
         isActive: true,
         itemSource: itemType === 'FG' ? itemSource : 'MANUFACTURED',
+        classification: itemType,
         brand: formData.brand || undefined,
         variantType: formData.variantType || undefined,
         size: formData.size || undefined,

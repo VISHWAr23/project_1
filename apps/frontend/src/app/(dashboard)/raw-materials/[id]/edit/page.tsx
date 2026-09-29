@@ -35,6 +35,8 @@ export default function EditRawMaterialPage() {
 
   const [hasDualUnit, setHasDualUnit] = useState(false);
   const [itemSource, setItemSource] = useState<'MANUFACTURED' | 'TRADED'>('MANUFACTURED');
+  const [itemClassification, setItemClassification] = useState<'RM' | 'PM' | 'FG'>('RM');
+  const [isActive, setIsActive] = useState<boolean>(true);
 
   const [formData, setFormData] = useState({
     sku: '',
@@ -71,6 +73,19 @@ export default function EditRawMaterialPage() {
   useEffect(() => {
     if (material) {
       setHasDualUnit(Boolean(material.secondaryUnitId || material.conversionFactor));
+      setItemClassification(
+        material.classification ||
+          (material.isPackagingMaterial
+            ? 'PM'
+            : material.isFinishedGood
+            ? 'FG'
+            : material.sku?.startsWith('FG-')
+            ? 'FG'
+            : material.sku?.startsWith('PM-')
+            ? 'PM'
+            : 'RM')
+      );
+      setIsActive(material.isActive !== undefined ? material.isActive : true);
       setFormData({
         sku: material.sku || '',
         name: material.name || '',
@@ -147,6 +162,8 @@ export default function EditRawMaterialPage() {
           unitCost: Number(formData.unitCost) || 0,
           remarks: formData.remarks || undefined,
           itemSource,
+          classification: itemClassification,
+          isActive,
           brand: formData.brand || undefined,
           variantType: formData.variantType || undefined,
           size: formData.size || undefined,
@@ -205,6 +222,82 @@ export default function EditRawMaterialPage() {
           <h2 className="text-sm font-bold text-foreground tracking-tight border-b border-border pb-2">
             1. Material Identification & Cataloging
           </h2>
+
+          {/* Material Classification (RM / PM / FG) */}
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-foreground">
+              Inventory Category Classification <span className="text-red-500">*</span>
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <button
+                type="button"
+                onClick={() => setItemClassification('RM')}
+                className={`p-3 rounded-lg border text-left transition-all ${
+                  itemClassification === 'RM'
+                    ? 'border-blue-500 bg-blue-500/10 text-blue-500 ring-1 ring-blue-500'
+                    : 'border-border bg-secondary/40 text-muted-foreground hover:bg-secondary'
+                }`}
+              >
+                <span className="block font-bold text-xs">Raw Material (RM)</span>
+                <span className="text-[10px] text-muted-foreground block mt-0.5">
+                  Cotton bales, grey yarn, chemicals, fabrics for conversion
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setItemClassification('PM')}
+                className={`p-3 rounded-lg border text-left transition-all ${
+                  itemClassification === 'PM'
+                    ? 'border-amber-500 bg-amber-500/10 text-amber-500 ring-1 ring-amber-500'
+                    : 'border-border bg-secondary/40 text-muted-foreground hover:bg-secondary'
+                }`}
+              >
+                <span className="block font-bold text-xs">Packaging Material (PM)</span>
+                <span className="text-[10px] text-muted-foreground block mt-0.5">
+                  Boxes, poly covers, tapes, pouches, wrappers
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setItemClassification('FG')}
+                className={`p-3 rounded-lg border text-left transition-all ${
+                  itemClassification === 'FG'
+                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500'
+                    : 'border-border bg-secondary/40 text-muted-foreground hover:bg-secondary'
+                }`}
+              >
+                <span className="block font-bold text-xs">Finished Good (FG)</span>
+                <span className="text-[10px] text-muted-foreground block mt-0.5">
+                  Sterile gauze swabs, gamjee rolls, adult pullups, bedsheets
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Active / Deactivated Status Switch */}
+          <div className="flex items-center justify-between p-3.5 rounded-lg border border-border bg-secondary/30">
+            <div>
+              <span className="block text-xs font-semibold text-foreground">Material Status</span>
+              <span className="text-[11px] text-muted-foreground block mt-0.5">
+                {isActive
+                  ? 'Active in inventory catalog, stock transactions, and production planning'
+                  : 'Deactivated / Inactive — hidden from active catalogs and order dropdowns'}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsActive(!isActive)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                isActive
+                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25'
+                  : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 hover:bg-rose-500/25'
+              }`}
+            >
+              {isActive ? '✓ Active Material' : '✕ Deactivated (Archived)'}
+            </button>
+          </div>
 
           {/* Sourcing & Procurement Classification */}
           <div className="p-3 rounded-lg border border-border bg-secondary/30 space-y-2">
