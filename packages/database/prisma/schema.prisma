@@ -2148,3 +2148,189 @@ model GreyFabricCosting {
   @@index([createdAt], map: "idx_fabric_costing_created_at")
   @@map("grey_fabric_costings")
 }
+
+model MopingPadProductionBatch {
+  id                   String    @id @default(uuid()) @db.Uuid
+  batchNumber          String    @unique @map("batch_number") @db.VarChar(100)
+  productName          String    @map("product_name") @db.VarChar(255)
+  materialType         String    @default("ROLL") @map("material_type") @db.VarChar(50)
+  rollWidth            Decimal?  @map("roll_width") @db.Decimal(10, 2)
+  rollWidthUom         String?   @default("cm") @map("roll_width_uom") @db.VarChar(20)
+  rollLength           Decimal?  @map("roll_length") @db.Decimal(10, 2)
+  rollLengthUom        String?   @default("m") @map("roll_length_uom") @db.VarChar(20)
+  pieceLength          Decimal?  @map("piece_length") @db.Decimal(10, 2)
+  pieceLengthUom       String?   @default("cm") @map("piece_length_uom") @db.VarChar(20)
+  pieceWidth           Decimal?  @map("piece_width") @db.Decimal(10, 2)
+  pieceWidthUom        String?   @default("cm") @map("piece_width_uom") @db.VarChar(20)
+  pieceCount           Int?      @map("piece_count")
+  totalLength          Decimal   @map("total_length") @db.Decimal(12, 3)
+  pinningSize          Decimal   @map("pinning_size") @db.Decimal(10, 2)
+  pinningSizeUom       String?   @default("cm") @map("pinning_size_uom") @db.VarChar(20)
+  outputQuantity       Int       @map("output_quantity")
+  remnantLength        Decimal?  @default(0) @map("remnant_length") @db.Decimal(10, 3)
+  completedQuantity    Int       @default(0) @map("completed_quantity")
+  pendingQuantity      Int       @map("pending_quantity")
+  completionPercentage Decimal   @default(0) @map("completion_percentage") @db.Decimal(5, 2)
+  executorType         String    @default("WORKERS") @map("executor_type") @db.VarChar(50)
+  workerIds            String[]  @default([]) @map("worker_ids")
+  workerNames          String?   @map("worker_names") @db.VarChar(255)
+  companyId            String?   @map("company_id") @db.Uuid
+  companyName          String?   @map("company_name") @db.VarChar(255)
+  deliveryPerson       String?   @map("delivery_person") @db.VarChar(100)
+  vehicleNumber        String?   @map("vehicle_number") @db.VarChar(50)
+  dcNo                 String?   @map("dc_no") @db.VarChar(100)
+  dcDate               DateTime? @map("dc_date") @db.Date
+  ends                 String?   @db.VarChar(100)
+  itemType             String?   @map("item_type") @db.VarChar(100)
+  outputProductWidth   String?   @map("output_product_width") @db.VarChar(100)
+  status               String    @default("IN_PROGRESS") @db.VarChar(50)
+  startDate            DateTime  @default(now()) @map("start_date") @db.Date
+  targetDate           DateTime? @map("target_date") @db.Date
+  completionDate       DateTime? @map("completion_date") @db.Date
+  notes                String?   @db.Text
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  @@index([batchNumber], map: "idx_moping_pad_batch_no")
+  @@index([status], map: "idx_moping_pad_status")
+  @@map("moping_pad_production_batches")
+}
+
+model DryingBatch {
+  id                  String    @id @default(uuid()) @db.Uuid
+  batchNumber         String    @unique @map("batch_number") @db.VarChar(100)
+  productName         String    @map("product_name") @db.VarChar(255)
+  pieceLength         Decimal   @map("piece_length") @db.Decimal(10, 2)
+  pieceLengthUom      String?   @default("m") @map("piece_length_uom") @db.VarChar(20)
+  pieceWidth          Decimal?  @map("piece_width") @db.Decimal(10, 2)
+  pieceWidthUom       String?   @default("cm") @map("piece_width_uom") @db.VarChar(20)
+  totalPieces         Int       @map("total_pieces")
+  totalLength         Decimal   @map("total_length") @db.Decimal(12, 3)
+  completedPieces     Int       @default(0) @map("completed_pieces")
+  pendingPieces       Int       @map("pending_pieces")
+  completedLength     Decimal   @default(0) @map("completed_length") @db.Decimal(12, 3)
+  completionPercentage Decimal  @default(0) @map("completion_percentage") @db.Decimal(5, 2)
+  salaryRatePerMeter  Decimal   @default(0) @map("salary_rate_per_meter") @db.Decimal(10, 2)
+  totalSalary         Decimal   @default(0) @map("total_salary") @db.Decimal(12, 2)
+  earnedSalary        Decimal   @default(0) @map("earned_salary") @db.Decimal(12, 2)
+  workerSalaryShare   Decimal   @default(0) @map("worker_salary_share") @db.Decimal(12, 2)
+  executorType        String    @default("WORKERS") @map("executor_type") @db.VarChar(50)
+  workerIds           String[]  @default([]) @map("worker_ids")
+  workerNames         String?   @map("worker_names") @db.VarChar(255)
+  companyId           String?   @map("company_id") @db.Uuid
+  companyName         String?   @map("company_name") @db.VarChar(255)
+  deliveryPerson      String?   @map("delivery_person") @db.VarChar(100)
+  vehicleNumber       String?   @map("vehicle_number") @db.VarChar(50)
+  dcNo                String?   @map("dc_no") @db.VarChar(100)
+  dcDate              DateTime? @map("dc_date") @db.Date
+  ends                String?   @db.VarChar(100)
+  itemType            String?   @map("item_type") @db.VarChar(100)
+  outputProductWidth  String?   @map("output_product_width") @db.VarChar(100)
+  status              String    @default("IN_PROGRESS") @db.VarChar(50)
+  startDate           DateTime  @default(now()) @map("start_date") @db.Date
+  targetDate          DateTime? @map("target_date") @db.Date
+  completionDate      DateTime? @map("completion_date") @db.Date
+  dryingChamberOrLine String?   @map("drying_chamber_or_line") @db.VarChar(100)
+  notes               String?   @db.Text
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@index([batchNumber], map: "idx_drying_batch_no")
+  @@index([status], map: "idx_drying_status")
+  @@map("drying_batches")
+}
+
+model GauzePadPinningBatch {
+  id                 String    @id @default(uuid()) @db.Uuid
+  batchNumber        String    @unique @map("batch_number") @db.VarChar(100)
+  productName        String    @map("product_name") @db.VarChar(255)
+  materialType       String    @default("ROLL") @map("material_type") @db.VarChar(50)
+  rollWidth          Decimal?  @map("roll_width") @db.Decimal(10, 2)
+  rollWidthUom       String?   @default("cm") @map("roll_width_uom") @db.VarChar(20)
+  rollLength         Decimal?  @map("roll_length") @db.Decimal(10, 2)
+  rollLengthUom      String?   @default("m") @map("roll_length_uom") @db.VarChar(20)
+  pieceLength        Decimal?  @map("piece_length") @db.Decimal(10, 2)
+  pieceLengthUom     String?   @default("cm") @map("piece_length_uom") @db.VarChar(20)
+  pieceWidth         Decimal?  @map("piece_width") @db.Decimal(10, 2)
+  pieceWidthUom      String?   @default("cm") @map("piece_width_uom") @db.VarChar(20)
+  pieceCount         Int?      @map("piece_count")
+  totalLength        Decimal   @map("total_length") @db.Decimal(12, 3)
+  pinningSize        Decimal   @map("pinning_size") @db.Decimal(10, 2)
+  pinningSizeUom     String?   @default("cm") @map("pinning_size_uom") @db.VarChar(20)
+  cuttingSize        Decimal   @map("cutting_size") @db.Decimal(10, 2)
+  outputQuantity     Int       @map("output_quantity")
+  remnantLength      Decimal?  @default(0) @map("remnant_length") @db.Decimal(10, 3)
+  salaryRatePerPiece Decimal   @default(0) @map("salary_rate_per_piece") @db.Decimal(10, 2)
+  totalSalary        Decimal   @default(0) @map("total_salary") @db.Decimal(12, 2)
+  workerSalaryShare  Decimal   @default(0) @map("worker_salary_share") @db.Decimal(12, 2)
+  executorType       String    @default("WORKERS") @map("executor_type") @db.VarChar(50)
+  workerIds          String[]  @default([]) @map("worker_ids")
+  workerNames        String?   @map("worker_names") @db.VarChar(255)
+  companyId          String?   @map("company_id") @db.Uuid
+  companyName        String?   @map("company_name") @db.VarChar(255)
+  deliveryPerson     String?   @map("delivery_person") @db.VarChar(100)
+  vehicleNumber      String?   @map("vehicle_number") @db.VarChar(50)
+  dcNo               String?   @map("dc_no") @db.VarChar(100)
+  dcDate             DateTime? @map("dc_date") @db.Date
+  ends               String?   @db.VarChar(100)
+  itemType           String?   @map("item_type") @db.VarChar(100)
+  status             String    @default("IN_PROGRESS") @db.VarChar(50)
+  startDate          DateTime  @default(now()) @map("start_date") @db.Date
+  targetDate         DateTime? @map("target_date") @db.Date
+  completionDate     DateTime? @map("completion_date") @db.Date
+  notes              String?   @db.Text
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@index([batchNumber], map: "idx_gz_pinning_batch_no")
+  @@index([status], map: "idx_gz_pinning_status")
+  @@map("gauze_pad_pinning_batches")
+}
+
+model PillowBedsheetBatch {
+  id                          String    @id @default(uuid()) @db.Uuid
+  batchNumber                 String    @unique @map("batch_number") @db.VarChar(100)
+  productName                 String    @map("product_name") @db.VarChar(255)
+  productType                 String    @map("product_type") @db.VarChar(50)
+  weightKg                    Decimal   @map("weight_kg") @db.Decimal(10, 3)
+  gsm                         Decimal   @db.Decimal(6, 2)
+  rollWidth                   Decimal   @map("roll_width") @db.Decimal(10, 2)
+  rollWidthUom                String    @default("cm") @map("roll_width_uom") @db.VarChar(20)
+  rollWidthInMeters           Decimal   @map("roll_width_in_meters") @db.Decimal(10, 4)
+  totalLength                 Decimal   @map("total_length") @db.Decimal(12, 3)
+  bedSheetLength              Decimal?  @map("bed_sheet_length") @db.Decimal(10, 2)
+  bedSheetLengthUom           String?   @default("m") @map("bed_sheet_length_uom") @db.VarChar(20)
+  pillowCoverCuttingLength    Decimal?  @map("pillow_cover_cutting_length") @db.Decimal(10, 2)
+  pillowCoverCuttingLengthUom String?   @default("m") @map("pillow_cover_cutting_length_uom") @db.VarChar(20)
+  cuttingCount                Int?      @default(1) @map("cutting_count")
+  outputQuantity              Int       @map("output_quantity")
+  remnantLength               Decimal   @default(0) @map("remnant_length") @db.Decimal(10, 3)
+  completedQuantity           Int       @default(0) @map("completed_quantity")
+  pendingQuantity             Int       @map("pending_quantity")
+  completionPercentage        Decimal   @default(0) @map("completion_percentage") @db.Decimal(5, 2)
+  salaryRatePerUnit           Decimal   @default(0) @map("salary_rate_per_unit") @db.Decimal(10, 2)
+  totalSalary                 Decimal   @default(0) @map("total_salary") @db.Decimal(12, 2)
+  workerSalaryShare           Decimal   @default(0) @map("worker_salary_share") @db.Decimal(12, 2)
+  executorType                String    @default("WORKERS") @map("executor_type") @db.VarChar(50)
+  workerIds                   String[]  @default([]) @map("worker_ids")
+  workerNames                 String?   @map("worker_names") @db.VarChar(255)
+  companyId                   String?   @map("company_id") @db.Uuid
+  companyName                 String?   @map("company_name") @db.VarChar(255)
+  deliveryPerson              String?   @map("delivery_person") @db.VarChar(100)
+  vehicleNumber               String?   @map("vehicle_number") @db.VarChar(50)
+  dcNo                        String?   @map("dc_no") @db.VarChar(100)
+  dcDate                      DateTime? @map("dc_date") @db.Date
+  ends                        String?   @db.VarChar(100)
+  itemType                    String?   @map("item_type") @db.VarChar(100)
+  status                      String    @default("IN_PROGRESS") @db.VarChar(50)
+  startDate                   DateTime  @default(now()) @map("start_date") @db.Date
+  targetDate                  DateTime? @map("target_date") @db.Date
+  completionDate              DateTime? @map("completion_date") @db.Date
+  notes                       String?   @db.Text
+  createdAt                   DateTime  @default(now()) @map("created_at")
+  updatedAt                   DateTime  @updatedAt @map("updated_at")
+
+  @@index([batchNumber], map: "idx_pbs_batch_no")
+  @@index([status], map: "idx_pbs_status")
+  @@map("pillow_bedsheet_batches")
+}

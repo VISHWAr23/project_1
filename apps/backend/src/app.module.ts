@@ -16,6 +16,10 @@ import { CustomerOrdersModule } from './modules/customer-orders/customer-orders.
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { FabricCostingModule } from './modules/fabric-costing/fabric-costing.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { MopingPadProductionModule } from './modules/moping-pad-production/moping-pad-production.module';
+import { DryingModule } from './modules/drying/drying.module';
+import { GauzePadPinningModule } from './modules/gauze-pad-pinning/gauze-pad-pinning.module';
+import { PillowBedsheetProductionModule } from './modules/pillow-bedsheet-production/pillow-bedsheet-production.module';
 
 @Module({
   imports: [
@@ -39,6 +43,10 @@ import { ReportsModule } from './modules/reports/reports.module';
     CustomerOrdersModule,
     FabricCostingModule,
     ReportsModule,
+    MopingPadProductionModule,
+    DryingModule,
+    GauzePadPinningModule,
+    PillowBedsheetProductionModule,
   ],
 })
 export class AppModule {}

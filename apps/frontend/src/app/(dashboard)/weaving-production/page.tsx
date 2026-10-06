@@ -20,17 +20,20 @@ import {
   Sparkles,
   FileText,
   PackageCheck,
+  Trash2,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useJobWorkOrders } from '@/hooks/useJobWork';
 import { JobWorkStatusBadge } from '@/components/job-work/job-work-status-badge';
+import { JobWorkDeleteModal } from '@/components/job-work/job-work-delete-modal';
 import { formatDate } from '@/lib/date-utils';
 
 export default function WeavingProductionPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'COMPLETED'>('ALL');
+  const [deletingOrder, setDeletingOrder] = useState<any | null>(null);
 
   const { data: jobWorkData, isLoading } = useJobWorkOrders({ limit: 100 });
 
@@ -416,6 +419,17 @@ export default function WeavingProductionPage() {
                             <ExternalLink className="h-3 w-3" />
                           </Button>
                         </Link>
+                        {order.status !== 'CLOSED' && Number(order.totalReturnedWeight || 0) === 0 && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-1.5 text-[11px] text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                            onClick={() => setDeletingOrder(order)}
+                            title={order.status === 'CREATED' ? 'Delete Order' : 'Cancel & Reverse Stock'}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -433,6 +447,14 @@ export default function WeavingProductionPage() {
           </table>
         </div>
       </Card>
+
+      {/* Delete / Cancel Order Modal */}
+      <JobWorkDeleteModal
+        order={deletingOrder}
+        isOpen={Boolean(deletingOrder)}
+        onClose={() => setDeletingOrder(null)}
+        onSuccess={() => setDeletingOrder(null)}
+      />
     </div>
   );
 }

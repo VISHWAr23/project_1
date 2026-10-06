@@ -197,7 +197,7 @@ function CreateMopingPadBatchContent() {
         materialType,
         dcNo: dcNo.trim() || undefined,
         dcDate: dcDate || undefined,
-        ends: ends === '' ? undefined : Number(ends),
+        ends: ends === '' ? undefined : String(ends).trim(),
         itemType: itemType.trim() || undefined,
         outputProductWidth: outputProductWidth.trim() || undefined,
         rollWidth: rollWidth === '' ? undefined : Number(rollWidth),
