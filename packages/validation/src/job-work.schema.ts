@@ -18,6 +18,8 @@ export const createJobWorkOrderSchema = z.object({
   finishedProductId: z.string().uuid('Valid Finished Product is required').optional().nullable(),
   expectedReturnDate: z.string().min(1, 'Expected return date is required'),
   remarks: z.string().optional(),
+  dcNo: z.string().optional(),
+  dcDate: z.string().optional(),
 });
 
 export type CreateJobWorkOrderInput = z.infer<typeof createJobWorkOrderSchema>;
@@ -36,6 +38,8 @@ export const issueMaterialsSchema = z.object({
   vehicleNumber: z.string().min(1, 'Vehicle number is required'),
   driverName: z.string().min(1, 'Driver name is required'),
   remarks: z.string().optional(),
+  dcNo: z.string().optional(),
+  dcDate: z.string().optional(),
   items: z.array(issueItemSchema).min(1, 'At least one roll must be issued'),
 });
 
@@ -89,6 +93,8 @@ export const createWeavingJobWorkSchema = z.object({
   rawMaterialId: z.string().uuid().optional().nullable(),
   expectedReturnDate: z.string().min(1, 'Expected return date is required'),
   remarks: z.string().optional(),
+  dcNo: z.string().optional(),
+  dcDate: z.string().optional(),
 
   // Weaving Engineering Parameters
   ends: z.number().int().positive('Ends count must be positive'),
@@ -241,6 +247,8 @@ export const createBleachingJobWorkSchema = z.object({
   jobWorkType: z.literal('BLEACHING').default('BLEACHING'),
   expectedReturnDate: z.string().min(1, 'Expected return date is required'),
   remarks: z.string().optional(),
+  dcNo: z.string().optional(),
+  dcDate: z.string().optional(),
 
   // Bleaching Process Specifications
   bleachingType: z.enum(['BEAM_DYEING', 'PEROXIDE_BLEACHING'], {

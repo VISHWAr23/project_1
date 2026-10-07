@@ -109,10 +109,29 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
                   Bleaching ({order.bleachingDetail?.bleachingType === 'BEAM_DYEING' ? 'Beam Dyeing' : 'Peroxide Bleaching'})
                 </span>
               )}
+              {order.challanNumber || (order as any).dcNo ? (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1 font-mono">
+                  <Truck className="h-3 w-3" />
+                  DC: {order.challanNumber || (order as any).dcNo}
+                </span>
+              ) : (
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-muted-foreground bg-secondary border border-border flex items-center gap-1">
+                  <Truck className="h-3 w-3" />
+                  DC Pending
+                </span>
+              )}
               <JobWorkStatusBadge status={order.status} />
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Issued to {order.jobWorkCompany?.companyName} • Delivery Challan: {order.challanNumber || 'Pending'}
+            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+              <span>Issued to <strong className="text-foreground">{order.jobWorkCompany?.companyName}</strong></span>
+              <span>•</span>
+              <span>Delivery Challan: <strong className="font-mono text-foreground">{order.challanNumber || (order as any).dcNo || 'Pending'}</strong></span>
+              {(order as any).dcDate && (
+                <>
+                  <span>•</span>
+                  <span>DC Date: <strong className="font-mono text-foreground">{new Date((order as any).dcDate).toLocaleDateString()}</strong></span>
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -163,7 +182,7 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
             </Link>
           )}
 
-          {order.challanNumber && (
+          {(order.challanNumber || (order as any).dcNo) && (
             <Link href={`/job-work/${order.id}/challan`}>
               <Button variant="outline" size="sm" leftIcon={<Printer className="h-3.5 w-3.5" />}>
                 Delivery Challan PDF
@@ -378,6 +397,20 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
             <p className="font-bold text-sm text-foreground">{order.jobWorkCompany?.companyName}</p>
             <p className="text-muted-foreground">{order.jobWorkCompany?.address || 'Industrial Premises'}</p>
             <div className="pt-2 space-y-1">
+              <p>
+                <span className="text-muted-foreground">DC Number:</span>{' '}
+                <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
+                  {order.challanNumber || (order as any).dcNo || 'Pending Issue'}
+                </span>
+              </p>
+              {(order as any).dcDate && (
+                <p>
+                  <span className="text-muted-foreground">DC Issue Date:</span>{' '}
+                  <span className="font-mono text-foreground">
+                    {new Date((order as any).dcDate).toLocaleDateString()}
+                  </span>
+                </p>
+              )}
               <p><span className="text-muted-foreground">GSTIN:</span> <span className="font-mono text-foreground">{order.jobWorkCompany?.gstin || 'N/A'}</span></p>
               <p><span className="text-muted-foreground">Contact:</span> <span className="text-foreground">{order.jobWorkCompany?.contactPerson || '-'}</span></p>
               <p><span className="text-muted-foreground">Phone:</span> <span className="text-foreground">{order.jobWorkCompany?.phone || '-'}</span></p>

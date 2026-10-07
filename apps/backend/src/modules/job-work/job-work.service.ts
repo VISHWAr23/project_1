@@ -96,7 +96,10 @@ export class JobWorkService {
     const activeVendorsCount = await prisma.jobWorkCompany.count({ where: { isActive: true } });
 
     return {
-      items,
+      items: items.map((order) => ({
+        ...order,
+        dcNo: order.challanNumber || null,
+      })),
       meta: {
         total,
         page,
@@ -187,7 +190,10 @@ export class JobWorkService {
       throw new NotFoundException(`Job Work Order with ID ${id} not found`);
     }
 
-    return order;
+    return {
+      ...order,
+      dcNo: order.challanNumber || null,
+    };
   }
 
   /**
@@ -215,6 +221,7 @@ export class JobWorkService {
       const createdOrder = await tx.jobWorkOrder.create({
         data: {
           jobWorkNumber,
+          challanNumber: dto.dcNo?.trim() || null,
           jobWorkCompanyId: dto.jobWorkCompanyId,
           rawMaterialId: dto.rawMaterialId,
           finishedProductId: dto.finishedProductId || null,
@@ -283,6 +290,7 @@ export class JobWorkService {
         data: {
           jobWorkNumber,
           jobWorkType: 'WEAVING',
+          challanNumber: dto.dcNo?.trim() || null,
           jobWorkCompanyId: dto.jobWorkCompanyId,
           rawMaterialId: dto.rawMaterialId || null,
           expectedReturnDate: new Date(dto.expectedReturnDate),
@@ -382,11 +390,21 @@ export class JobWorkService {
     // Auto-generate Job Work Number e.g. JWO-2026-0043
     const jobWorkNumber = await this.generateNextJobWorkNumber();
 
+    // Auto-generate Delivery Challan (DC No) for bleaching since materials are issued immediately
+    const challanCount = await prisma.jobWorkOrder.count({
+      where: { challanNumber: { not: null } },
+    });
+    const year = new Date().getFullYear();
+    const challanNumber = dto.dcNo?.trim()
+      ? (dto.dcNo.trim().toUpperCase().startsWith('DC-') ? dto.dcNo.trim() : `DC-${dto.dcNo.trim()}`)
+      : `DC-${year}-${String(challanCount + 1).padStart(4, '0')}`;
+
     const order = await prisma.$transaction(async (tx) => {
       const createdOrder = await tx.jobWorkOrder.create({
         data: {
           jobWorkNumber,
           jobWorkType: 'BLEACHING',
+          challanNumber,
           jobWorkCompanyId: dto.jobWorkCompanyId,
           expectedReturnDate: new Date(dto.expectedReturnDate),
           totalIssuedWeight: dto.totalInputWeightKg,
@@ -498,12 +516,14 @@ export class JobWorkService {
       );
     }
 
-    // Auto-generate Challan Number
+    // Auto-generate Delivery Challan (DC) Number
     const challanCount = await prisma.jobWorkOrder.count({
       where: { challanNumber: { not: null } },
     });
     const year = new Date().getFullYear();
-    const challanNumber = dto.remarks?.includes('DC-')
+    const challanNumber = dto.dcNo?.trim()
+      ? (dto.dcNo.trim().toUpperCase().startsWith('DC-') ? dto.dcNo.trim() : `DC-${dto.dcNo.trim()}`)
+      : dto.remarks?.includes('DC-')
       ? dto.remarks
       : `DC-${year}-${String(challanCount + 1).padStart(4, '0')}`;
 
@@ -596,7 +616,10 @@ export class JobWorkService {
         },
       });
 
-      return orderUpdated;
+      return {
+        ...orderUpdated,
+        dcNo: orderUpdated.challanNumber || null,
+      };
     });
 
     return updatedOrder;
@@ -976,6 +999,7 @@ export class JobWorkService {
       where.OR = [
         { rollNumber: { contains: query.search, mode: 'insensitive' } },
         { jobWorkOrder: { jobWorkNumber: { contains: query.search, mode: 'insensitive' } } },
+        { jobWorkOrder: { challanNumber: { contains: query.search, mode: 'insensitive' } } },
         { jobWorkOrder: { jobWorkCompany: { companyName: { contains: query.search, mode: 'insensitive' } } } },
       ];
     }
@@ -998,7 +1022,15 @@ export class JobWorkService {
     ]);
 
     return {
-      items,
+      items: items.map((item) => ({
+        ...item,
+        jobWorkOrder: item.jobWorkOrder
+          ? {
+              ...item.jobWorkOrder,
+              dcNo: item.jobWorkOrder.challanNumber || null,
+            }
+          : item.jobWorkOrder,
+      })),
       meta: {
         total,
         page,
@@ -1023,6 +1055,7 @@ export class JobWorkService {
         { description: { contains: query.search, mode: 'insensitive' } },
         { rollOrThan: { contains: query.search, mode: 'insensitive' } },
         { jobWorkOrder: { jobWorkNumber: { contains: query.search, mode: 'insensitive' } } },
+        { jobWorkOrder: { challanNumber: { contains: query.search, mode: 'insensitive' } } },
         { jobWorkOrder: { jobWorkCompany: { companyName: { contains: query.search, mode: 'insensitive' } } } },
       ];
     }
@@ -1047,7 +1080,15 @@ export class JobWorkService {
     ]);
 
     return {
-      items,
+      items: items.map((item) => ({
+        ...item,
+        jobWorkOrder: item.jobWorkOrder
+          ? {
+              ...item.jobWorkOrder,
+              dcNo: item.jobWorkOrder.challanNumber || null,
+            }
+          : item.jobWorkOrder,
+      })),
       meta: {
         total,
         page,
@@ -1206,6 +1247,7 @@ export class JobWorkService {
         { rollOrThan: { contains: query.search, mode: 'insensitive' } },
         { whitenessIndex: { contains: query.search, mode: 'insensitive' } },
         { jobWorkOrder: { jobWorkNumber: { contains: query.search, mode: 'insensitive' } } },
+        { jobWorkOrder: { challanNumber: { contains: query.search, mode: 'insensitive' } } },
         { jobWorkOrder: { jobWorkCompany: { companyName: { contains: query.search, mode: 'insensitive' } } } },
       ];
     }
@@ -1230,7 +1272,15 @@ export class JobWorkService {
     ]);
 
     return {
-      items,
+      items: items.map((item) => ({
+        ...item,
+        jobWorkOrder: item.jobWorkOrder
+          ? {
+              ...item.jobWorkOrder,
+              dcNo: item.jobWorkOrder.challanNumber || null,
+            }
+          : item.jobWorkOrder,
+      })),
       meta: {
         total,
         page,

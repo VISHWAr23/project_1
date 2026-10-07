@@ -47,6 +47,7 @@ function CreateBleachingOrderContent() {
 
   const companyIdParam = searchParams.get('companyId') || '';
   const companyNameParam = searchParams.get('companyName') || '';
+  const dcNoParam = searchParams.get('dcNo') || '';
   const workerNamesParam = searchParams.get('workerNames') || '';
 
   const { data: companies = [], isLoading: isLoadingCompanies } = useJobWorkCompanies();
@@ -55,6 +56,7 @@ function CreateBleachingOrderContent() {
 
   // Basic Details
   const [jobWorkCompanyId, setJobWorkCompanyId] = useState(companyIdParam);
+  const [dcNo, setDcNo] = useState(dcNoParam || '05');
   const [expectedReturnDate, setExpectedReturnDate] = useState(() => {
     const future = new Date();
     future.setDate(future.getDate() + 7);
@@ -220,6 +222,7 @@ function CreateBleachingOrderContent() {
     try {
       const payload = {
         jobWorkCompanyId: effectiveCompanyId,
+        dcNo: dcNo.trim() || undefined,
         expectedReturnDate,
         remarks: remarks.trim() || undefined,
         bleachingType,
@@ -320,6 +323,18 @@ function CreateBleachingOrderContent() {
                 value={expectedReturnDate}
                 onChange={(e) => setExpectedReturnDate(e.target.value)}
                 required
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-foreground block mb-1.5">
+                Delivery Challan (DC) Reference No.
+              </label>
+              <Input
+                placeholder="e.g. 05 or DC-2026-0012"
+                value={dcNo}
+                onChange={(e) => setDcNo(e.target.value)}
+                className="font-mono text-xs"
               />
             </div>
 

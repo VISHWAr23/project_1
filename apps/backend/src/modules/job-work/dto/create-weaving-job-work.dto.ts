@@ -46,6 +46,16 @@ export class CreateWeavingJobWorkDto {
   @IsOptional()
   remarks?: string;
 
+  @ApiPropertyOptional({ description: 'Delivery Challan (DC) reference number' })
+  @IsString()
+  @IsOptional()
+  dcNo?: string;
+
+  @ApiPropertyOptional({ description: 'Delivery Challan (DC) date' })
+  @IsString()
+  @IsOptional()
+  dcDate?: string;
+
   // Weaving Parameters
   @ApiProperty({ description: 'Ends count (e.g. 1260)' })
   @IsNumber()

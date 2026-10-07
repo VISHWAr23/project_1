@@ -10,6 +10,7 @@ import {
   Building2,
   Package,
   Calendar,
+  Truck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -43,6 +44,10 @@ function CreateJobWorkOrderContent() {
 
   const [jobWorkCompanyId, setJobWorkCompanyId] = useState(
     searchParams.get('companyId') || ''
+  );
+  const [dcNo, setDcNo] = useState(searchParams.get('dcNo') || '');
+  const [dcDate, setDcDate] = useState(
+    searchParams.get('dcDate') || new Date().toISOString().split('T')[0]
   );
   const [rawMaterialId, setRawMaterialId] = useState('');
   const [finishedProductId, setFinishedProductId] = useState('');
@@ -110,6 +115,8 @@ function CreateJobWorkOrderContent() {
         finishedProductId: finishedProductId || undefined,
         expectedReturnDate,
         remarks,
+        dcNo: dcNo.trim() || undefined,
+        dcDate: dcDate || undefined,
       });
 
       toast('Job Work Order Created', `Order ${order.jobWorkNumber} generated successfully`, 'success');
@@ -226,6 +233,34 @@ function CreateJobWorkOrderContent() {
                 onChange={(e) => setRemarks(e.target.value)}
               />
             </div>
+          </div>
+        </Card>
+
+        {/* Section 2: Delivery Challan (DC) Reference */}
+        <Card className="p-6 space-y-4 bg-card border-border">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <h2 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
+              <Truck className="h-4 w-4 text-blue-500" />
+              <span>Delivery Challan (DC) Particulars</span>
+            </h2>
+            <span className="text-[11px] font-mono text-muted-foreground">
+              Optional / Auto-Generated if blank
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Delivery Challan (DC) Reference No."
+              placeholder="e.g. DC-JW-2026-0084 or Mill Challan #"
+              value={dcNo}
+              onChange={(e) => setDcNo(e.target.value)}
+            />
+            <Input
+              label="DC Issue Date"
+              type="date"
+              value={dcDate}
+              onChange={(e) => setDcDate(e.target.value)}
+            />
           </div>
         </Card>
 

@@ -25,6 +25,16 @@ export class CreateBleachingJobWorkDto {
   @IsOptional()
   remarks?: string;
 
+  @ApiPropertyOptional({ description: 'Delivery Challan (DC) reference number' })
+  @IsString()
+  @IsOptional()
+  dcNo?: string;
+
+  @ApiPropertyOptional({ description: 'Delivery Challan (DC) date' })
+  @IsString()
+  @IsOptional()
+  dcDate?: string;
+
   @ApiPropertyOptional({ description: 'Job Work Type identifier', enum: ['BLEACHING'], default: 'BLEACHING' })
   @IsString()
   @IsOptional()

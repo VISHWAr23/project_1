@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   Factory,
@@ -26,9 +27,12 @@ import {
   Bed,
   Plus,
   Trash2,
+  Search,
+  X,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { SkeletonLoader } from '@/components/ui/skeleton-loader';
 import { Modal } from '@/components/ui/modal';
@@ -68,7 +72,7 @@ import { useJobWorkCompanies, useJobWorkOrders } from '@/hooks/useJobWork';
 import { useEmployees } from '@/hooks/useEmployees';
 import { formatDate } from '@/lib/date-utils';
 
-export default function JobWorkProductionHubPage() {
+function JobWorkProductionHubContent() {
   const [selectedProduction, setSelectedProduction] = useState<ProductionType | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deletingOrder, setDeletingOrder] = useState<any>(null);
@@ -81,6 +85,19 @@ export default function JobWorkProductionHubPage() {
   const [activeTab, setActiveTab] = useState<
     'all' | 'gauze' | 'gamjee' | 'moping-pad' | 'gauze-pad-pinning' | 'drying' | 'pillow-bedsheet' | 'weaving' | 'bleaching' | 'standard'
   >('all');
+  const searchParams = useSearchParams();
+  const initialVendor = searchParams.get('vendor') || searchParams.get('companyId') || '';
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedVendorId, setSelectedVendorId] = useState(initialVendor);
+  const [companyOnlyFilter, setCompanyOnlyFilter] = useState(Boolean(initialVendor));
+
+  useEffect(() => {
+    const v = searchParams.get('vendor') || searchParams.get('companyId') || '';
+    if (v) {
+      setSelectedVendorId(v);
+      setCompanyOnlyFilter(true);
+    }
+  }, [searchParams]);
 
   const { toast } = useToast();
   const deleteGauzeBatchMutation = useDeleteGauzeBatch();
@@ -211,6 +228,11 @@ export default function JobWorkProductionHubPage() {
       metricSecondary?: React.ReactNode;
       manageUrl: string;
       rawOrder?: any;
+      dcNo?: string | null;
+      dcDate?: string | null;
+      companyName?: string | null;
+      companyId?: string | null;
+      isCompanyJobWork?: boolean;
     }> = [];
 
     const resolveTimestamp = (b: any) => {
@@ -317,6 +339,11 @@ export default function JobWorkProductionHubPage() {
           </div>
         ),
         manageUrl: '/moping-pad-production',
+        dcNo: batch.dcNo || null,
+        dcDate: batch.dcDate || null,
+        companyName: batch.executorType === 'COMPANY' ? (batch.companyName || 'Subcontractor') : null,
+        companyId: (batch as any).jobWorkCompanyId || null,
+        isCompanyJobWork: batch.executorType === 'COMPANY',
       });
     });
 
@@ -347,6 +374,11 @@ export default function JobWorkProductionHubPage() {
           </div>
         ),
         manageUrl: '/gauze-pad-pinning',
+        dcNo: batch.dcNo || null,
+        dcDate: batch.dcDate || null,
+        companyName: batch.executorType === 'COMPANY' ? (batch.companyName || 'Subcontractor') : null,
+        companyId: (batch as any).jobWorkCompanyId || null,
+        isCompanyJobWork: batch.executorType === 'COMPANY',
       });
     });
 
@@ -377,6 +409,11 @@ export default function JobWorkProductionHubPage() {
           </div>
         ),
         manageUrl: '/drying',
+        dcNo: batch.dcNo || null,
+        dcDate: batch.dcDate || null,
+        companyName: batch.executorType === 'COMPANY' ? (batch.companyName || 'Subcontractor') : null,
+        companyId: (batch as any).jobWorkCompanyId || null,
+        isCompanyJobWork: batch.executorType === 'COMPANY',
       });
     });
 
@@ -407,6 +444,11 @@ export default function JobWorkProductionHubPage() {
           </div>
         ),
         manageUrl: `/pillow-bedsheet-production/batches/${batch.id}`,
+        dcNo: batch.dcNo || null,
+        dcDate: batch.dcDate || null,
+        companyName: batch.executorType === 'COMPANY' ? (batch.companyName || 'Subcontractor') : null,
+        companyId: (batch as any).jobWorkCompanyId || null,
+        isCompanyJobWork: batch.executorType === 'COMPANY',
       });
     });
 
@@ -442,6 +484,11 @@ export default function JobWorkProductionHubPage() {
         ),
         manageUrl: `/job-work/${order.id}`,
         rawOrder: order,
+        dcNo: order.challanNumber || order.dcNo || null,
+        dcDate: order.dcDate || null,
+        companyName: order.jobWorkCompany?.companyName || 'Subcontractor',
+        companyId: order.jobWorkCompanyId || order.jobWorkCompany?.id || null,
+        isCompanyJobWork: true,
       });
     });
 
@@ -476,6 +523,11 @@ export default function JobWorkProductionHubPage() {
         ),
         manageUrl: `/job-work/${order.id}`,
         rawOrder: order,
+        dcNo: order.challanNumber || order.dcNo || null,
+        dcDate: order.dcDate || null,
+        companyName: order.jobWorkCompany?.companyName || 'Bleaching Mill',
+        companyId: order.jobWorkCompanyId || order.jobWorkCompany?.id || null,
+        isCompanyJobWork: true,
       });
     });
 
@@ -509,6 +561,11 @@ export default function JobWorkProductionHubPage() {
         ),
         manageUrl: `/job-work/${order.id}`,
         rawOrder: order,
+        dcNo: order.challanNumber || order.dcNo || null,
+        dcDate: order.dcDate || null,
+        companyName: order.jobWorkCompany?.companyName || 'Subcontractor',
+        companyId: order.jobWorkCompanyId || order.jobWorkCompany?.id || null,
+        isCompanyJobWork: true,
       });
     });
 
@@ -534,10 +591,39 @@ export default function JobWorkProductionHubPage() {
     activeStandardOrders,
   ]);
 
+  const totalCompanyJobWorks = useMemo(() => {
+    return allUnifiedBatches.filter((b) => b.isCompanyJobWork).length;
+  }, [allUnifiedBatches]);
+
+  const totalWithDcNo = useMemo(() => {
+    return allUnifiedBatches.filter((b) => Boolean(b.dcNo)).length;
+  }, [allUnifiedBatches]);
+
   const displayedBatches = useMemo(() => {
-    if (activeTab === 'all') return allUnifiedBatches;
-    return allUnifiedBatches.filter((b) => b.categoryKey === activeTab);
-  }, [allUnifiedBatches, activeTab]);
+    return allUnifiedBatches.filter((b) => {
+      if (activeTab !== 'all' && b.categoryKey !== activeTab) {
+        return false;
+      }
+      if (companyOnlyFilter && !b.isCompanyJobWork) {
+        return false;
+      }
+      if (selectedVendorId && b.companyId !== selectedVendorId) {
+        return false;
+      }
+      if (searchTerm.trim()) {
+        const q = searchTerm.toLowerCase().trim();
+        const matchesDc = b.dcNo?.toLowerCase().includes(q);
+        const matchesBatch = b.batchNumber?.toLowerCase().includes(q);
+        const matchesCompany = b.companyName?.toLowerCase().includes(q);
+        const matchesProduct = b.productName?.toLowerCase().includes(q);
+        const matchesType = b.typeLabel?.toLowerCase().includes(q);
+        if (!matchesDc && !matchesBatch && !matchesCompany && !matchesProduct && !matchesType) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [allUnifiedBatches, activeTab, companyOnlyFilter, selectedVendorId, searchTerm]);
 
   return (
     <div className="space-y-8 pb-12">
@@ -571,7 +657,7 @@ export default function JobWorkProductionHubPage() {
       </div>
 
       {/* Metric Highlights Strip */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         {/* KPI 1 */}
         <Card className="p-3 sm:p-4 bg-card border-border hover:border-border/80 transition-colors">
           <div className="flex items-center justify-between">
@@ -585,6 +671,24 @@ export default function JobWorkProductionHubPage() {
               {totalActiveRuns}
             </span>
             <span className="text-[10px] sm:text-[11px] text-muted-foreground font-mono">WIP Batches</span>
+          </div>
+        </Card>
+
+        {/* KPI: DC Tracked Outsourced Job Works */}
+        <Card className="p-3 sm:p-4 bg-card border-border hover:border-amber-500/50 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">DC Tracked</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <Truck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-1.5">
+            <span className="text-xl sm:text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">
+              {totalWithDcNo}
+            </span>
+            <span className="text-[10px] sm:text-[11px] text-muted-foreground font-mono">
+              / {totalCompanyJobWorks} Outsourced
+            </span>
           </div>
         </Card>
 
@@ -637,7 +741,7 @@ export default function JobWorkProductionHubPage() {
         </Card>
 
         {/* KPI 5 */}
-        <Card className="p-3 sm:p-4 bg-card border-border hover:border-border/80 transition-colors col-span-2 md:col-span-1">
+        <Card className="p-3 sm:p-4 bg-card border-border hover:border-border/80 transition-colors">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">Pinning & Drying</span>
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
@@ -1353,6 +1457,73 @@ export default function JobWorkProductionHubPage() {
           </div>
         </div>
 
+        {/* Search, Company Filter & Outsourced Toggle Toolbar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by DC No, Order #, Batch #, Company/Mill, Product..."
+              className="pl-9 h-8 text-xs bg-background"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                title="Clear Search"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            {/* Vendor Filter Dropdown */}
+            <select
+              value={selectedVendorId}
+              onChange={(e) => setSelectedVendorId(e.target.value)}
+              className="h-8 px-2.5 text-xs rounded-md border border-input bg-background text-foreground max-w-[200px]"
+            >
+              <option value="">All Companies & Mills</option>
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.companyName}
+                </option>
+              ))}
+            </select>
+
+            {/* Toggle: Company Job Work Only (with DC) */}
+            <button
+              type="button"
+              onClick={() => setCompanyOnlyFilter(!companyOnlyFilter)}
+              className={`px-2.5 py-1 text-xs rounded-md border font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap h-8 ${
+                companyOnlyFilter
+                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 font-semibold'
+                  : 'bg-secondary/40 text-muted-foreground hover:text-foreground border-border'
+              }`}
+            >
+              <Truck className="h-3.5 w-3.5" />
+              <span>Outsourced Only ({totalCompanyJobWorks})</span>
+            </button>
+
+            {(searchTerm || selectedVendorId || companyOnlyFilter) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedVendorId('');
+                  setCompanyOnlyFilter(false);
+                }}
+                className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+              >
+                Reset Filters
+              </Button>
+            )}
+          </div>
+        </div>
+
         {/* Batches Grid / Table in Newest-First Order */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {displayedBatches.map((batch) => (
@@ -1361,18 +1532,41 @@ export default function JobWorkProductionHubPage() {
               className={`p-4 border border-border/80 ${batch.borderHoverClass} transition-colors flex flex-col justify-between`}
             >
               <div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className={`font-mono font-bold ${batch.textAccentClass}`}>
-                    {batch.batchNumber}
-                  </span>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${batch.badgeClasses}`}>
+                <div className="flex items-center justify-between text-xs gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className={`font-mono font-bold ${batch.textAccentClass}`}>
+                      {batch.batchNumber}
+                    </span>
+                    {batch.dcNo ? (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                        <Truck className="h-2.5 w-2.5" />
+                        DC #{batch.dcNo}
+                      </span>
+                    ) : batch.isCompanyJobWork ? (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono text-muted-foreground bg-secondary/80 border border-border">
+                        DC Pending
+                      </span>
+                    ) : null}
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${batch.badgeClasses} shrink-0`}>
                     {batch.typeLabel}
                   </span>
                 </div>
 
-                <p className="text-xs font-medium text-foreground mt-2 truncate" title={batch.productName}>
-                  {batch.productName}
-                </p>
+                <div className="mt-2 flex items-center justify-between gap-1 text-[11px]">
+                  <p className="font-medium text-foreground truncate" title={batch.productName}>
+                    {batch.productName}
+                  </p>
+                  {batch.companyName && (
+                    <span
+                      className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 font-medium shrink-0 flex items-center gap-1 max-w-[130px] truncate"
+                      title={batch.companyName}
+                    >
+                      <Building2 className="h-2.5 w-2.5 shrink-0" />
+                      <span className="truncate">{batch.companyName}</span>
+                    </span>
+                  )}
+                </div>
 
                 <div className="mt-3">
                   {batch.metricPrimary}
@@ -1421,8 +1615,27 @@ export default function JobWorkProductionHubPage() {
           {displayedBatches.length === 0 && (
             <div className="col-span-full p-8 text-center border border-dashed border-border rounded-xl bg-card">
               <p className="text-xs text-muted-foreground">
-                No active batches running currently. Select a Production Line above to assign and launch a new manufacturing run.
+                {searchTerm || selectedVendorId || companyOnlyFilter || activeTab !== 'all'
+                  ? 'No active batches or job work orders match your current search/filter criteria. Try clearing filters or searching for another DC No or partner mill.'
+                  : 'No active batches running currently. Select a Production Line above to assign and launch a new manufacturing run.'}
               </p>
+              {(searchTerm || selectedVendorId || companyOnlyFilter || activeTab !== 'all') && (
+                <div className="mt-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setSelectedVendorId('');
+                      setCompanyOnlyFilter(false);
+                      setActiveTab('all');
+                    }}
+                    className="text-xs h-7"
+                  >
+                    Clear All Filters
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1492,5 +1705,19 @@ export default function JobWorkProductionHubPage() {
         </Modal>
       )}
     </div>
+  );
+}
+
+export default function JobWorkProductionHubPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-8 text-center text-muted-foreground font-mono text-sm">
+          Loading Job Work Operations...
+        </div>
+      }
+    >
+      <JobWorkProductionHubContent />
+    </Suspense>
   );
 }

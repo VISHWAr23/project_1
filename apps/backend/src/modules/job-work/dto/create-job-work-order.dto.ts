@@ -25,4 +25,14 @@ export class CreateJobWorkOrderDto {
   @IsString()
   @IsOptional()
   remarks?: string;
+
+  @ApiPropertyOptional({ description: 'Delivery Challan (DC) reference number' })
+  @IsString()
+  @IsOptional()
+  dcNo?: string;
+
+  @ApiPropertyOptional({ description: 'Delivery Challan (DC) date' })
+  @IsString()
+  @IsOptional()
+  dcDate?: string;
 }

@@ -40,6 +40,36 @@ export class IssueMaterialsDto {
   @IsNotEmpty()
   driverName!: string;
 
+  @ApiPropertyOptional({ description: 'Delivery Challan (DC) reference number (e.g. DC-05 or 05)' })
+  @IsString()
+  @IsOptional()
+  dcNo?: string;
+
+  @ApiPropertyOptional({ description: 'Delivery Challan (DC) dispatch date' })
+  @IsString()
+  @IsOptional()
+  dcDate?: string;
+
+  @ApiPropertyOptional({ description: 'Delivery person name' })
+  @IsString()
+  @IsOptional()
+  deliveryPerson?: string;
+
+  @ApiPropertyOptional({ description: 'Ends count' })
+  @IsString()
+  @IsOptional()
+  ends?: string;
+
+  @ApiPropertyOptional({ description: 'Item type' })
+  @IsString()
+  @IsOptional()
+  itemType?: string;
+
+  @ApiPropertyOptional({ description: 'Output product width' })
+  @IsString()
+  @IsOptional()
+  outputProductWidth?: string;
+
   @ApiPropertyOptional({ description: 'Delivery Challan remarks' })
   @IsString()
   @IsOptional()

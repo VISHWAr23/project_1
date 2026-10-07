@@ -36,15 +36,25 @@ export default function DigitalReturnRegisterPage() {
     },
     {
       key: 'jobWorkOrder',
-      header: 'Order & Vendor',
-      render: (row) => (
-        <div>
-          <Link href={`/job-work/${row.jobWorkOrder?.id}`} className="font-mono text-xs font-semibold text-foreground hover:underline block">
-            {row.jobWorkOrder?.jobWorkNumber}
-          </Link>
-          <span className="text-[11px] text-muted-foreground">{row.jobWorkOrder?.jobWorkCompany?.companyName}</span>
-        </div>
-      ),
+      header: 'Order, DC & Vendor',
+      render: (row) => {
+        const dc = row.jobWorkOrder?.challanNumber || (row.jobWorkOrder as any)?.dcNo;
+        return (
+          <div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Link href={`/job-work/${row.jobWorkOrder?.id}`} className="font-mono text-xs font-semibold text-foreground hover:underline">
+                {row.jobWorkOrder?.jobWorkNumber}
+              </Link>
+              {dc && (
+                <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold">
+                  DC #{dc}
+                </span>
+              )}
+            </div>
+            <span className="text-[11px] text-muted-foreground block">{row.jobWorkOrder?.jobWorkCompany?.companyName}</span>
+          </div>
+        );
+      },
     },
     {
       key: 'finishedProduct',
@@ -117,7 +127,7 @@ export default function DigitalReturnRegisterPage() {
         <div className="relative w-full sm:w-96">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by Roll #, Work Order No, or Vendor..."
+            placeholder="Search by Roll #, Work Order No, DC No, or Vendor..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 text-xs"

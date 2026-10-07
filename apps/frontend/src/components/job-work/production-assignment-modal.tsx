@@ -58,6 +58,8 @@ export function ProductionAssignmentModal({
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [deliveryPerson, setDeliveryPerson] = useState('');
   const [vehicleNumber, setVehicleNumber] = useState('');
+  const [dcNo, setDcNo] = useState('05');
+  const [dcDate, setDcDate] = useState(new Date().toISOString().split('T')[0]);
   const [workerSearch, setWorkerSearch] = useState('');
 
   // Queries
@@ -135,6 +137,12 @@ export function ProductionAssignmentModal({
       }
       if (vehicleNumber.trim()) {
         queryParams.set('vehicleNumber', vehicleNumber.trim());
+      }
+      if (dcNo.trim()) {
+        queryParams.set('dcNo', dcNo.trim());
+      }
+      if (dcDate.trim()) {
+        queryParams.set('dcDate', dcDate.trim());
       }
     }
 
@@ -580,6 +588,29 @@ export function ProductionAssignmentModal({
                         value={vehicleNumber}
                         onChange={(e) => setVehicleNumber(e.target.value)}
                         className="h-8.5 text-xs font-mono uppercase"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-foreground block mb-1">
+                        Delivery Challan (DC) No.
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder="e.g. 05 or DC-2026-001"
+                        value={dcNo}
+                        onChange={(e) => setDcNo(e.target.value)}
+                        className="h-8.5 text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-foreground block mb-1">
+                        Delivery Challan (DC) Date
+                      </label>
+                      <Input
+                        type="date"
+                        value={dcDate}
+                        onChange={(e) => setDcDate(e.target.value)}
+                        className="h-8.5 text-xs"
                       />
                     </div>
                   </div>

@@ -41,6 +41,7 @@ function CreateWeavingOrderContent() {
 
   const companyIdParam = searchParams.get('companyId') || '';
   const companyNameParam = searchParams.get('companyName') || '';
+  const dcNoParam = searchParams.get('dcNo') || '';
   const workerNamesParam = searchParams.get('workerNames') || '';
 
   const { data: companies = [], isLoading: isLoadingCompanies } = useJobWorkCompanies();
@@ -48,6 +49,7 @@ function CreateWeavingOrderContent() {
 
   // Company and Basic Fields
   const [jobWorkCompanyId, setJobWorkCompanyId] = useState(companyIdParam);
+  const [dcNo, setDcNo] = useState(dcNoParam || '05');
   const [expectedReturnDate, setExpectedReturnDate] = useState(() => {
     const future = new Date();
     future.setDate(future.getDate() + 14);
@@ -200,6 +202,7 @@ function CreateWeavingOrderContent() {
     try {
       const order = await weavingCreateMutation.mutateAsync({
         jobWorkCompanyId,
+        dcNo: dcNo.trim() || undefined,
         expectedReturnDate,
         remarks,
         ends: Number(ends),
@@ -324,6 +327,21 @@ function CreateWeavingOrderContent() {
               </div>
               <span className="text-[10px] text-muted-foreground mt-1 block">
                 Target date for woven fabric in-pass return delivery
+              </span>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-foreground block mb-1">
+                Delivery Challan (DC) Reference No.
+              </label>
+              <Input
+                placeholder="e.g. 05 or DC-2026-0012"
+                value={dcNo}
+                onChange={(e) => setDcNo(e.target.value)}
+                className="font-mono text-xs"
+              />
+              <span className="text-[10px] text-muted-foreground mt-1 block">
+                Delivery Challan reference issued to the weaving mill
               </span>
             </div>
           </div>

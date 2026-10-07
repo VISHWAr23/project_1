@@ -271,6 +271,8 @@ export interface CreateJobWorkOrderPayload {
   finishedProductId?: string;
   expectedReturnDate: string;
   remarks?: string;
+  dcNo?: string;
+  dcDate?: string;
 }
 
 export interface CreateWeavingJobWorkPayload {
@@ -279,6 +281,8 @@ export interface CreateWeavingJobWorkPayload {
   rawMaterialId?: string | null;
   expectedReturnDate: string;
   remarks?: string;
+  dcNo?: string;
+  dcDate?: string;
 
   // Weaving Specs
   ends: number;
@@ -330,6 +334,8 @@ export interface CreateBleachingJobWorkPayload {
   jobWorkType?: 'BLEACHING';
   expectedReturnDate: string;
   remarks?: string;
+  dcNo?: string;
+  dcDate?: string;
 
   // Process Specs
   bleachingType: BleachingType;

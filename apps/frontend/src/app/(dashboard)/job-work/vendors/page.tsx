@@ -28,6 +28,7 @@ import {
   Table as TableIcon,
   ShieldCheck,
   AlertTriangle,
+  Truck,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,7 @@ import {
   useCreateJobWorkCompany,
   useUpdateJobWorkCompany,
   useDeleteJobWorkCompany,
+  useJobWorkOrders,
 } from '@/hooks/useJobWork';
 import { JobWorkCompany } from '@/types/job-work.types';
 import { formatDate } from '@/lib/date-utils';
@@ -79,9 +81,13 @@ export default function JobWorkVendorsPage() {
   const [formData, setFormData] = useState<VendorFormData>(INITIAL_FORM);
 
   const [deletingVendor, setDeletingVendor] = useState<JobWorkCompany | null>(null);
+  const [selectedVendorForDcModal, setSelectedVendorForDcModal] = useState<JobWorkCompany | null>(null);
 
   // Queries & Mutations
   const { data: vendors = [], isLoading } = useJobWorkCompanies({ includeInactive: true });
+  const { data: vendorOrdersData, isLoading: loadingVendorOrders } = useJobWorkOrders(
+    selectedVendorForDcModal ? { jobWorkCompanyId: selectedVendorForDcModal.id, limit: 100 } : undefined
+  );
   const createMutation = useCreateJobWorkCompany();
   const updateMutation = useUpdateJobWorkCompany();
   const deleteMutation = useDeleteJobWorkCompany();
@@ -578,6 +584,16 @@ export default function JobWorkVendorsPage() {
                         <Button
                           size="sm"
                           variant="ghost"
+                          onClick={() => setSelectedVendorForDcModal(vendor)}
+                          className="h-7 px-2 text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 flex items-center gap-1 font-medium"
+                          title="View Delivery Challan (DC) Numbers for this Vendor"
+                        >
+                          <Truck className="h-3.5 w-3.5" />
+                          <span>DC List</span>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
                           onClick={() => handleOpenEdit(vendor)}
                           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
                           title="Edit Vendor"
@@ -690,6 +706,16 @@ export default function JobWorkVendorsPage() {
                 </span>
 
                 <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSelectedVendorForDcModal(vendor)}
+                    className="h-7 px-1.5 text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 flex items-center gap-1 font-medium mr-1"
+                    title="View Delivery Challans (DC) for this vendor"
+                  >
+                    <Truck className="h-3 w-3" />
+                    <span>DCs</span>
+                  </Button>
                   <Link
                     href={`/job-work?vendor=${vendor.id}`}
                     className="text-[11px] font-medium text-blue-600 hover:underline mr-1"
@@ -905,6 +931,142 @@ export default function JobWorkVendorsPage() {
               >
                 <Trash2 className="h-4 w-4" />
                 {deleteMutation.isPending ? 'Processing...' : 'Confirm Remove'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* VENDOR JOB WORK & DELIVERY CHALLAN (DC) REGISTER MODAL */}
+      {selectedVendorForDcModal && (
+        <Modal
+          isOpen={Boolean(selectedVendorForDcModal)}
+          onClose={() => setSelectedVendorForDcModal(null)}
+          title={`Job Work & Delivery Challan (DC) Register`}
+          description={`Delivery Challan records and job work consignments executed by ${selectedVendorForDcModal.companyName}`}
+          size="3xl"
+        >
+          <div className="space-y-4 pt-1">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs bg-secondary/40 p-3 rounded-lg border border-border">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="font-semibold text-foreground">
+                  Vendor: <strong className="text-blue-600 dark:text-blue-400">{selectedVendorForDcModal.companyName}</strong>
+                </span>
+                <span>•</span>
+                <span className="text-muted-foreground font-mono">
+                  GSTIN: {selectedVendorForDcModal.gstin || 'Unregistered'}
+                </span>
+                {selectedVendorForDcModal.phone && (
+                  <>
+                    <span>•</span>
+                    <span className="text-muted-foreground font-mono">
+                      Phone: {selectedVendorForDcModal.phone}
+                    </span>
+                  </>
+                )}
+              </div>
+              <Link
+                href={`/job-work?vendor=${selectedVendorForDcModal.id}`}
+                className="text-blue-600 dark:text-blue-400 font-medium hover:underline inline-flex items-center gap-1 shrink-0"
+              >
+                <span>Filter on Operations Hub</span>
+                <ExternalLink className="h-3 w-3" />
+              </Link>
+            </div>
+
+            {loadingVendorOrders ? (
+              <div className="py-12 text-center text-xs text-muted-foreground font-mono">
+                Loading Delivery Challans & Job Work Orders...
+              </div>
+            ) : !vendorOrdersData?.items || vendorOrdersData.items.length === 0 ? (
+              <div className="py-12 text-center text-xs text-muted-foreground border border-dashed border-border rounded-lg bg-card">
+                No Job Work orders or Delivery Challan records found for this vendor.
+              </div>
+            ) : (
+              <div className="border border-border rounded-lg overflow-x-auto max-h-[420px]">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-secondary/40 border-b border-border sticky top-0 text-muted-foreground font-semibold">
+                    <tr>
+                      <th className="py-2.5 px-3">Order #</th>
+                      <th className="py-2.5 px-3">Delivery Challan (DC No)</th>
+                      <th className="py-2.5 px-3">Type</th>
+                      <th className="py-2.5 px-3">Material / Fabric</th>
+                      <th className="py-2.5 px-3 text-right">Issued Qty</th>
+                      <th className="py-2.5 px-3 text-center">Status</th>
+                      <th className="py-2.5 px-3 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/60">
+                    {vendorOrdersData.items.map((order: any) => {
+                      const dc = order.challanNumber || order.dcNo;
+                      return (
+                        <tr key={order.id} className="hover:bg-secondary/20 transition-colors">
+                          <td className="py-2.5 px-3 font-mono font-bold text-foreground">
+                            {order.jobWorkNumber}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            {dc ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono font-bold text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[11px]">
+                                  {dc}
+                                </span>
+                                <button
+                                  onClick={() => handleCopyGstin(dc)}
+                                  className="text-muted-foreground hover:text-foreground p-0.5"
+                                  title="Copy DC Number"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-[10px] font-mono">
+                                Pending Issue
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-secondary font-mono">
+                              {order.jobWorkType || 'STANDARD'}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 max-w-[180px] truncate" title={order.rawMaterial?.name || (order.weavingDetail ? 'Woven Fabric' : 'Job Work Consignment')}>
+                            {order.rawMaterial?.name || (order.weavingDetail ? 'Woven Fabric' : 'Job Work')}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono font-semibold">
+                            {order.totalIssuedWeight ? `${Number(order.totalIssuedWeight).toFixed(1)} kg` : `${order.totalIssuedQty || 0} pcs`}
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-secondary text-foreground">
+                              {order.status}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-right">
+                            <Link
+                              href={`/job-work/${order.id}`}
+                              className="text-blue-600 hover:underline font-medium inline-flex items-center gap-1"
+                            >
+                              <span>View</span>
+                              <ExternalLink className="h-3 w-3" />
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between pt-2 border-t border-border text-xs">
+              <span className="text-muted-foreground font-mono">
+                {vendorOrdersData?.items ? `${vendorOrdersData.items.length} records found` : ''}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedVendorForDcModal(null)}
+              >
+                Close
               </Button>
             </div>
           </div>
