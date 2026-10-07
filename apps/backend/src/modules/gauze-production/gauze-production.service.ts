@@ -975,6 +975,22 @@ export class GauzeProductionService implements OnModuleInit {
   }
 
   /**
+   * Delete a Gauze Production Batch
+   */
+  async deleteBatch(batchId: string) {
+    const batch = await prisma.gauzeProductionBatch.findUnique({
+      where: { id: batchId },
+    });
+    if (!batch) throw new NotFoundException('Batch not found');
+
+    await prisma.gauzeProductionBatch.delete({
+      where: { id: batchId },
+    });
+
+    return { success: true, message: `Batch ${batch.batchNumber} removed successfully` };
+  }
+
+  /**
    * 7. Forward and Reverse Traceability
    */
   async getTraceability(batchId: string) {
@@ -1081,6 +1097,88 @@ export class GauzeProductionService implements OnModuleInit {
         receipts: true,
       },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Delete / Cancel a Gauze Bleaching Job
+   */
+  async deleteBleachingJob(id: string, userId?: string) {
+    const job = await prisma.gauzeBleachingJob.findUnique({
+      where: { id },
+      include: {
+        productionBatch: true,
+        receipts: true,
+      },
+    });
+
+    if (!job) {
+      throw new NotFoundException(`Bleaching Job with ID ${id} not found`);
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      // 1. If batch exists, restore batch status and quantities
+      if (job.productionBatch) {
+        const batch = job.productionBatch;
+        const quantityToRestore = Number(job.quantitySent) || 0;
+        const currentBatchQty = Number(batch.currentQuantity) || 0;
+        const totalReceived = job.receipts.reduce((sum, r) => sum + (Number(r.quantityReceived) || 0), 0);
+
+        let newBatchQty = currentBatchQty;
+        if (job.status === 'SENT') {
+          newBatchQty = currentBatchQty + quantityToRestore;
+        } else if (job.status === 'COMPLETED') {
+          newBatchQty = Math.max(0, currentBatchQty - totalReceived + quantityToRestore);
+        }
+
+        const otherJobs = await tx.gauzeBleachingJob.findMany({
+          where: {
+            productionBatchId: batch.id,
+            id: { not: id },
+          },
+        });
+
+        const newStatus =
+          otherJobs.length > 0
+            ? otherJobs.some((j) => j.status === 'SENT')
+              ? GauzeProductionStatus.SENT_TO_BLEACHING
+              : GauzeProductionStatus.READY_FOR_BLEACHING
+            : GauzeProductionStatus.READY_FOR_BLEACHING;
+
+        await tx.gauzeProductionBatch.update({
+          where: { id: batch.id },
+          data: {
+            currentQuantity: newBatchQty,
+            status: newStatus,
+            currentStage: newStatus === GauzeProductionStatus.SENT_TO_BLEACHING ? 'BLEACHING' : 'WEAVING',
+          },
+        });
+      }
+
+      // 2. Delete related material movements
+      await tx.gauzeMaterialMovement.deleteMany({
+        where: {
+          OR: [
+            { referenceId: id },
+            { referenceType: 'BLEACHING_JOB', referenceId: id },
+          ],
+        },
+      });
+
+      // 3. Delete receipts (if any)
+      await tx.gauzeBleachingReceipt.deleteMany({
+        where: { bleachingJobId: id },
+      });
+
+      // 4. Delete the bleaching job itself
+      await tx.gauzeBleachingJob.delete({
+        where: { id },
+      });
+
+      return {
+        success: true,
+        message: `Bleaching Job ${job.jobNumber} deleted successfully.`,
+      };
     });
   }
 

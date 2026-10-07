@@ -1,12 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {
-  useGamjeeBatchDetail,
-  useUpdateGamjeeBatchStatus,
-} from '@/hooks/useGamjeeProduction';
+
 import { GamjeeBatchStatusBadge } from '@/components/gamjee-production/batch-status-badge';
 import { GamjeeProductionTimeline } from '@/components/gamjee-production/production-timeline';
 import { IssueMaterialsModal } from '@/components/gamjee-production/issue-materials-modal';
@@ -16,6 +13,12 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SkeletonLoader } from '@/components/ui/skeleton-loader';
 import { toast } from '@/components/ui/toast';
+import { Modal } from '@/components/ui/modal';
+import {
+  useGamjeeBatchDetail,
+  useUpdateGamjeeBatchStatus,
+  useDeleteGamjeeBatch,
+} from '@/hooks/useGamjeeProduction';
 import {
   ArrowLeft,
   Package,
@@ -27,15 +30,19 @@ import {
   Clock,
   Pin,
   Plus,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { formatDate } from '@/lib/date-utils';
 
 export default function GamjeeBatchDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params?.id as string;
 
   const { data: batch, isLoading, error } = useGamjeeBatchDetail(id);
   const updateStatusMutation = useUpdateGamjeeBatchStatus();
+  const deleteBatchMutation = useDeleteGamjeeBatch();
 
   const [activeTab, setActiveTab] = useState<'materials' | 'processing' | 'rolling'>('materials');
 
@@ -43,6 +50,7 @@ export default function GamjeeBatchDetailPage() {
   const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
   const [isOperationModalOpen, setIsOperationModalOpen] = useState(false);
   const [isRollingModalOpen, setIsRollingModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [activeOperationCode, setActiveOperationCode] = useState<string | undefined>(undefined);
 
   if (isLoading) {
@@ -90,6 +98,16 @@ export default function GamjeeBatchDetailPage() {
       toast.success(`Batch status updated to ${newStatus}`);
     } catch (err: any) {
       toast.error(err?.message || 'Failed to update status');
+    }
+  };
+
+  const handleDeleteBatch = async () => {
+    try {
+      await deleteBatchMutation.mutateAsync(id);
+      toast.success(`Gamjee Batch ${batch.batchNumber} has been removed.`);
+      router.push('/gamjee-production/batches');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to delete batch');
     }
   };
 
@@ -206,6 +224,17 @@ export default function GamjeeBatchDetailPage() {
                 {batch.status === 'ON_HOLD' ? 'Resume Batch' : 'Pause Batch'}
               </Button>
             )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 text-xs text-red-500 hover:text-red-600 hover:bg-red-500/10 border-red-500/30 gap-1.5"
+              onClick={() => setIsDeleteModalOpen(true)}
+              title="Delete Batch"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Delete</span>
+            </Button>
           </div>
         </div>
 
@@ -667,6 +696,57 @@ export default function GamjeeBatchDetailPage() {
         onClose={() => setIsRollingModalOpen(false)}
         batch={batch}
       />
+
+      {/* Delete Batch Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <Modal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          title="Delete Gamjee Production Batch"
+          maxWidth="md"
+        >
+          <div className="space-y-4">
+            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl space-y-2 text-xs text-red-300">
+              <div className="flex items-center gap-2 font-bold text-red-400 text-sm">
+                <AlertTriangle className="h-5 w-5 shrink-0" />
+                Confirm Batch Deletion
+              </div>
+              <p>
+                Are you sure you want to permanently delete Gamjee Batch <strong className="text-foreground font-mono">{batch.batchNumber}</strong>?
+              </p>
+              <p>
+                Product: <strong className="text-foreground">{batch.finishedProduct?.name || 'Gamjee Roll'}</strong>. Target: <strong className="text-foreground font-mono">{batch.productionQuantity || 0} Rolls</strong>.
+              </p>
+              <p className="text-muted-foreground">
+                This action will delete the batch record and release associated allocations.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                disabled={deleteBatchMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                type="button"
+                className="bg-red-600 hover:bg-red-700 text-white border-none"
+                onClick={handleDeleteBatch}
+                isLoading={deleteBatchMutation.isPending}
+                leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+              >
+                Delete Batch
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

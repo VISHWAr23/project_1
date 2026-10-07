@@ -182,17 +182,15 @@ export default function JobWorkDetailPage({ params }: { params: Promise<{ id: st
             </Button>
           )}
 
-          {order.status !== 'CLOSED' && (Number(order.totalReturnedWeight) === 0) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-              onClick={() => setIsDeleteOpen(true)}
-              leftIcon={<Trash2 className="h-3.5 w-3.5" />}
-            >
-              {order.status === 'CREATED' ? 'Delete Order' : 'Cancel & Reverse'}
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+            onClick={() => setIsDeleteOpen(true)}
+            leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+          >
+            {order.status === 'CREATED' ? 'Delete Order' : 'Cancel / Delete'}
+          </Button>
 
           {order.status !== 'CLOSED' && (
             <Button

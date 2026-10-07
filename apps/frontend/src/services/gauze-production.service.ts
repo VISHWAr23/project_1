@@ -75,6 +75,12 @@ export const gauzeProductionService = {
     });
   },
 
+  deleteBatch: async (id: string): Promise<{ success: boolean; message: string }> => {
+    return apiClient(`/gauze-production/batches/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
   // Bleaching Stage
   sendToBleaching: async (batchId: string, payload: SendToBleachingInput) => {
     return apiClient(`/gauze-production/batches/${batchId}/bleaching`, {
@@ -97,6 +103,12 @@ export const gauzeProductionService = {
     if (params?.search) query.append('search', params.search);
 
     return apiClient<GauzeBleachingJobItem[]>(`/gauze-production/bleaching-jobs?${query.toString()}`);
+  },
+
+  deleteBleachingJob: async (id: string): Promise<{ success: boolean; message: string }> => {
+    return apiClient(`/gauze-production/bleaching-jobs/${id}`, {
+      method: 'DELETE',
+    });
   },
 
   getVendorStockRegister: async (): Promise<VendorHeldStockRecord[]> => {

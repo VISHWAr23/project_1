@@ -57,3 +57,15 @@ export function useUpdateGauzePadPinningBatchStatus() {
     },
   });
 }
+
+export function useDeleteGauzePadPinningBatch() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => gauzePadPinningService.deleteBatch(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gauzePadPinningBatches'] });
+      queryClient.invalidateQueries({ queryKey: ['gauzePadPinningDashboard'] });
+    },
+  });
+}

@@ -14,22 +14,32 @@ import {
   CheckCircle2,
   Layers,
   ArrowLeft,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Table, Column } from '@/components/ui/table';
-import { useGauzeBleachingJobs, useVendorHeldStock } from '@/hooks/useGauzeProduction';
+import { Modal } from '@/components/ui/modal';
+import { useToast } from '@/components/ui/toast';
+import {
+  useGauzeBleachingJobs,
+  useVendorHeldStock,
+  useDeleteGauzeBleachingJob,
+} from '@/hooks/useGauzeProduction';
 import { useJobWorkCompanies } from '@/hooks/useJobWork';
 import { GauzeBleachingJobItem } from '@/types/gauze-production.types';
 import { formatDate } from '@/lib/date-utils';
 
 export default function GauzeBleachingJobsPage() {
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [vendorFilter, setVendorFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [activeTab, setActiveTab] = useState<'jobs' | 'vendors'>('jobs');
+  const [deletingJob, setDeletingJob] = useState<GauzeBleachingJobItem | null>(null);
 
   const { data: companies = [] } = useJobWorkCompanies();
   const { data: jobs = [], isLoading: jobsLoading } = useGauzeBleachingJobs({
@@ -38,6 +48,18 @@ export default function GauzeBleachingJobsPage() {
     status: statusFilter !== 'ALL' ? statusFilter : undefined,
   });
   const { data: vendorStock = [], isLoading: vendorLoading } = useVendorHeldStock();
+  const deleteJobMutation = useDeleteGauzeBleachingJob();
+
+  const handleConfirmDelete = async () => {
+    if (!deletingJob) return;
+    try {
+      await deleteJobMutation.mutateAsync(deletingJob.id);
+      toast('Bleaching Job Deleted', `Job ${deletingJob.jobNumber} was deleted successfully.`, 'success');
+      setDeletingJob(null);
+    } catch (err: any) {
+      toast('Failed to Delete', err?.message || 'Could not delete bleaching job.', 'error');
+    }
+  };
 
   const jobColumns: Column<GauzeBleachingJobItem>[] = [
     {
@@ -130,12 +152,23 @@ export default function GauzeBleachingJobsPage() {
       header: 'Action',
       align: 'right',
       render: (row) => (
-        <Link href={`/gauze-production/batches/${row.productionBatchId}`}>
-          <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
-            Open Batch
-            <ArrowRight className="h-3 w-3" />
+        <div className="flex items-center justify-end gap-1.5">
+          <Link href={`/gauze-production/batches/${row.productionBatchId}`}>
+            <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
+              Open Batch
+              <ArrowRight className="h-3 w-3" />
+            </Button>
+          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10"
+            onClick={() => setDeletingJob(row)}
+            title="Delete Bleaching Job"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
-        </Link>
+        </div>
       ),
     },
   ];
@@ -296,6 +329,55 @@ export default function GauzeBleachingJobsPage() {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Delete Bleaching Job Confirmation Modal */}
+      {deletingJob && (
+        <Modal
+          isOpen={!!deletingJob}
+          onClose={() => setDeletingJob(null)}
+          title="Delete Bleaching Job"
+          maxWidth="md"
+        >
+          <div className="space-y-4">
+            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl space-y-2 text-xs text-red-300">
+              <div className="flex items-center gap-2 font-bold text-red-400 text-sm">
+                <AlertTriangle className="h-5 w-5 shrink-0" />
+                Confirm Deletion
+              </div>
+              <p>
+                Are you sure you want to delete Bleaching Job <strong className="text-foreground font-mono">{deletingJob.jobNumber}</strong> sent to <strong className="text-foreground">{deletingJob.vendor?.companyName}</strong>?
+              </p>
+              <p>
+                Quantity: <strong className="text-foreground font-mono">{Number(deletingJob.quantitySent).toLocaleString()} {deletingJob.uom}</strong>.
+                {deletingJob.status === 'SENT' ? ' Deleting will restore this quantity back to the production batch.' : ''}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => setDeletingJob(null)}
+                disabled={deleteJobMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                type="button"
+                className="bg-red-600 hover:bg-red-700 text-white border-none"
+                onClick={handleConfirmDelete}
+                isLoading={deleteJobMutation.isPending}
+                leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+              >
+                Delete Bleaching Job
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

@@ -1126,6 +1126,24 @@ export class GamjeeProductionService implements OnModuleInit {
   }
 
   /**
+   * Delete a Gamjee Production Batch
+   */
+  async deleteBatch(batchId: string) {
+    const batch = await prisma.gamjeeProductionBatch.findUnique({
+      where: { id: batchId },
+    });
+    if (!batch) {
+      throw new NotFoundException(`Batch with ID ${batchId} not found`);
+    }
+
+    await prisma.gamjeeProductionBatch.delete({
+      where: { id: batchId },
+    });
+
+    return { success: true, message: `Batch ${batch.batchNumber} removed successfully` };
+  }
+
+  /**
    * 6. Complete Traceability Chain
    */
   async getTraceability(batchId: string) {

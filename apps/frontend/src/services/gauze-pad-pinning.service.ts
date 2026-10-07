@@ -210,6 +210,15 @@ class GauzePadPinningService {
     );
   }
 
+  async deleteBatch(id: string): Promise<{ success: boolean; message: string }> {
+    return await apiClient<{ success: boolean; message: string }>(
+      `/gauze-pad-pinning/batches/${id}`,
+      {
+        method: 'DELETE',
+      }
+    );
+  }
+
   async getDashboardStats(): Promise<GauzePadPinningDashboardStats> {
     return await apiClient<GauzePadPinningDashboardStats>(
       `/gauze-pad-pinning/dashboard`

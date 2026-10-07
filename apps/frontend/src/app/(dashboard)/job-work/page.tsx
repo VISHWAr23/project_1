@@ -25,21 +25,45 @@ import {
   Coins,
   Bed,
   Plus,
+  Trash2,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SkeletonLoader } from '@/components/ui/skeleton-loader';
+import { Modal } from '@/components/ui/modal';
+import { useToast } from '@/components/ui/toast';
 import {
   ProductionAssignmentModal,
   ProductionType,
 } from '@/components/job-work/production-assignment-modal';
-import { useGauzeDashboard, useGauzeBatches } from '@/hooks/useGauzeProduction';
-import { useGamjeeDashboard, useGamjeeBatches } from '@/hooks/useGamjeeProduction';
-import { useMopingPadBatches } from '@/hooks/useMopingPadProduction';
-import { useGauzePadPinningBatches } from '@/hooks/useGauzePadPinning';
-import { useDryingBatches } from '@/hooks/useDrying';
-import { usePillowBedsheetBatches } from '@/hooks/usePillowBedsheetProduction';
+import { JobWorkDeleteModal } from '@/components/job-work/job-work-delete-modal';
+import {
+  useGauzeDashboard,
+  useGauzeBatches,
+  useDeleteGauzeBatch,
+} from '@/hooks/useGauzeProduction';
+import {
+  useGamjeeDashboard,
+  useGamjeeBatches,
+  useDeleteGamjeeBatch,
+} from '@/hooks/useGamjeeProduction';
+import {
+  useMopingPadBatches,
+  useDeleteMopingPadBatch,
+} from '@/hooks/useMopingPadProduction';
+import {
+  useGauzePadPinningBatches,
+  useDeleteGauzePadPinningBatch,
+} from '@/hooks/useGauzePadPinning';
+import {
+  useDryingBatches,
+  useDeleteDryingBatch,
+} from '@/hooks/useDrying';
+import {
+  usePillowBedsheetBatches,
+  useDeletePillowBedsheetBatch,
+} from '@/hooks/usePillowBedsheetProduction';
 import { useJobWorkCompanies, useJobWorkOrders } from '@/hooks/useJobWork';
 import { useEmployees } from '@/hooks/useEmployees';
 import { formatDate } from '@/lib/date-utils';
@@ -47,9 +71,55 @@ import { formatDate } from '@/lib/date-utils';
 export default function JobWorkProductionHubPage() {
   const [selectedProduction, setSelectedProduction] = useState<ProductionType | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deletingOrder, setDeletingOrder] = useState<any>(null);
+  const [batchToDelete, setBatchToDelete] = useState<{
+    id: string;
+    batchNumber: string;
+    categoryKey: string;
+    typeLabel: string;
+  } | null>(null);
   const [activeTab, setActiveTab] = useState<
-    'all' | 'gauze' | 'gamjee' | 'moping-pad' | 'gauze-pad-pinning' | 'drying' | 'pillow-bedsheet' | 'weaving' | 'bleaching'
+    'all' | 'gauze' | 'gamjee' | 'moping-pad' | 'gauze-pad-pinning' | 'drying' | 'pillow-bedsheet' | 'weaving' | 'bleaching' | 'standard'
   >('all');
+
+  const { toast } = useToast();
+  const deleteGauzeBatchMutation = useDeleteGauzeBatch();
+  const deleteGamjeeBatchMutation = useDeleteGamjeeBatch();
+  const deleteMopingBatchMutation = useDeleteMopingPadBatch();
+  const deletePinningBatchMutation = useDeleteGauzePadPinningBatch();
+  const deleteDryingBatchMutation = useDeleteDryingBatch();
+  const deletePillowBatchMutation = useDeletePillowBedsheetBatch();
+
+  const isDeletingBatch =
+    deleteGauzeBatchMutation.isPending ||
+    deleteGamjeeBatchMutation.isPending ||
+    deleteMopingBatchMutation.isPending ||
+    deletePinningBatchMutation.isPending ||
+    deleteDryingBatchMutation.isPending ||
+    deletePillowBatchMutation.isPending;
+
+  const handleDeleteBatch = async () => {
+    if (!batchToDelete) return;
+    try {
+      if (batchToDelete.categoryKey === 'moping-pad') {
+        await deleteMopingBatchMutation.mutateAsync(batchToDelete.id);
+      } else if (batchToDelete.categoryKey === 'gauze-pad-pinning') {
+        await deletePinningBatchMutation.mutateAsync(batchToDelete.id);
+      } else if (batchToDelete.categoryKey === 'drying') {
+        await deleteDryingBatchMutation.mutateAsync(batchToDelete.id);
+      } else if (batchToDelete.categoryKey === 'pillow-bedsheet') {
+        await deletePillowBatchMutation.mutateAsync(batchToDelete.id);
+      } else if (batchToDelete.categoryKey === 'gauze') {
+        await deleteGauzeBatchMutation.mutateAsync(batchToDelete.id);
+      } else if (batchToDelete.categoryKey === 'gamjee') {
+        await deleteGamjeeBatchMutation.mutateAsync(batchToDelete.id);
+      }
+      toast('Batch Deleted', `${batchToDelete.typeLabel} batch ${batchToDelete.batchNumber} has been removed.`, 'success');
+      setBatchToDelete(null);
+    } catch (err: any) {
+      toast('Delete Failed', err?.message || 'Could not delete batch', 'error');
+    }
+  };
 
   // Queries
   const { data: gauzeStats, isLoading: loadingGauzeStats } = useGauzeDashboard();
@@ -95,6 +165,18 @@ export default function JobWorkProductionHubPage() {
     );
   }, [jobWorkOrdersData?.items]);
 
+  const activeStandardOrders = useMemo(() => {
+    return (
+      jobWorkOrdersData?.items?.filter(
+        (o: any) =>
+          o.jobWorkType === 'STANDARD' &&
+          o.status !== 'COMPLETED' &&
+          o.status !== 'CANCELLED' &&
+          o.status !== 'CLOSED'
+      ) || []
+    );
+  }, [jobWorkOrdersData?.items]);
+
   const totalActiveRuns =
     activeGauzeBatches.length +
     activeGamjeeBatches.length +
@@ -103,7 +185,8 @@ export default function JobWorkProductionHubPage() {
     activeDryingBatches.length +
     activePillowBatches.length +
     activeWeavingOrders.length +
-    activeBleachingOrders.length;
+    activeBleachingOrders.length +
+    activeStandardOrders.length;
 
   const handleOpenAssignment = (type: ProductionType) => {
     setSelectedProduction(type);
@@ -114,6 +197,7 @@ export default function JobWorkProductionHubPage() {
   const allUnifiedBatches = useMemo(() => {
     const list: Array<{
       id: string;
+      entityId: string;
       batchNumber: string;
       categoryKey: string;
       typeLabel: string;
@@ -126,6 +210,7 @@ export default function JobWorkProductionHubPage() {
       metricPrimary: React.ReactNode;
       metricSecondary?: React.ReactNode;
       manageUrl: string;
+      rawOrder?: any;
     }> = [];
 
     const resolveTimestamp = (b: any) => {
@@ -159,6 +244,7 @@ export default function JobWorkProductionHubPage() {
     activeGauzeBatches.forEach((batch: any) => {
       list.push({
         id: `gauze-${batch.id}`,
+        entityId: batch.id,
         batchNumber: batch.batchNumber,
         categoryKey: 'gauze',
         typeLabel: 'Gauze',
@@ -182,6 +268,7 @@ export default function JobWorkProductionHubPage() {
     activeGamjeeBatches.forEach((batch: any) => {
       list.push({
         id: `gamjee-${batch.id}`,
+        entityId: batch.id,
         batchNumber: batch.batchNumber,
         categoryKey: 'gamjee',
         typeLabel: 'Gamjee',
@@ -205,6 +292,7 @@ export default function JobWorkProductionHubPage() {
     activeMopingBatches.forEach((batch: any) => {
       list.push({
         id: `moping-${batch.id}`,
+        entityId: batch.id,
         batchNumber: batch.batchNumber,
         categoryKey: 'moping-pad',
         typeLabel: 'Moping Pad',
@@ -236,6 +324,7 @@ export default function JobWorkProductionHubPage() {
     activeGauzePadBatches.forEach((batch: any) => {
       list.push({
         id: `pinning-${batch.id}`,
+        entityId: batch.id,
         batchNumber: batch.batchNumber,
         categoryKey: 'gauze-pad-pinning',
         typeLabel: 'Pad Pinning',
@@ -265,6 +354,7 @@ export default function JobWorkProductionHubPage() {
     activeDryingBatches.forEach((batch: any) => {
       list.push({
         id: `drying-${batch.id}`,
+        entityId: batch.id,
         batchNumber: batch.batchNumber,
         categoryKey: 'drying',
         typeLabel: 'Drying',
@@ -294,6 +384,7 @@ export default function JobWorkProductionHubPage() {
     activePillowBatches.forEach((batch: any) => {
       list.push({
         id: `pillow-${batch.id}`,
+        entityId: batch.id,
         batchNumber: batch.batchNumber,
         categoryKey: 'pillow-bedsheet',
         typeLabel: batch.productType === 'BED_SHEET' ? 'Bed Sheet' : 'Pillow Cover',
@@ -323,6 +414,7 @@ export default function JobWorkProductionHubPage() {
     activeWeavingOrders.forEach((order: any) => {
       list.push({
         id: `weaving-${order.id}`,
+        entityId: order.id,
         batchNumber: order.jobWorkNumber,
         categoryKey: 'weaving',
         typeLabel: 'Weaving',
@@ -349,6 +441,7 @@ export default function JobWorkProductionHubPage() {
           </div>
         ),
         manageUrl: `/job-work/${order.id}`,
+        rawOrder: order,
       });
     });
 
@@ -357,6 +450,7 @@ export default function JobWorkProductionHubPage() {
       const isBeam = order.bleachingDetail?.bleachingType === 'BEAM_DYEING';
       list.push({
         id: `bleaching-${order.id}`,
+        entityId: order.id,
         batchNumber: order.jobWorkNumber,
         categoryKey: 'bleaching',
         typeLabel: isBeam ? 'Bleaching • Beam Dyeing' : 'Bleaching • Peroxide',
@@ -381,6 +475,40 @@ export default function JobWorkProductionHubPage() {
           </div>
         ),
         manageUrl: `/job-work/${order.id}`,
+        rawOrder: order,
+      });
+    });
+
+    // 9. Standard Job Work Orders
+    activeStandardOrders.forEach((order: any) => {
+      list.push({
+        id: `standard-${order.id}`,
+        entityId: order.id,
+        batchNumber: order.jobWorkNumber,
+        categoryKey: 'standard',
+        typeLabel: 'Standard Job Work',
+        badgeClasses: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
+        textAccentClass: 'text-blue-600 dark:text-blue-400',
+        borderHoverClass: 'hover:border-blue-500/50',
+        productName: order.rawMaterial?.name || order.jobWorkCompany?.companyName || 'Job Work Order',
+        dateStr: resolveDisplayDate(order),
+        timestamp: resolveTimestamp(order),
+        metricPrimary: (
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Issued: <strong className="text-foreground font-mono">{Number(order.totalIssuedWeight).toFixed(1)} kg</strong></span>
+            <span className="px-2 py-0.5 rounded bg-secondary text-[10px] font-mono">{order.status}</span>
+          </div>
+        ),
+        metricSecondary: (
+          <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground bg-secondary/40 px-2 py-1 rounded">
+            <span>Vendor: {order.jobWorkCompany?.companyName || 'Subcontractor'}</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
+              Pending: {Number(order.pendingWeight || 0).toFixed(1)} kg
+            </span>
+          </div>
+        ),
+        manageUrl: `/job-work/${order.id}`,
+        rawOrder: order,
       });
     });
 
@@ -402,6 +530,8 @@ export default function JobWorkProductionHubPage() {
     activeDryingBatches,
     activePillowBatches,
     activeWeavingOrders,
+    activeBleachingOrders,
+    activeStandardOrders,
   ]);
 
   const displayedBatches = useMemo(() => {
@@ -1209,6 +1339,17 @@ export default function JobWorkProductionHubPage() {
             >
               Bleaching ({activeBleachingOrders.length})
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('standard')}
+              className={`px-2.5 py-1 rounded-md transition-colors whitespace-nowrap shrink-0 min-h-[32px] ${
+                activeTab === 'standard'
+                  ? 'bg-background font-semibold text-blue-600 dark:text-blue-400 shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Standard ({activeStandardOrders.length})
+            </button>
           </div>
         </div>
 
@@ -1244,13 +1385,35 @@ export default function JobWorkProductionHubPage() {
                 <span className="text-[11px] text-muted-foreground">
                   {formatDate(batch.dateStr)}
                 </span>
-                <Link
-                  href={batch.manageUrl}
-                  className={`${batch.textAccentClass} hover:underline flex items-center gap-1 font-medium text-xs`}
-                >
-                  <span>Manage</span>
-                  <ExternalLink className="h-3 w-3" />
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                    onClick={() => {
+                      if (batch.rawOrder) {
+                        setDeletingOrder(batch.rawOrder);
+                      } else {
+                        setBatchToDelete({
+                          id: batch.entityId,
+                          batchNumber: batch.batchNumber,
+                          categoryKey: batch.categoryKey,
+                          typeLabel: batch.typeLabel,
+                        });
+                      }
+                    }}
+                    title={`Delete ${batch.typeLabel} ${batch.rawOrder ? 'Job Work' : 'Batch'}`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                  <Link
+                    href={batch.manageUrl}
+                    className={`${batch.textAccentClass} hover:underline flex items-center gap-1 font-medium text-xs`}
+                  >
+                    <span>Manage</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </div>
               </div>
             </Card>
           ))}
@@ -1271,6 +1434,63 @@ export default function JobWorkProductionHubPage() {
         onClose={() => setIsModalOpen(false)}
         productionType={selectedProduction}
       />
+
+      {/* Job Work Order Delete Modal */}
+      {deletingOrder && (
+        <JobWorkDeleteModal
+          order={deletingOrder}
+          isOpen={Boolean(deletingOrder)}
+          onClose={() => setDeletingOrder(null)}
+        />
+      )}
+
+      {/* Batch Deletion Confirmation Modal for Manufacturing Lines */}
+      {batchToDelete && (
+        <Modal
+          isOpen={Boolean(batchToDelete)}
+          onClose={() => setBatchToDelete(null)}
+          title={`Delete ${batchToDelete.typeLabel} Batch`}
+          maxWidth="md"
+        >
+          <div className="space-y-4">
+            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl space-y-2 text-xs text-red-300">
+              <div className="flex items-center gap-2 font-bold text-red-400 text-sm">
+                <AlertCircle className="h-5 w-5 shrink-0" />
+                Confirm Batch Deletion
+              </div>
+              <p>
+                Are you sure you want to permanently delete {batchToDelete.typeLabel} Batch <strong className="text-foreground font-mono">{batchToDelete.batchNumber}</strong>?
+              </p>
+              <p className="text-muted-foreground">
+                This action will permanently delete the active batch run and release associated allocations.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => setBatchToDelete(null)}
+                disabled={isDeletingBatch}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                type="button"
+                className="bg-red-600 hover:bg-red-700 text-white border-none"
+                onClick={handleDeleteBatch}
+                isLoading={isDeletingBatch}
+                leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+              >
+                Delete Batch
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

@@ -104,6 +104,12 @@ export class GamjeeProductionController {
     return this.gamjeeProductionService.updateStatus(id, status, remarks, userId);
   }
 
+  @Delete('batches/:id')
+  @ApiOperation({ summary: 'Delete a Gamjee Production Batch' })
+  async deleteBatch(@Param('id') id: string) {
+    return this.gamjeeProductionService.deleteBatch(id);
+  }
+
   @Get('batches/:id/traceability')
   @ApiOperation({ summary: 'Get forward and reverse traceability chain for a batch' })
   async getTraceability(@Param('id') id: string) {

@@ -22,18 +22,26 @@ import {
   Inbox,
   Scissors,
   ArrowLeft,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Modal } from '@/components/ui/modal';
 import { Table, Column } from '@/components/ui/table';
 import { BatchStatusBadge } from '@/components/gauze-production/batch-status-badge';
 import { SendBleachingModal } from '@/components/gauze-production/send-bleaching-modal';
 import { ReceiveBleachingModal } from '@/components/gauze-production/receive-bleaching-modal';
 import { AddOperationModal } from '@/components/gauze-production/add-operation-modal';
 import { PackingModal } from '@/components/gauze-production/packing-modal';
-import { useGauzeDashboard, useGauzeBatches, useVendorHeldStock } from '@/hooks/useGauzeProduction';
+import {
+  useGauzeDashboard,
+  useGauzeBatches,
+  useVendorHeldStock,
+  useDeleteGauzeBatch,
+} from '@/hooks/useGauzeProduction';
 import { GauzeProductionBatch } from '@/types/gauze-production.types';
 import { formatDate } from '@/lib/date-utils';
+import { useToast } from '@/components/ui/toast';
 
 export default function GauzeProductionDashboardPage() {
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useGauzeDashboard();
@@ -43,9 +51,25 @@ export default function GauzeProductionDashboardPage() {
   // Active batch for modal triggers
   const [selectedBatch, setSelectedBatch] = useState<GauzeProductionBatch | null>(null);
   const [modalType, setModalType] = useState<'send-bleach' | 'receive-bleach' | 'operation' | 'packing' | null>(null);
+  const [batchToDelete, setBatchToDelete] = useState<GauzeProductionBatch | null>(null);
+
+  const { toast } = useToast();
+  const deleteBatchMutation = useDeleteGauzeBatch();
 
   const batches = batchesData?.items || [];
   const activeBatches = batches.filter((b) => b.status !== 'COMPLETED' && b.status !== 'CANCELLED');
+
+  const handleDeleteBatch = async () => {
+    if (!batchToDelete) return;
+    try {
+      await deleteBatchMutation.mutateAsync(batchToDelete.id);
+      toast('Batch Deleted', `Gauze Batch ${batchToDelete.batchNumber} has been removed.`, 'success');
+      setBatchToDelete(null);
+      handleRefreshAll();
+    } catch (e: any) {
+      toast('Delete Failed', e?.message || 'Could not delete batch', 'error');
+    }
+  };
 
   const handleRefreshAll = () => {
     refetchStats();
@@ -197,6 +221,16 @@ export default function GauzeProductionDashboardPage() {
                 <ArrowRight className="h-3 w-3" />
               </Button>
             </Link>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setBatchToDelete(row)}
+              className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-500/10 border border-red-500/20 rounded-md shrink-0 flex items-center justify-center"
+              title="Delete Batch"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
           </div>
         );
       },
@@ -570,6 +604,57 @@ export default function GauzeProductionDashboardPage() {
           batch={selectedBatch}
           onSuccess={handleCloseModal}
         />
+      )}
+
+      {/* Delete Batch Confirmation Modal */}
+      {batchToDelete && (
+        <Modal
+          isOpen={Boolean(batchToDelete)}
+          onClose={() => setBatchToDelete(null)}
+          title="Delete Gauze Production Batch"
+          maxWidth="md"
+        >
+          <div className="space-y-4">
+            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl space-y-2 text-xs text-red-300">
+              <div className="flex items-center gap-2 font-bold text-red-400 text-sm">
+                <AlertTriangle className="h-5 w-5 shrink-0" />
+                Confirm Batch Deletion
+              </div>
+              <p>
+                Are you sure you want to permanently delete Gauze Batch <strong className="text-foreground font-mono">{batchToDelete.batchNumber}</strong>?
+              </p>
+              <p>
+                Fabric: <strong className="text-foreground">{batchToDelete.product?.name}</strong>. Current quantity: <strong className="text-foreground">{Number(batchToDelete.currentQuantity)} {batchToDelete.currentUom}</strong>.
+              </p>
+              <p className="text-muted-foreground">
+                This action will delete the batch record from the production floor and release allocations.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => setBatchToDelete(null)}
+                disabled={deleteBatchMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                type="button"
+                className="bg-red-600 hover:bg-red-700 text-white border-none"
+                onClick={handleDeleteBatch}
+                isLoading={deleteBatchMutation.isPending}
+                leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+              >
+                Delete Batch
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

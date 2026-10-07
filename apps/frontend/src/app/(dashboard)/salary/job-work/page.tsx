@@ -21,6 +21,8 @@ import {
   Sparkles,
   ArrowRight,
   Filter,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -30,8 +32,9 @@ import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
 import { SalaryNavTabs } from '@/components/salary/salary-nav-tabs';
+import { JobWorkDeleteModal } from '@/components/job-work/job-work-delete-modal';
 import { useJobWorkOrders, useJobWorkCompanies } from '@/hooks/useJobWork';
-import { useGauzeBleachingJobs } from '@/hooks/useGauzeProduction';
+import { useGauzeBleachingJobs, useDeleteGauzeBleachingJob } from '@/hooks/useGauzeProduction';
 import { JobWorkOrder } from '@/types/job-work.types';
 import { GauzeBleachingJobItem } from '@/types/gauze-production.types';
 import { formatDate } from '@/lib/date-utils';
@@ -87,6 +90,22 @@ export default function JobWorkWagesPage() {
   const [selectedVendor, setSelectedVendor] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'ALL' | JobWorkCategory>('ALL');
   const [filterTab, setFilterTab] = useState<'ALL' | 'PENDING' | 'SETTLED'>('ALL');
+
+  // Deletion States
+  const [deletingOrder, setDeletingOrder] = useState<JobWorkOrder | null>(null);
+  const [deletingGauzeJob, setDeletingGauzeJob] = useState<GauzeBleachingJobItem | null>(null);
+  const deleteGauzeJobMutation = useDeleteGauzeBleachingJob();
+
+  const handleConfirmDeleteGauzeJob = async () => {
+    if (!deletingGauzeJob) return;
+    try {
+      await deleteGauzeJobMutation.mutateAsync(deletingGauzeJob.id);
+      toast('Bleaching Job Deleted', `Job ${deletingGauzeJob.jobNumber} deleted successfully.`, 'success');
+      setDeletingGauzeJob(null);
+    } catch (err: any) {
+      toast('Failed to Delete', err?.message || 'Could not delete bleaching job.', 'error');
+    }
+  };
 
   // Interactive Wage State per item
   const [wageStates, setWageStates] = useState<Record<string, WageRecordState>>({});
@@ -793,27 +812,41 @@ export default function JobWorkWagesPage() {
                         )}
                       </td>
                       <td className="p-3.5 text-right">
-                        {isSettled ? (
+                        <div className="flex items-center justify-end gap-1.5">
+                          {isSettled ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setVoucherItem(item)}
+                              leftIcon={<FileText className="h-3.5 w-3.5 text-emerald-400" />}
+                              className="text-xs text-emerald-400 hover:bg-emerald-500/10 h-7"
+                            >
+                              Voucher
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => handleOpenSettlement(item)}
+                              leftIcon={<CreditCard className="h-3.5 w-3.5" />}
+                              className="text-xs h-7 bg-emerald-600 hover:bg-emerald-500"
+                            >
+                              Settle Wages
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setVoucherItem(item)}
-                            leftIcon={<FileText className="h-3.5 w-3.5 text-emerald-400" />}
-                            className="text-xs text-emerald-400 hover:bg-emerald-500/10 h-7"
+                            className="h-7 px-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                            onClick={() => {
+                              if (item.rawOrder) setDeletingOrder(item.rawOrder);
+                              else if (item.rawGauzeJob) setDeletingGauzeJob(item.rawGauzeJob);
+                            }}
+                            title="Delete Job Work"
                           >
-                            Voucher
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
-                        ) : (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => handleOpenSettlement(item)}
-                            leftIcon={<CreditCard className="h-3.5 w-3.5" />}
-                            className="text-xs h-7 bg-emerald-600 hover:bg-emerald-500"
-                          >
-                            Settle Wages
-                          </Button>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1079,6 +1112,63 @@ export default function JobWorkWagesPage() {
               </Button>
               <Button variant="primary" size="sm" onClick={() => setVoucherItem(null)}>
                 Close
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Delete Job Work Order Modal */}
+      {deletingOrder && (
+        <JobWorkDeleteModal
+          order={deletingOrder}
+          isOpen={Boolean(deletingOrder)}
+          onClose={() => setDeletingOrder(null)}
+        />
+      )}
+
+      {/* Delete Gauze Bleaching Job Modal */}
+      {deletingGauzeJob && (
+        <Modal
+          isOpen={Boolean(deletingGauzeJob)}
+          onClose={() => setDeletingGauzeJob(null)}
+          title="Delete Bleaching Job"
+          maxWidth="md"
+        >
+          <div className="space-y-4">
+            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl space-y-2 text-xs text-red-300">
+              <div className="flex items-center gap-2 font-bold text-red-400 text-sm">
+                <AlertTriangle className="h-5 w-5 shrink-0" />
+                Confirm Deletion
+              </div>
+              <p>
+                Are you sure you want to delete Bleaching Job <strong className="text-foreground font-mono">{deletingGauzeJob.jobNumber}</strong> with <strong className="text-foreground">{deletingGauzeJob.vendor?.companyName}</strong>?
+              </p>
+              <p>
+                Quantity: <strong className="text-foreground font-mono">{Number(deletingGauzeJob.quantitySent).toLocaleString()} {deletingGauzeJob.uom}</strong>.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => setDeletingGauzeJob(null)}
+                disabled={deleteGauzeJobMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                type="button"
+                className="bg-red-600 hover:bg-red-700 text-white border-none"
+                onClick={handleConfirmDeleteGauzeJob}
+                isLoading={deleteGauzeJobMutation.isPending}
+                leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+              >
+                Delete Bleaching Job
               </Button>
             </div>
           </div>

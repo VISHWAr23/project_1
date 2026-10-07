@@ -71,6 +71,12 @@ export const gamjeeProductionService = {
     });
   },
 
+  deleteBatch: async (id: string): Promise<{ success: boolean; message: string }> => {
+    return apiClient(`/gamjee-production/batches/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
   // Operations & Materials
   issueMaterials: async (batchId: string, payload: IssueGamjeeMaterialsInput) => {
     return apiClient(`/gamjee-production/batches/${batchId}/issue-materials`, {

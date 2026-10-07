@@ -75,6 +75,17 @@ export function useCreateGamjeeBatch() {
   });
 }
 
+export function useDeleteGamjeeBatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => gamjeeProductionService.deleteBatch(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gamjeeBatches'] });
+      queryClient.invalidateQueries({ queryKey: ['gamjeeDashboard'] });
+    },
+  });
+}
+
 export function useIssueGamjeeMaterials() {
   const queryClient = useQueryClient();
   return useMutation({

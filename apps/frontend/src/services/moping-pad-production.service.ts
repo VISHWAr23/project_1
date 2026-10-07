@@ -217,6 +217,15 @@ class MopingPadProductionService {
     );
   }
 
+  async deleteBatch(id: string): Promise<{ success: boolean; message: string }> {
+    return await apiClient<{ success: boolean; message: string }>(
+      `/moping-pad-production/batches/${id}`,
+      {
+        method: 'DELETE',
+      }
+    );
+  }
+
   async getDashboardStats(): Promise<MopingPadDashboardStats> {
     return await apiClient<MopingPadDashboardStats>(
       '/moping-pad-production/dashboard'

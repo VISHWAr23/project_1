@@ -79,3 +79,15 @@ export function useUpdatePillowBedsheetBatchStatus() {
     },
   });
 }
+
+export function useDeletePillowBedsheetBatch() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => pillowBedsheetProductionService.deleteBatch(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pillowBedsheetBatches'] });
+      queryClient.invalidateQueries({ queryKey: ['pillowBedsheetDashboard'] });
+    },
+  });
+}

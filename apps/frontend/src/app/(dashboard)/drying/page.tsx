@@ -20,6 +20,7 @@ import {
   Truck,
   FileText,
   AlertTriangle,
+  Trash2,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ import {
   useDryingBatches,
   useDryingDashboard,
   useUpdateDryingProgress,
+  useDeleteDryingBatch,
 } from '@/hooks/useDrying';
 import { ProductionAssignmentModal } from '@/components/job-work/production-assignment-modal';
 import { formatDate } from '@/lib/date-utils';
@@ -42,6 +44,7 @@ export default function DryingPage() {
   const [newCompletedPieces, setNewCompletedPieces] = useState<number | ''>('');
   const [isMarkFinal, setIsMarkFinal] = useState(false);
   const [wastageDescription, setWastageDescription] = useState('');
+  const [batchToDelete, setBatchToDelete] = useState<any>(null);
 
   const { data: stats } = useDryingDashboard();
   const { data: batchesData } = useDryingBatches({
@@ -50,9 +53,21 @@ export default function DryingPage() {
   });
 
   const updateProgressMutation = useUpdateDryingProgress();
+  const deleteBatchMutation = useDeleteDryingBatch();
   const { toast } = useToast();
 
   const batches = batchesData?.items || [];
+
+  const handleDeleteBatch = async () => {
+    if (!batchToDelete) return;
+    try {
+      await deleteBatchMutation.mutateAsync(batchToDelete.id);
+      toast('Batch Deleted', `Batch ${batchToDelete.batchNumber} has been removed.`, 'success');
+      setBatchToDelete(null);
+    } catch (e: any) {
+      toast('Delete Failed', e?.message || 'Could not delete batch', 'error');
+    }
+  };
 
   const handleSaveProgress = async (id: string, totalPieces: number) => {
     if (newCompletedPieces === '' || Number(newCompletedPieces) < 0) {
@@ -348,8 +363,8 @@ export default function DryingPage() {
                     </td>
 
                     <td className="py-3.5 px-4 text-center">
-                      {batch.status !== 'COMPLETED' ? (
-                        <div className="flex flex-col items-center gap-1">
+                      <div className="flex items-center justify-center gap-1.5">
+                        {batch.status !== 'COMPLETED' ? (
                           <Button
                             size="sm"
                             variant="outline"
@@ -363,37 +378,41 @@ export default function DryingPage() {
                           >
                             <span>Log Progress</span>
                           </Button>
-                          {batch.notes && (
-                            <span className="text-[10px] text-muted-foreground italic truncate max-w-[130px] block" title={batch.notes}>
-                              📝 {batch.notes}
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                              <Check className="h-3.5 w-3.5" /> Finished
                             </span>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-1">
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                            <Check className="h-3.5 w-3.5" /> Finished
-                          </span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedBatchForProgress(batch);
-                              setNewCompletedPieces(batch.completedPieces || batch.totalPieces);
-                              setIsMarkFinal(true);
-                              setWastageDescription(batch.notes || '');
-                            }}
-                            className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground gap-1 border-border/70 hover:bg-secondary/50"
-                          >
-                            <FileText className="h-3 w-3 text-orange-500" />
-                            <span>View / Edit Wastage</span>
-                          </Button>
-                          {batch.notes && (
-                            <span className="text-[10px] text-orange-700 dark:text-orange-300 font-medium truncate max-w-[130px] bg-orange-500/10 px-1.5 py-0.5 rounded border border-orange-500/20" title={batch.notes}>
-                              📝 {batch.notes}
-                            </span>
-                          )}
-                        </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedBatchForProgress(batch);
+                                setNewCompletedPieces(batch.completedPieces || batch.totalPieces);
+                                setIsMarkFinal(true);
+                                setWastageDescription(batch.notes || '');
+                              }}
+                              className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-foreground gap-1 border-border/70 hover:bg-secondary/50"
+                              title="View / Edit Wastage"
+                            >
+                              <FileText className="h-3 w-3 text-orange-500" />
+                            </Button>
+                          </div>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setBatchToDelete(batch)}
+                          className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-500/10 border border-red-500/20 rounded-md shrink-0 flex items-center justify-center"
+                          title="Delete Batch"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      {batch.notes && (
+                        <span className="text-[10px] text-muted-foreground italic truncate max-w-[130px] block mt-1 mx-auto" title={batch.notes}>
+                          📝 {batch.notes}
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -620,25 +639,43 @@ export default function DryingPage() {
             })()}
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+            <div className="flex items-center justify-between gap-2 pt-3 border-t border-border">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
+                size="sm"
                 onClick={() => {
+                  const b = selectedBatchForProgress;
                   setSelectedBatchForProgress(null);
                   setNewCompletedPieces('');
                   setIsMarkFinal(false);
                   setWastageDescription('');
+                  setBatchToDelete(b);
                 }}
-                disabled={updateProgressMutation.isPending}
+                className="text-red-500 hover:text-red-600 hover:bg-red-500/10 gap-1.5 text-xs"
               >
-                Cancel
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>Delete Batch</span>
               </Button>
-              <Button
-                type="button"
-                onClick={() =>
-                  handleSaveProgress(selectedBatchForProgress.id, selectedBatchForProgress.totalPieces)
-                }
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedBatchForProgress(null);
+                    setNewCompletedPieces('');
+                    setIsMarkFinal(false);
+                    setWastageDescription('');
+                  }}
+                  disabled={updateProgressMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() =>
+                    handleSaveProgress(selectedBatchForProgress.id, selectedBatchForProgress.totalPieces)
+                  }
                 disabled={
                   updateProgressMutation.isPending ||
                   newCompletedPieces === '' ||
@@ -656,7 +693,8 @@ export default function DryingPage() {
               </Button>
             </div>
           </div>
-        </Modal>
+        </div>
+      </Modal>
       )}
 
       <ProductionAssignmentModal
@@ -664,6 +702,57 @@ export default function DryingPage() {
         onClose={() => setIsModalOpen(false)}
         productionType="DRYING"
       />
+
+      {/* Delete Batch Confirmation Modal */}
+      {batchToDelete && (
+        <Modal
+          isOpen={Boolean(batchToDelete)}
+          onClose={() => setBatchToDelete(null)}
+          title="Delete Drying Batch"
+          maxWidth="md"
+        >
+          <div className="space-y-4">
+            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl space-y-2 text-xs text-red-300">
+              <div className="flex items-center gap-2 font-bold text-red-400 text-sm">
+                <AlertTriangle className="h-5 w-5 shrink-0" />
+                Confirm Batch Deletion
+              </div>
+              <p>
+                Are you sure you want to permanently delete Drying Batch <strong className="text-foreground font-mono">{batchToDelete.batchNumber}</strong>?
+              </p>
+              <p>
+                Target Pieces: <strong className="text-foreground font-mono">{batchToDelete.totalPieces} pcs</strong> ({batchToDelete.completedPieces || 0} completed).
+              </p>
+              <p className="text-muted-foreground">
+                This action will remove the batch record from the production floor and release allocations.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => setBatchToDelete(null)}
+                disabled={deleteBatchMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                type="button"
+                className="bg-red-600 hover:bg-red-700 text-white border-none"
+                onClick={handleDeleteBatch}
+                isLoading={deleteBatchMutation.isPending}
+                leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+              >
+                Delete Batch
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

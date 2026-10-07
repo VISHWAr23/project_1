@@ -120,6 +120,11 @@ export class JobWorkService {
    * Get single Job Work Order details with items & status history
    */
   async findOne(id: string) {
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_REGEX.test(id)) {
+      throw new NotFoundException(`Job Work Order with ID ${id} not found`);
+    }
+
     const order = await prisma.jobWorkOrder.findUnique({
       where: { id },
       include: {
@@ -1433,6 +1438,11 @@ export class JobWorkService {
    * Delete or Cancel a Job Work Order
    */
   async delete(id: string, userId?: string) {
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_REGEX.test(id)) {
+      throw new NotFoundException(`Job Work Order with ID ${id} not found`);
+    }
+
     const order = await prisma.jobWorkOrder.findUnique({
       where: { id },
       include: {
@@ -1446,16 +1456,9 @@ export class JobWorkService {
       throw new NotFoundException(`Job Work Order with ID ${id} not found`);
     }
 
-    if (order.status === JobWorkStatus.CLOSED) {
-      throw new BadRequestException('Closed and reconciled orders cannot be deleted.');
-    }
-
-    if (order.returnItems && order.returnItems.length > 0) {
-      throw new BadRequestException('Cannot delete an order with returned goods already recorded.');
-    }
-
+    // Transaction for cascade deletion and stock restoration if needed
     return await prisma.$transaction(async (tx) => {
-      // If materials were issued, reverse stock back to warehouse
+      // If materials were issued, reverse stock back to warehouse if order was in progress or issued
       if (order.status === JobWorkStatus.MATERIALS_ISSUED || order.status === JobWorkStatus.IN_PROGRESS) {
         const issuedWeight = Number(order.totalIssuedWeight) || 0;
         if (issuedWeight > 0 && order.rawMaterialId) {
@@ -1473,23 +1476,37 @@ export class JobWorkService {
               data: { currentStockBalance: restoredStock },
             });
 
-            await tx.inventoryTransaction.create({
-              data: {
-                rawMaterialId: rawMaterialId,
-                transactionType: TransactionType.ADJUSTMENT_ADD,
-                quantity: issuedWeight,
-                previousStock: currentStock,
-                newStock: restoredStock,
-                unitPrice: Number(currentMat.unitCost) || 0,
-                notes: `Job Work Order ${order.jobWorkNumber} Cancelled - Restored ${issuedWeight} kg stock`,
-                createdByUserId: userId || (await tx.user.findFirstOrThrow()).id,
-              },
-            });
+            const actingUserId = userId || (await tx.user.findFirst())?.id;
+            if (actingUserId) {
+              await tx.inventoryTransaction.create({
+                data: {
+                  rawMaterialId: rawMaterialId,
+                  transactionType: TransactionType.ADJUSTMENT_ADD,
+                  quantity: issuedWeight,
+                  previousStock: currentStock,
+                  newStock: restoredStock,
+                  unitPrice: Number(currentMat.unitCost) || 0,
+                  notes: `Job Work Order ${order.jobWorkNumber} Deleted/Cancelled - Restored ${issuedWeight} kg stock`,
+                  createdByUserId: actingUserId,
+                },
+              });
+            }
           }
         }
       }
 
-      // Delete status history & issue items
+      // If this was a bleaching order that consumed weaving received items, unlink them and reset isBleached
+      await tx.weavingReceivedItem.updateMany({
+        where: { bleachingJobWorkOrderId: id },
+        data: { bleachingJobWorkOrderId: null, isBleached: false },
+      });
+
+      // Safely delete all related child records
+      await tx.jobWorkReturnItem.deleteMany({ where: { jobWorkOrderId: id } });
+      await tx.weavingReceivedItem.deleteMany({ where: { jobWorkOrderId: id } });
+      await tx.bleachingReceivedItem.deleteMany({ where: { jobWorkOrderId: id } });
+      await tx.weavingJobWorkDetail.deleteMany({ where: { jobWorkOrderId: id } });
+      await tx.bleachingJobWorkDetail.deleteMany({ where: { jobWorkOrderId: id } });
       await tx.jobWorkStatusHistory.deleteMany({ where: { jobWorkOrderId: id } });
       await tx.jobWorkIssueItem.deleteMany({ where: { jobWorkOrderId: id } });
       await tx.jobWorkOrder.delete({ where: { id } });

@@ -261,6 +261,15 @@ class PillowBedsheetProductionService {
     );
   }
 
+  public async deleteBatch(id: string): Promise<{ success: boolean; message: string }> {
+    return await apiClient<{ success: boolean; message: string }>(
+      `/pillow-bedsheet-production/batches/${id}`,
+      {
+        method: 'DELETE',
+      }
+    );
+  }
+
   public async getDashboardStats(): Promise<PillowBedsheetDashboardStats> {
     return await apiClient<PillowBedsheetDashboardStats>(
       '/pillow-bedsheet-production/dashboard'

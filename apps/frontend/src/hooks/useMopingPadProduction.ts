@@ -80,3 +80,15 @@ export function useUpdateMopingPadProgress() {
   });
 }
 
+export function useDeleteMopingPadBatch() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => mopingPadProductionService.deleteBatch(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mopingPadBatches'] });
+      queryClient.invalidateQueries({ queryKey: ['mopingPadDashboard'] });
+    },
+  });
+}
+

@@ -114,6 +114,12 @@ export class GauzeProductionController {
     return this.gauzeProductionService.updateStatus(id, body.status, body.remarks, userId);
   }
 
+  @Delete('batches/:id')
+  @ApiOperation({ summary: 'Delete a gauze production batch' })
+  async deleteBatch(@Param('id') id: string) {
+    return this.gauzeProductionService.deleteBatch(id);
+  }
+
   @Get('batches/:id/traceability')
   @ApiOperation({ summary: 'Get forward and reverse traceability chain for a batch' })
   async getTraceability(@Param('id') id: string) {
@@ -128,6 +134,12 @@ export class GauzeProductionController {
     @Query('search') search?: string
   ) {
     return this.gauzeProductionService.getBleachingJobs({ vendorId, status, search });
+  }
+
+  @Delete('bleaching-jobs/:id')
+  @ApiOperation({ summary: 'Delete or Cancel a Gauze Bleaching Job' })
+  async deleteBleachingJob(@Param('id') id: string, @Req() req?: any) {
+    return this.gauzeProductionService.deleteBleachingJob(id, req?.user?.id);
   }
 
   @Get('vendor-stock')

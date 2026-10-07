@@ -17,14 +17,18 @@ import {
   Coins,
   Check,
   Truck,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Modal } from '@/components/ui/modal';
 import {
   useGauzePadPinningBatches,
   useGauzePadPinningDashboard,
   useUpdateGauzePadPinningBatchStatus,
+  useDeleteGauzePadPinningBatch,
 } from '@/hooks/useGauzePadPinning';
 import { ProductionAssignmentModal } from '@/components/job-work/production-assignment-modal';
 import { formatDate } from '@/lib/date-utils';
@@ -35,6 +39,7 @@ export default function GauzePadPinningPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [materialFilter, setMaterialFilter] = useState('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [batchToDelete, setBatchToDelete] = useState<any>(null);
 
   const { data: stats } = useGauzePadPinningDashboard();
   const { data: batchesData } = useGauzePadPinningBatches({
@@ -44,9 +49,21 @@ export default function GauzePadPinningPage() {
   });
 
   const updateStatusMutation = useUpdateGauzePadPinningBatchStatus();
+  const deleteBatchMutation = useDeleteGauzePadPinningBatch();
   const { toast } = useToast();
 
   const batches = batchesData?.items || [];
+
+  const handleDeleteBatch = async () => {
+    if (!batchToDelete) return;
+    try {
+      await deleteBatchMutation.mutateAsync(batchToDelete.id);
+      toast('Batch Deleted', `Batch ${batchToDelete.batchNumber} has been removed.`, 'success');
+      setBatchToDelete(null);
+    } catch (e: any) {
+      toast('Delete Failed', e?.message || 'Could not delete batch', 'error');
+    }
+  };
 
   const handleStatusChange = async (id: string, newStatus: any) => {
     try {
@@ -321,19 +338,30 @@ export default function GauzePadPinningPage() {
                     </td>
 
                     <td className="py-3.5 px-4 text-center">
-                      {batch.status !== 'COMPLETED' ? (
+                      <div className="flex items-center justify-center gap-1.5">
+                        {batch.status !== 'COMPLETED' ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleStatusChange(batch.id, 'COMPLETED')}
+                            className="h-7 px-2 text-[11px] gap-1 text-emerald-600 hover:text-emerald-700"
+                          >
+                            <Check className="h-3 w-3" />
+                            <span>Complete</span>
+                          </Button>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">Finished</span>
+                        )}
                         <Button
                           size="sm"
-                          variant="outline"
-                          onClick={() => handleStatusChange(batch.id, 'COMPLETED')}
-                          className="h-7 px-2 text-[11px] gap-1 text-emerald-600 hover:text-emerald-700"
+                          variant="ghost"
+                          onClick={() => setBatchToDelete(batch)}
+                          className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-500/10 border border-red-500/20 rounded-md shrink-0 flex items-center justify-center"
+                          title="Delete Batch"
                         >
-                          <Check className="h-3 w-3" />
-                          <span>Complete</span>
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground">Finished</span>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -348,6 +376,57 @@ export default function GauzePadPinningPage() {
         onClose={() => setIsModalOpen(false)}
         productionType="GAUZE_PAD_PINNING"
       />
+
+      {/* Delete Batch Confirmation Modal */}
+      {batchToDelete && (
+        <Modal
+          isOpen={Boolean(batchToDelete)}
+          onClose={() => setBatchToDelete(null)}
+          title="Delete Gauze Pad Pinning Batch"
+          maxWidth="md"
+        >
+          <div className="space-y-4">
+            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl space-y-2 text-xs text-red-300">
+              <div className="flex items-center gap-2 font-bold text-red-400 text-sm">
+                <AlertTriangle className="h-5 w-5 shrink-0" />
+                Confirm Batch Deletion
+              </div>
+              <p>
+                Are you sure you want to permanently delete Gauze Pad Pinning Batch <strong className="text-foreground font-mono">{batchToDelete.batchNumber}</strong>?
+              </p>
+              <p>
+                Target Output: <strong className="text-foreground font-mono">{batchToDelete.outputQuantity} Pads</strong> ({batchToDelete.totalLength}m fabric).
+              </p>
+              <p className="text-muted-foreground">
+                This action will remove the batch record from the production floor and release allocations.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => setBatchToDelete(null)}
+                disabled={deleteBatchMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                type="button"
+                className="bg-red-600 hover:bg-red-700 text-white border-none"
+                onClick={handleDeleteBatch}
+                isLoading={deleteBatchMutation.isPending}
+                leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+              >
+                Delete Batch
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

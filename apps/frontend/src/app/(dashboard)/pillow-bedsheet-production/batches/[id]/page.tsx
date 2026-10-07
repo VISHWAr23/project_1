@@ -22,6 +22,7 @@ import {
   Check,
   XCircle,
   AlertCircle,
+  Trash2,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ import {
   usePillowBedsheetBatchDetail,
   useUpdatePillowBedsheetBatchStatus,
   useUpdatePillowBedsheetProgress,
+  useDeletePillowBedsheetBatch,
 } from '@/hooks/usePillowBedsheetProduction';
 import { formatDate } from '@/lib/date-utils';
 import { useToast } from '@/components/ui/toast';
@@ -45,9 +47,11 @@ export default function PillowBedsheetBatchDetailPage() {
   const { data: batch, isLoading, error } = usePillowBedsheetBatchDetail(id);
   const updateStatusMutation = useUpdatePillowBedsheetBatchStatus();
   const updateProgressMutation = useUpdatePillowBedsheetProgress();
+  const deleteBatchMutation = useDeletePillowBedsheetBatch();
   const { toast } = useToast();
 
   const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [newCompletedQuantity, setNewCompletedQuantity] = useState<number | ''>('');
 
   if (isLoading) {
@@ -94,6 +98,16 @@ export default function PillowBedsheetBatchDetailPage() {
       toast('Status Updated', `Batch marked as ${status}`, 'success');
     } catch (e: any) {
       toast('Update Failed', e?.message || 'Failed to update status', 'error');
+    }
+  };
+
+  const handleDeleteBatch = async () => {
+    try {
+      await deleteBatchMutation.mutateAsync(id);
+      toast('Batch Deleted', `Batch ${batch.batchNumber} has been removed.`, 'success');
+      router.push('/pillow-bedsheet-production');
+    } catch (e: any) {
+      toast('Delete Failed', e?.message || 'Could not delete batch', 'error');
     }
   };
 
@@ -197,6 +211,17 @@ export default function PillowBedsheetBatchDetailPage() {
               Reopen Batch
             </Button>
           )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="h-8 text-xs text-red-500 hover:text-red-600 hover:bg-red-500/10 border-red-500/30 gap-1.5"
+            title="Delete Batch"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            <span>Delete</span>
+          </Button>
         </div>
       </div>
 
@@ -570,6 +595,57 @@ export default function PillowBedsheetBatchDetailPage() {
                 className="bg-purple-600 hover:bg-purple-700 text-white font-semibold"
               >
                 Save Progress
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Delete Batch Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <Modal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          title="Delete Production Batch"
+          maxWidth="md"
+        >
+          <div className="space-y-4">
+            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl space-y-2 text-xs text-red-300">
+              <div className="flex items-center gap-2 font-bold text-red-400 text-sm">
+                <AlertCircle className="h-5 w-5 shrink-0" />
+                Confirm Batch Deletion
+              </div>
+              <p>
+                Are you sure you want to permanently delete {batch.productType === 'BED_SHEET' ? 'Bed Sheet' : 'Pillow Cover'} Batch <strong className="text-foreground font-mono">{batch.batchNumber}</strong>?
+              </p>
+              <p>
+                Target Pieces: <strong className="text-foreground font-mono">{batch.outputQuantity} pcs</strong> ({batch.completedQuantity || 0} completed).
+              </p>
+              <p className="text-muted-foreground">
+                This action will delete the batch record and navigate back to the production list.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                disabled={deleteBatchMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                type="button"
+                className="bg-red-600 hover:bg-red-700 text-white border-none"
+                onClick={handleDeleteBatch}
+                isLoading={deleteBatchMutation.isPending}
+                leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+              >
+                Delete Batch
               </Button>
             </div>
           </div>

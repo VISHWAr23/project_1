@@ -17,16 +17,20 @@ import {
   LayoutGrid,
   Calendar,
   ArrowLeft,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { Modal } from '@/components/ui/modal';
 import { Table, Column } from '@/components/ui/table';
 import { BatchStatusBadge } from '@/components/gauze-production/batch-status-badge';
-import { useGauzeBatches, useGauzeMasters } from '@/hooks/useGauzeProduction';
+import { useGauzeBatches, useGauzeMasters, useDeleteGauzeBatch } from '@/hooks/useGauzeProduction';
 import { GauzeProductionBatch } from '@/types/gauze-production.types';
 import { formatDate } from '@/lib/date-utils';
+import { useToast } from '@/components/ui/toast';
 
 export default function GauzeBatchesListPage() {
   const [search, setSearch] = useState('');
@@ -35,6 +39,10 @@ export default function GauzeBatchesListPage() {
   const [sizeFilter, setSizeFilter] = useState('ALL');
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+  const [batchToDelete, setBatchToDelete] = useState<GauzeProductionBatch | null>(null);
+
+  const { toast } = useToast();
+  const deleteBatchMutation = useDeleteGauzeBatch();
 
   const { data: masters } = useGauzeMasters();
   const { data: batchesData, isLoading } = useGauzeBatches({
@@ -48,6 +56,17 @@ export default function GauzeBatchesListPage() {
 
   const batches = batchesData?.items || [];
   const meta = batchesData?.meta;
+
+  const handleDeleteBatch = async () => {
+    if (!batchToDelete) return;
+    try {
+      await deleteBatchMutation.mutateAsync(batchToDelete.id);
+      toast('Batch Deleted', `Gauze Batch ${batchToDelete.batchNumber} has been removed.`, 'success');
+      setBatchToDelete(null);
+    } catch (e: any) {
+      toast('Delete Failed', e?.message || 'Could not delete batch', 'error');
+    }
+  };
 
   const columns: Column<GauzeProductionBatch>[] = [
     {
@@ -128,12 +147,23 @@ export default function GauzeBatchesListPage() {
       header: 'Action',
       align: 'right',
       render: (row) => (
-        <Link href={`/gauze-production/batches/${row.id}`}>
-          <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
-            Open Details
-            <ArrowRight className="h-3 w-3" />
+        <div className="flex items-center justify-end gap-1.5">
+          <Link href={`/gauze-production/batches/${row.id}`}>
+            <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
+              Open Details
+              <ArrowRight className="h-3 w-3" />
+            </Button>
+          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setBatchToDelete(row)}
+            className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-500/10 border border-red-500/20 rounded-md shrink-0 flex items-center justify-center"
+            title="Delete Batch"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
-        </Link>
+        </div>
       ),
     },
   ];
@@ -316,16 +346,78 @@ export default function GauzeBatchesListPage() {
                 <span className="text-[11px] text-muted-foreground truncate max-w-[150px]">
                   {batch.supplier?.name || 'Direct Stock'}
                 </span>
-                <Link href={`/gauze-production/batches/${batch.id}`}>
-                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
-                    Open
-                    <ArrowRight className="h-3 w-3" />
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setBatchToDelete(batch)}
+                    className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-500/10 border border-red-500/20 rounded-md shrink-0 flex items-center justify-center"
+                    title="Delete Batch"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
-                </Link>
+                  <Link href={`/gauze-production/batches/${batch.id}`}>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
+                      Open
+                      <ArrowRight className="h-3 w-3" />
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Delete Batch Confirmation Modal */}
+      {batchToDelete && (
+        <Modal
+          isOpen={Boolean(batchToDelete)}
+          onClose={() => setBatchToDelete(null)}
+          title="Delete Gauze Production Batch"
+          maxWidth="md"
+        >
+          <div className="space-y-4">
+            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl space-y-2 text-xs text-red-300">
+              <div className="flex items-center gap-2 font-bold text-red-400 text-sm">
+                <AlertTriangle className="h-5 w-5 shrink-0" />
+                Confirm Batch Deletion
+              </div>
+              <p>
+                Are you sure you want to permanently delete Gauze Batch <strong className="text-foreground font-mono">{batchToDelete.batchNumber}</strong>?
+              </p>
+              <p>
+                Fabric: <strong className="text-foreground">{batchToDelete.product.name}</strong> ({Number(batchToDelete.currentQuantity)} {batchToDelete.currentUom} remaining).
+              </p>
+              <p className="text-muted-foreground">
+                This action will delete the batch record and all associated movements, operations, and logs.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => setBatchToDelete(null)}
+                disabled={deleteBatchMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                type="button"
+                className="bg-red-600 hover:bg-red-700 text-white border-none"
+                onClick={handleDeleteBatch}
+                isLoading={deleteBatchMutation.isPending}
+                leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+              >
+                Delete Batch
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

@@ -180,6 +180,15 @@ class DryingService {
     );
   }
 
+  async deleteBatch(id: string): Promise<{ success: boolean; message: string }> {
+    return await apiClient<{ success: boolean; message: string }>(
+      `/drying/batches/${id}`,
+      {
+        method: 'DELETE',
+      }
+    );
+  }
+
   async getDashboardStats(): Promise<DryingDashboardStats> {
     return await apiClient<DryingDashboardStats>('/drying/dashboard');
   }

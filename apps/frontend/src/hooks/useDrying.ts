@@ -51,3 +51,15 @@ export function useUpdateDryingProgress() {
     },
   });
 }
+
+export function useDeleteDryingBatch() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => dryingService.deleteBatch(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dryingBatches'] });
+      queryClient.invalidateQueries({ queryKey: ['dryingDashboard'] });
+    },
+  });
+}

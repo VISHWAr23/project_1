@@ -91,6 +91,17 @@ export function useCreateGauzeBatch() {
   });
 }
 
+export function useDeleteGauzeBatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => gauzeProductionService.deleteBatch(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gauzeBatches'] });
+      queryClient.invalidateQueries({ queryKey: ['gauzeDashboard'] });
+    },
+  });
+}
+
 export function useSendToBleaching() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -114,6 +125,19 @@ export function useReceiveBleaching() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['gauzeBatches'] });
       queryClient.invalidateQueries({ queryKey: ['gauzeBatch', variables.batchId] });
+      queryClient.invalidateQueries({ queryKey: ['gauzeBleachingJobs'] });
+      queryClient.invalidateQueries({ queryKey: ['vendorHeldStock'] });
+      queryClient.invalidateQueries({ queryKey: ['gauzeDashboard'] });
+    },
+  });
+}
+
+export function useDeleteGauzeBleachingJob() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => gauzeProductionService.deleteBleachingJob(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gauzeBatches'] });
       queryClient.invalidateQueries({ queryKey: ['gauzeBleachingJobs'] });
       queryClient.invalidateQueries({ queryKey: ['vendorHeldStock'] });
       queryClient.invalidateQueries({ queryKey: ['gauzeDashboard'] });

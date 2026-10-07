@@ -419,17 +419,15 @@ export default function WeavingProductionPage() {
                             <ExternalLink className="h-3 w-3" />
                           </Button>
                         </Link>
-                        {order.status !== 'CLOSED' && Number(order.totalReturnedWeight || 0) === 0 && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 px-1.5 text-[11px] text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                            onClick={() => setDeletingOrder(order)}
-                            title={order.status === 'CREATED' ? 'Delete Order' : 'Cancel & Reverse Stock'}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-1.5 text-[11px] text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                          onClick={() => setDeletingOrder(order)}
+                          title="Delete Order"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     </td>
                   </tr>
