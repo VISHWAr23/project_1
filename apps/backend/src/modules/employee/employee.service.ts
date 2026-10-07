@@ -821,10 +821,14 @@ export class EmployeeService {
   }
 
   async createDepartment(data: { name: string; code?: string; description?: string }) {
-    const code = data.code || data.name.substring(0, 6).toUpperCase().replace(/\s+/g, '');
+    let code = data.code?.trim() || data.name.substring(0, 6).toUpperCase().replace(/\s+/g, '');
+    const existing = await prisma.department.findUnique({ where: { code } });
+    if (existing) {
+      code = `${code.substring(0, 15)}-${Math.floor(100 + Math.random() * 900)}`;
+    }
     return prisma.department.create({
       data: {
-        name: data.name,
+        name: data.name.trim(),
         code,
         description: data.description || null,
       },
@@ -835,14 +839,18 @@ export class EmployeeService {
     return prisma.department.update({
       where: { id },
       data: {
-        ...(data.name ? { name: data.name } : {}),
-        ...(data.code ? { code: data.code } : {}),
+        ...(data.name ? { name: data.name.trim() } : {}),
+        ...(data.code ? { code: data.code.trim() } : {}),
         ...(data.description !== undefined ? { description: data.description } : {}),
       },
     });
   }
 
   async deleteDepartment(id: string) {
+    await prisma.employee.updateMany({
+      where: { departmentId: id },
+      data: { departmentId: null },
+    });
     return prisma.department.delete({
       where: { id },
     });
@@ -880,10 +888,14 @@ export class EmployeeService {
   }
 
   async createDesignation(data: { name: string; code?: string; description?: string }) {
-    const code = data.code || data.name.substring(0, 6).toUpperCase().replace(/\s+/g, '');
+    let code = data.code?.trim() || data.name.substring(0, 6).toUpperCase().replace(/\s+/g, '');
+    const existing = await prisma.designation.findUnique({ where: { code } });
+    if (existing) {
+      code = `${code.substring(0, 15)}-${Math.floor(100 + Math.random() * 900)}`;
+    }
     return prisma.designation.create({
       data: {
-        name: data.name,
+        name: data.name.trim(),
         code,
         description: data.description || null,
       },
@@ -894,14 +906,18 @@ export class EmployeeService {
     return prisma.designation.update({
       where: { id },
       data: {
-        ...(data.name ? { name: data.name } : {}),
-        ...(data.code ? { code: data.code } : {}),
+        ...(data.name ? { name: data.name.trim() } : {}),
+        ...(data.code ? { code: data.code.trim() } : {}),
         ...(data.description !== undefined ? { description: data.description } : {}),
       },
     });
   }
 
   async deleteDesignation(id: string) {
+    await prisma.employee.updateMany({
+      where: { designationId: id },
+      data: { designationId: null },
+    });
     return prisma.designation.delete({
       where: { id },
     });

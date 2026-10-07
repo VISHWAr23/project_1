@@ -533,6 +533,7 @@ export function MasterEntityModal({
       isOpen={isOpen}
       onClose={onClose}
       title={getEntityTitle()}
+      zIndex="z-[60]"
       maxWidth={entityType === 'supplier' || entityType === 'jobWorkCompany' || entityType === 'customer' ? 'lg' : 'md'}
     >
       <div className="space-y-4 text-xs font-mono">
@@ -558,24 +559,58 @@ export function MasterEntityModal({
 
         {/* Name & Code Row for Other Types */}
         {entityType !== 'gauzeSize' && entityType !== 'unit' && entityType !== 'gamjeeSize' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input
-              label={
-                entityType === 'jobWorkCompany' || entityType === 'supplier' || entityType === 'customer'
-                  ? 'Company / Account Name *'
-                  : 'Name / Title *'
-              }
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Lakshmi Cotton Spinning Mills"
-              required
-            />
-            <Input
-              label="Identifier Code (Optional)"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="e.g. SUP-001 or PROD"
-            />
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label={
+                  entityType === 'jobWorkCompany' || entityType === 'supplier' || entityType === 'customer'
+                    ? 'Company / Account Name *'
+                    : entityType === 'department'
+                    ? 'Department Name *'
+                    : entityType === 'designation'
+                    ? 'Designation Title *'
+                    : 'Name / Title *'
+                }
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={
+                  entityType === 'department'
+                    ? 'e.g. Production & Manufacturing'
+                    : entityType === 'designation'
+                    ? 'e.g. Senior Machine Operator'
+                    : entityType === 'category'
+                    ? 'e.g. Raw Cotton Yarn'
+                    : 'e.g. Lakshmi Cotton Spinning Mills'
+                }
+                required
+              />
+              <Input
+                label="Identifier Code (Optional)"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder={
+                  entityType === 'department'
+                    ? 'e.g. PROD'
+                    : entityType === 'designation'
+                    ? 'e.g. SMO'
+                    : 'e.g. SUP-001 or PROD'
+                }
+              />
+            </div>
+            {(entityType === 'department' || entityType === 'designation' || entityType === 'category' || entityType === 'location') && (
+              <Input
+                label="Description (Optional)"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={
+                  entityType === 'department'
+                    ? 'e.g. Weaving, bleaching, and converting department'
+                    : entityType === 'designation'
+                    ? 'e.g. Responsible for operating high-speed loom line'
+                    : 'Optional notes or description...'
+                }
+              />
+            )}
           </div>
         )}
 

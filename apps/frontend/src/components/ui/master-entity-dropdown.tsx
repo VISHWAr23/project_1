@@ -340,6 +340,15 @@ export function MasterEntityDropdown({
     deleteOperation.isPending ||
     deleteGamjeeSize.isPending;
 
+  // Formatted options with fallback for currently selected value
+  const displayOptions = useMemo(() => {
+    const list = [{ value: '', label: placeholder }, ...currentOptions];
+    if (value && !list.some((o) => o.value === value)) {
+      list.push({ value, label: selectedOption?.label || 'Selected Option' });
+    }
+    return list;
+  }, [placeholder, currentOptions, value, selectedOption]);
+
   return (
     <div className={`space-y-1.5 ${className}`}>
       {/* Label */}
@@ -352,7 +361,7 @@ export function MasterEntityDropdown({
       <Select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        options={[{ value: '', label: placeholder }, ...currentOptions]}
+        options={displayOptions}
         required={required}
         disabled={disabled}
         error={error}
@@ -369,7 +378,7 @@ export function MasterEntityDropdown({
             <span />
           )}
 
-          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+          <div className="flex items-center gap-1.5 ml-auto flex-wrap justify-end">
             {/* Edit Current Item Button */}
             {allowEdit && (
               <button
@@ -440,6 +449,7 @@ export function MasterEntityDropdown({
           onClose={() => setIsGenericModalOpen(false)}
           title={genericModalMode === 'add' ? `Add New ${label}` : `Edit ${label}`}
           maxWidth="sm"
+          zIndex="z-[60]"
         >
           <form onSubmit={handleSaveGeneric} className="space-y-4 text-xs font-mono">
             <Input

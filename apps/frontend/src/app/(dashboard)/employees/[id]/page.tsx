@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
+import { MasterEntityDropdown } from '@/components/ui/master-entity-dropdown';
 import { useToast } from '@/components/ui/toast';
 import Link from 'next/link';
 import {
@@ -1177,6 +1178,7 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         title={`Edit Staff Profile: ${employee.employeeCode}`}
+        maxWidth="3xl"
       >
         <form onSubmit={handleEditSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto pr-2 font-mono text-xs">
           {/* Section 1: Basic Identity */}
@@ -1233,39 +1235,25 @@ export default function EmployeeProfilePage({ params }: { params: Promise<{ id: 
           {/* Section 2: Department & Joining */}
           <div className="border-b border-border pb-3 space-y-3">
             <h4 className="font-bold text-blue-500 text-[11px] uppercase">2. Role, Department & Cycle</h4>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-start">
+              <MasterEntityDropdown
+                label="Department"
+                entityType="department"
+                placeholder="Select Department..."
+                options={departments.map((d) => ({ label: d.name, value: d.id, raw: d }))}
+                value={editForm.departmentId || ''}
+                onChange={(val) => setEditForm({ ...editForm, departmentId: val })}
+              />
+              <MasterEntityDropdown
+                label="Designation"
+                entityType="designation"
+                placeholder="Select Designation..."
+                options={designations.map((d) => ({ label: d.name, value: d.id, raw: d }))}
+                value={editForm.designationId || ''}
+                onChange={(val) => setEditForm({ ...editForm, designationId: val })}
+              />
               <div>
-                <label className="text-muted-foreground block mb-1">Department</label>
-                <select
-                  value={editForm.departmentId || ''}
-                  onChange={(e) => setEditForm({ ...editForm, departmentId: e.target.value })}
-                  className="w-full bg-secondary/50 border border-border text-xs rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-                >
-                  <option value="">Select Department</option>
-                  {departments.map((d) => (
-                    <option key={`edit-dept-${d.id}`} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-muted-foreground block mb-1">Designation</label>
-                <select
-                  value={editForm.designationId || ''}
-                  onChange={(e) => setEditForm({ ...editForm, designationId: e.target.value })}
-                  className="w-full bg-secondary/50 border border-border text-xs rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-                >
-                  <option value="">Select Designation</option>
-                  {designations.map((d) => (
-                    <option key={`edit-desig-${d.id}`} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-muted-foreground block mb-1">Joining Date</label>
+                <label className="text-xs font-semibold text-foreground flex items-center gap-1 block mb-1.5">Joining Date</label>
                 <Input
                   type="date"
                   value={editForm.joiningDate || ''}

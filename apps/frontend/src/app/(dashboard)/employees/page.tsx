@@ -390,6 +390,7 @@ export default function EmployeesPage() {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         title="New Employee Intake Form"
+        maxWidth="3xl"
       >
         <form onSubmit={handleCreateSubmit} className="space-y-4 pt-2 font-mono text-xs">
           <div className="grid grid-cols-2 gap-3">

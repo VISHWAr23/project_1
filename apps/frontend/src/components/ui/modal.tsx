@@ -13,6 +13,7 @@ export interface ModalProps {
   children: React.ReactNode;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
+  zIndex?: string;
 }
 
 export function Modal({
@@ -23,6 +24,7 @@ export function Modal({
   children,
   maxWidth,
   size = 'md',
+  zIndex = 'z-50',
 }: ModalProps) {
   const [mounted, setMounted] = useState(false);
   const effectiveWidth = maxWidth || size;
@@ -40,7 +42,10 @@ export function Modal({
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      const openModals = document.querySelectorAll('[data-modal-open="true"]');
+      if (openModals.length <= 1) {
+        document.body.style.overflow = 'unset';
+      }
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);
@@ -58,7 +63,7 @@ export function Modal({
   const modalContent = (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div data-modal-open="true" className={`fixed inset-0 ${zIndex} flex items-end sm:items-center justify-center p-0 sm:p-4`}>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
