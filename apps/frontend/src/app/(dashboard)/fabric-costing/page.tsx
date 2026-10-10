@@ -179,13 +179,13 @@ export default function FabricCostingPage() {
           </span>
         );
       case 'warpWeightKg':
-        return <span className="font-mono text-primary font-medium">{row.warpWeightKg.toFixed(3)} kg</span>;
+        return <span className="font-mono text-primary font-medium">{Number(row.warpWeightKg || 0).toFixed(3)} kg</span>;
       case 'weftWeightKg':
-        return <span className="font-mono text-primary font-medium">{row.weftWeightKg.toFixed(3)} kg</span>;
+        return <span className="font-mono text-primary font-medium">{Number(row.weftWeightKg || 0).toFixed(3)} kg</span>;
       case 'totalWeightKg':
-        return <span className="font-mono font-bold text-foreground">{row.totalWeightKg.toFixed(3)} kg</span>;
+        return <span className="font-mono font-bold text-foreground">{Number(row.totalWeightKg || 0).toFixed(3)} kg</span>;
       case 'weightPerMeterGram':
-        return <span className="font-mono text-blue-600 dark:text-blue-400 font-medium">{row.weightPerMeterGram.toFixed(2)} g/m</span>;
+        return <span className="font-mono text-blue-600 dark:text-blue-400 font-medium">{Number(row.weightPerMeterGram || 0).toFixed(2)} g/m</span>;
       case 'reedSpaceInches':
         return <span className="font-mono">{row.reedSpaceInches}&quot;</span>;
       case 'warpPricePerKg':
@@ -194,7 +194,7 @@ export default function FabricCostingPage() {
       case 'bleachingRatePerKg':
         return <span className="font-mono">₹{Number(row[colId as keyof GreyFabricCosting] || 0).toFixed(2)}</span>;
       case 'weavingRatePerMeter':
-        return <span className="font-mono">₹{row.weavingRatePerMeter.toFixed(3)}/m</span>;
+        return <span className="font-mono">₹{Number(row.weavingRatePerMeter || 0).toFixed(3)}/m</span>;
       case 'warpTotalPrice':
       case 'weftTotalPrice':
       case 'sizingTotalWages':
@@ -203,10 +203,16 @@ export default function FabricCostingPage() {
         return <span className="font-mono">₹{Number(row[colId as keyof GreyFabricCosting] || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>;
       case 'costBeforeBleaching': {
         const costBefore =
-          row.costBeforeBleaching ??
-          Number(
-            (row.warpTotalPrice + row.weftTotalPrice + row.sizingTotalWages + row.weavingTotalWages).toFixed(2)
-          );
+          row.costBeforeBleaching !== null && row.costBeforeBleaching !== undefined
+            ? Number(row.costBeforeBleaching)
+            : Number(
+                (
+                  Number(row.warpTotalPrice || 0) +
+                  Number(row.weftTotalPrice || 0) +
+                  Number(row.sizingTotalWages || 0) +
+                  Number(row.weavingTotalWages || 0)
+                ).toFixed(2)
+              );
         return (
           <span className="font-mono font-medium text-foreground">
             ₹{costBefore.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -215,13 +221,20 @@ export default function FabricCostingPage() {
       }
       case 'costPerMeterBeforeBleaching': {
         const costBefore =
-          row.costBeforeBleaching ??
-          Number(
-            (row.warpTotalPrice + row.weftTotalPrice + row.sizingTotalWages + row.weavingTotalWages).toFixed(2)
-          );
+          row.costBeforeBleaching !== null && row.costBeforeBleaching !== undefined
+            ? Number(row.costBeforeBleaching)
+            : Number(
+                (
+                  Number(row.warpTotalPrice || 0) +
+                  Number(row.weftTotalPrice || 0) +
+                  Number(row.sizingTotalWages || 0) +
+                  Number(row.weavingTotalWages || 0)
+                ).toFixed(2)
+              );
         const costPerM =
-          row.costPerMeterBeforeBleaching ??
-          Number((costBefore / (row.totalLengthMeters || 1)).toFixed(2));
+          row.costPerMeterBeforeBleaching !== null && row.costPerMeterBeforeBleaching !== undefined
+            ? Number(row.costPerMeterBeforeBleaching)
+            : Number((costBefore / (Number(row.totalLengthMeters || 0) || 1)).toFixed(2));
         return (
           <div className="inline-flex items-center gap-1 font-mono font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/25">
             ₹{costPerM.toFixed(2)}/m
@@ -231,13 +244,13 @@ export default function FabricCostingPage() {
       case 'totalProductionCost':
         return (
           <span className="font-mono font-bold text-primary">
-            ₹{row.totalProductionCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            ₹{Number(row.totalProductionCost || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
           </span>
         );
       case 'costPerMeter':
         return (
           <div className="inline-flex items-center gap-1 font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-            ₹{row.costPerMeter.toFixed(2)}/m
+            ₹{Number(row.costPerMeter || 0).toFixed(2)}/m
           </div>
         );
       case 'createdAt':

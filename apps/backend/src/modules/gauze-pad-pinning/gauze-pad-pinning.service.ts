@@ -160,7 +160,7 @@ export class GauzePadPinningService {
       },
     });
 
-    return batch;
+    return this.formatBatch(batch);
   }
 
   /**
@@ -215,7 +215,7 @@ export class GauzePadPinningService {
     ]);
 
     return {
-      items,
+      items: items.map((b) => this.formatBatch(b)),
       meta: {
         total,
         page,
@@ -237,7 +237,7 @@ export class GauzePadPinningService {
       throw new NotFoundException(`Gauze Pad Pinning batch with ID "${id}" not found`);
     }
 
-    return batch;
+    return this.formatBatch(batch);
   }
 
   /**
@@ -256,10 +256,27 @@ export class GauzePadPinningService {
       updateData.completionDate = null;
     }
 
-    return prisma.gauzePadPinningBatch.update({
+    const updated = await prisma.gauzePadPinningBatch.update({
       where: { id },
       data: updateData,
     });
+    return this.formatBatch(updated);
+  }
+
+  private formatBatch(b: any) {
+    if (!b) return b;
+    return {
+      ...b,
+      totalLength: b.totalLength !== null && b.totalLength !== undefined ? Number(b.totalLength) : 0,
+      salaryRatePerPiece: b.salaryRatePerPiece !== null && b.salaryRatePerPiece !== undefined ? Number(b.salaryRatePerPiece) : 0,
+      totalSalary: b.totalSalary !== null && b.totalSalary !== undefined ? Number(b.totalSalary) : 0,
+      workerSalaryShare: b.workerSalaryShare !== null && b.workerSalaryShare !== undefined ? Number(b.workerSalaryShare) : 0,
+      remnantLength: b.remnantLength !== null && b.remnantLength !== undefined ? Number(b.remnantLength) : 0,
+      rollLength: b.rollLength !== null && b.rollLength !== undefined ? Number(b.rollLength) : null,
+      rollWidth: b.rollWidth !== null && b.rollWidth !== undefined ? Number(b.rollWidth) : null,
+      pieceLength: b.pieceLength !== null && b.pieceLength !== undefined ? Number(b.pieceLength) : null,
+      pieceWidth: b.pieceWidth !== null && b.pieceWidth !== undefined ? Number(b.pieceWidth) : null,
+    };
   }
 
   /**

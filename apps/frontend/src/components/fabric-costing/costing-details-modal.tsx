@@ -32,22 +32,29 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
   };
 
   // Cost percentage distribution
-  const total = costing.totalProductionCost || 1;
-  const warpPct = ((costing.warpTotalPrice / total) * 100).toFixed(1);
-  const weftPct = ((costing.weftTotalPrice / total) * 100).toFixed(1);
-  const sizingPct = ((costing.sizingTotalWages / total) * 100).toFixed(1);
-  const weavingPct = ((costing.weavingTotalWages / total) * 100).toFixed(1);
-  const bleachingPct = ((costing.bleachingTotalCharges / total) * 100).toFixed(1);
+  const total = Number(costing.totalProductionCost || 1);
+  const warpPct = ((Number(costing.warpTotalPrice || 0) / total) * 100).toFixed(1);
+  const weftPct = ((Number(costing.weftTotalPrice || 0) / total) * 100).toFixed(1);
+  const sizingPct = ((Number(costing.sizingTotalWages || 0) / total) * 100).toFixed(1);
+  const weavingPct = ((Number(costing.weavingTotalWages || 0) / total) * 100).toFixed(1);
+  const bleachingPct = ((Number(costing.bleachingTotalCharges || 0) / total) * 100).toFixed(1);
 
   // Pre-bleaching costs
   const costBeforeBleaching =
-    costing.costBeforeBleaching ??
-    Number(
-      (costing.warpTotalPrice + costing.weftTotalPrice + costing.sizingTotalWages + costing.weavingTotalWages).toFixed(2)
-    );
+    costing.costBeforeBleaching !== null && costing.costBeforeBleaching !== undefined
+      ? Number(costing.costBeforeBleaching)
+      : Number(
+          (
+            Number(costing.warpTotalPrice || 0) +
+            Number(costing.weftTotalPrice || 0) +
+            Number(costing.sizingTotalWages || 0) +
+            Number(costing.weavingTotalWages || 0)
+          ).toFixed(2)
+        );
   const costPerMeterBeforeBleaching =
-    costing.costPerMeterBeforeBleaching ??
-    Number((costBeforeBleaching / (costing.totalLengthMeters || 1)).toFixed(2));
+    costing.costPerMeterBeforeBleaching !== null && costing.costPerMeterBeforeBleaching !== undefined
+      ? Number(costing.costPerMeterBeforeBleaching)
+      : Number((costBeforeBleaching / (Number(costing.totalLengthMeters || 0) || 1)).toFixed(2));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200">
@@ -123,11 +130,11 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
                   Cost / Meter (Before Bleach)
                 </div>
                 <div className="text-xl font-black font-mono text-amber-600 dark:text-amber-400">
-                  ₹{costPerMeterBeforeBleaching.toFixed(2)}
+                  ₹{Number(costPerMeterBeforeBleaching || 0).toFixed(2)}
                   <span className="text-xs font-normal text-muted-foreground ml-1">/ m</span>
                 </div>
                 <div className="text-[11px] text-muted-foreground font-mono">
-                  Subtotal: ₹{costBeforeBleaching.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  Subtotal: ₹{Number(costBeforeBleaching || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </div>
               </div>
 
@@ -137,11 +144,11 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
                   Cost / Meter (With Bleach)
                 </div>
                 <div className="text-xl sm:text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-                  ₹{costing.costPerMeter.toFixed(2)}
+                  ₹{Number(costing.costPerMeter || 0).toFixed(2)}
                   <span className="text-xs font-normal text-muted-foreground ml-1">/ m</span>
                 </div>
                 <div className="text-[11px] text-muted-foreground font-mono">
-                  Total: ₹{costing.totalProductionCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })} for {Number(costing.totalLengthMeters).toLocaleString('en-IN', { maximumFractionDigits: 2 })}m
+                  Total: ₹{Number(costing.totalProductionCost || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} for {Number(costing.totalLengthMeters).toLocaleString('en-IN', { maximumFractionDigits: 2 })}m
                 </div>
               </div>
             </div>
@@ -151,7 +158,7 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
           <div className="space-y-2">
             <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
               <span>Cost Composition Breakdown</span>
-              <span>100% of ₹{costing.totalProductionCost.toFixed(2)}</span>
+              <span>100% of ₹{Number(costing.totalProductionCost || 0).toFixed(2)}</span>
             </div>
             <div className="h-4 rounded-full overflow-hidden flex bg-muted/60 text-[10px] text-white font-mono font-bold">
               <div
@@ -193,23 +200,23 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
             <div className="flex flex-wrap items-center gap-4 text-xs pt-1">
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded bg-indigo-600" />
-                <span className="text-muted-foreground">Warp Yarn: <b>{warpPct}%</b> (₹{costing.warpTotalPrice.toFixed(2)})</span>
+                <span className="text-muted-foreground">Warp Yarn: <b>{warpPct}%</b> (₹{Number(costing.warpTotalPrice || 0).toFixed(2)})</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded bg-sky-500" />
-                <span className="text-muted-foreground">Weft Yarn: <b>{weftPct}%</b> (₹{costing.weftTotalPrice.toFixed(2)})</span>
+                <span className="text-muted-foreground">Weft Yarn: <b>{weftPct}%</b> (₹{Number(costing.weftTotalPrice || 0).toFixed(2)})</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded bg-emerald-500" />
-                <span className="text-muted-foreground">Weaving: <b>{weavingPct}%</b> (₹{costing.weavingTotalWages.toFixed(2)})</span>
+                <span className="text-muted-foreground">Weaving: <b>{weavingPct}%</b> (₹{Number(costing.weavingTotalWages || 0).toFixed(2)})</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded bg-amber-500" />
-                <span className="text-muted-foreground">Bleaching: <b>{bleachingPct}%</b> (₹{costing.bleachingTotalCharges.toFixed(2)})</span>
+                <span className="text-muted-foreground">Bleaching: <b>{bleachingPct}%</b> (₹{Number(costing.bleachingTotalCharges || 0).toFixed(2)})</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded bg-rose-500" />
-                <span className="text-muted-foreground">Sizing: <b>{sizingPct}%</b> (₹{costing.sizingTotalWages.toFixed(2)})</span>
+                <span className="text-muted-foreground">Sizing: <b>{sizingPct}%</b> (₹{Number(costing.sizingTotalWages || 0).toFixed(2)})</span>
               </div>
             </div>
           </div>
@@ -242,7 +249,7 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
                 <div className="text-xs flex justify-between items-center pt-1 text-muted-foreground">
                   <span>பாவு நூல் Price ({costing.warpWeightKg} × ₹{costing.warpPricePerKg}/kg):</span>
                   <span className="font-mono font-bold text-foreground">
-                    ₹{costing.warpTotalPrice.toFixed(2)}
+                    ₹{Number(costing.warpTotalPrice || 0).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -267,7 +274,7 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
                 <div className="text-xs flex justify-between items-center pt-1 text-muted-foreground">
                   <span>ஊடை நூல் Price ({costing.weftWeightKg} × ₹{costing.weftPricePerKg}/kg):</span>
                   <span className="font-mono font-bold text-foreground">
-                    ₹{costing.weftTotalPrice.toFixed(2)}
+                    ₹{Number(costing.weftTotalPrice || 0).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -279,7 +286,7 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
                     3. சைசிங் Wages (Sizing Wages)
                   </span>
                   <span className="text-xs font-mono font-bold text-foreground">
-                    ₹{costing.sizingTotalWages.toFixed(2)}
+                    ₹{Number(costing.sizingTotalWages || 0).toFixed(2)}
                   </span>
                 </div>
                 <div className="text-[11px] font-mono text-muted-foreground bg-muted/40 p-2.5 rounded-lg">
@@ -287,7 +294,7 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
                   <br />
                   = {costing.warpWeightKg} kg × ₹{costing.sizingRatePerKg}
                   <br />
-                  = <span className="text-foreground font-semibold">₹{costing.sizingTotalWages.toFixed(2)}</span>
+                  = <span className="text-foreground font-semibold">₹{Number(costing.sizingTotalWages || 0).toFixed(2)}</span>
                 </div>
               </div>
 
@@ -298,7 +305,7 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
                     4. நெசவு Wages (Weaving Wages)
                   </span>
                   <span className="text-xs font-mono font-bold text-foreground">
-                    ₹{costing.weavingTotalWages.toFixed(2)}
+                    ₹{Number(costing.weavingTotalWages || 0).toFixed(2)}
                   </span>
                 </div>
                 <div className="text-[11px] font-mono text-muted-foreground bg-muted/40 p-2.5 rounded-lg">
@@ -306,7 +313,7 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
                   <br />
                   = (₹{costing.weavingRatePerMeter} ÷ {costing.baseReedPicks}) × {costing.pick} × {costing.totalLengthMeters}m
                   <br />
-                  = <span className="text-foreground font-semibold">₹{costing.weavingTotalWages.toFixed(2)}</span>
+                  = <span className="text-foreground font-semibold">₹{Number(costing.weavingTotalWages || 0).toFixed(2)}</span>
                 </div>
               </div>
 
@@ -317,17 +324,17 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
                     5. சாம்பல் துணி அடக்கவிலை (Cost Before Bleaching)
                   </span>
                   <span className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30">
-                    ₹{costPerMeterBeforeBleaching.toFixed(2)} / m
+                    ₹{Number(costPerMeterBeforeBleaching || 0).toFixed(2)} / m
                   </span>
                 </div>
                 <div className="text-[11px] font-mono text-muted-foreground bg-card p-2.5 rounded-lg border border-border/60">
                   = பாவு Cost + ஊடை Cost + சைசிங் Wages + நெசவு Wages
                   <br />
-                  = ₹{costing.warpTotalPrice.toFixed(2)} + ₹{costing.weftTotalPrice.toFixed(2)} + ₹{costing.sizingTotalWages.toFixed(2)} + ₹{costing.weavingTotalWages.toFixed(2)}
+                  = ₹{Number(costing.warpTotalPrice || 0).toFixed(2)} + ₹{Number(costing.weftTotalPrice || 0).toFixed(2)} + ₹{Number(costing.sizingTotalWages || 0).toFixed(2)} + ₹{Number(costing.weavingTotalWages || 0).toFixed(2)}
                   <br />
-                  = <span className="text-foreground font-semibold">₹{costBeforeBleaching.toFixed(2)}</span>
+                  = <span className="text-foreground font-semibold">₹{Number(costBeforeBleaching || 0).toFixed(2)}</span>
                   <br />
-                  மீட்டர் விலை = ₹{costBeforeBleaching.toFixed(2)} ÷ {Number(costing.totalLengthMeters).toLocaleString('en-IN', { maximumFractionDigits: 2 })}m = <span className="text-amber-600 dark:text-amber-400 font-bold">₹{costPerMeterBeforeBleaching.toFixed(2)}/m</span>
+                  மீட்டர் விலை = ₹{Number(costBeforeBleaching || 0).toFixed(2)} ÷ {Number(costing.totalLengthMeters).toLocaleString('en-IN', { maximumFractionDigits: 2 })}m = <span className="text-amber-600 dark:text-amber-400 font-bold">₹{Number(costPerMeterBeforeBleaching || 0).toFixed(2)}/m</span>
                 </div>
               </div>
 
@@ -338,7 +345,7 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
                     6. Bleaching Charges (பிளீச்சிங் கட்டணம்)
                   </span>
                   <span className="text-xs font-mono font-bold text-foreground">
-                    ₹{costing.bleachingTotalCharges.toFixed(2)}
+                    ₹{Number(costing.bleachingTotalCharges || 0).toFixed(2)}
                   </span>
                 </div>
                 <div className="text-[11px] font-mono text-muted-foreground bg-muted/40 p-2.5 rounded-lg">
@@ -346,7 +353,7 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
                   <br />
                   = ₹{costing.bleachingRatePerKg} × {costing.totalWeightKg} kg
                   <br />
-                  = <span className="text-foreground font-semibold">₹{costing.bleachingTotalCharges.toFixed(2)}</span>
+                  = <span className="text-foreground font-semibold">₹{Number(costing.bleachingTotalCharges || 0).toFixed(2)}</span>
                 </div>
               </div>
 
@@ -378,19 +385,19 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
               <tbody className="divide-y divide-border/60">
                 <tr>
                   <td className="p-2.5 text-muted-foreground">பாவு எடை Price (Warp Yarn Cost)</td>
-                  <td className="p-2.5 text-right font-mono font-medium text-foreground">₹{costing.warpTotalPrice.toFixed(2)}</td>
+                  <td className="p-2.5 text-right font-mono font-medium text-foreground">₹{Number(costing.warpTotalPrice || 0).toFixed(2)}</td>
                 </tr>
                 <tr>
                   <td className="p-2.5 text-muted-foreground">ஊடை எடை Price (Weft Yarn Cost)</td>
-                  <td className="p-2.5 text-right font-mono font-medium text-foreground">₹{costing.weftTotalPrice.toFixed(2)}</td>
+                  <td className="p-2.5 text-right font-mono font-medium text-foreground">₹{Number(costing.weftTotalPrice || 0).toFixed(2)}</td>
                 </tr>
                 <tr>
                   <td className="p-2.5 text-muted-foreground">சைசிங் Wages (Sizing Wages)</td>
-                  <td className="p-2.5 text-right font-mono font-medium text-foreground">₹{costing.sizingTotalWages.toFixed(2)}</td>
+                  <td className="p-2.5 text-right font-mono font-medium text-foreground">₹{Number(costing.sizingTotalWages || 0).toFixed(2)}</td>
                 </tr>
                 <tr>
                   <td className="p-2.5 text-muted-foreground">நெசவு Wages (Weaving Wages)</td>
-                  <td className="p-2.5 text-right font-mono font-medium text-foreground">₹{costing.weavingTotalWages.toFixed(2)}</td>
+                  <td className="p-2.5 text-right font-mono font-medium text-foreground">₹{Number(costing.weavingTotalWages || 0).toFixed(2)}</td>
                 </tr>
                 <tr className="bg-amber-500/10 font-bold border-y border-amber-500/30">
                   <td className="p-2.5 text-amber-900 dark:text-amber-200">
@@ -398,20 +405,20 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
                     <div className="text-[10px] font-normal text-muted-foreground">பாவு + ஊடை + சைசிங் + நெசவு (Warp + Weft + Sizing + Weaving)</div>
                   </td>
                   <td className="p-2.5 text-right font-mono text-amber-700 dark:text-amber-300">
-                    <div className="text-sm font-black">₹{costBeforeBleaching.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-                    <div className="text-xs font-bold text-amber-600 dark:text-amber-400">₹{costPerMeterBeforeBleaching.toFixed(2)} / meter</div>
+                    <div className="text-sm font-black">₹{Number(costBeforeBleaching || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                    <div className="text-xs font-bold text-amber-600 dark:text-amber-400">₹{Number(costPerMeterBeforeBleaching || 0).toFixed(2)} / meter</div>
                   </td>
                 </tr>
                 <tr>
                   <td className="p-2.5 text-muted-foreground">Bleaching Charges (பிளீச்சிங் கட்டணம்)</td>
-                  <td className="p-2.5 text-right font-mono font-medium text-foreground">₹{costing.bleachingTotalCharges.toFixed(2)}</td>
+                  <td className="p-2.5 text-right font-mono font-medium text-foreground">₹{Number(costing.bleachingTotalCharges || 0).toFixed(2)}</td>
                 </tr>
                 <tr className="bg-primary/5 font-bold">
                   <td className="p-3 text-foreground text-sm">
                     Total Production Cost for {Number(costing.totalLengthMeters).toLocaleString('en-IN', { maximumFractionDigits: 2 })} meters
                   </td>
                   <td className="p-3 text-right font-mono text-base text-primary">
-                    ₹{costing.totalProductionCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    ₹{Number(costing.totalProductionCost || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </td>
                 </tr>
                 <tr className="bg-emerald-500/10 font-bold">
@@ -419,7 +426,7 @@ export function CostingDetailsModal({ costing, isOpen, onClose }: CostingDetails
                     1 Meter Finished Cost with Bleaching (பிளீச்சிங் சேர்த்த மீட்டர் அடக்கவிலை)
                   </td>
                   <td className="p-3 text-right font-mono text-lg text-emerald-600 dark:text-emerald-400">
-                    ₹{costing.costPerMeter.toFixed(2)} / meter
+                    ₹{Number(costing.costPerMeter || 0).toFixed(2)} / meter
                   </td>
                 </tr>
               </tbody>

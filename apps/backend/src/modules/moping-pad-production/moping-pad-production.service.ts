@@ -131,7 +131,7 @@ export class MopingPadProductionService {
       },
     });
 
-    return batch;
+    return this.formatBatch(batch);
   }
 
   /**
@@ -186,7 +186,7 @@ export class MopingPadProductionService {
     ]);
 
     return {
-      items,
+      items: items.map((b) => this.formatBatch(b)),
       meta: {
         total,
         page,
@@ -208,7 +208,7 @@ export class MopingPadProductionService {
       throw new NotFoundException(`Moping pad production batch with ID "${id}" not found`);
     }
 
-    return batch;
+    return this.formatBatch(batch);
   }
 
   /**
@@ -228,10 +228,11 @@ export class MopingPadProductionService {
       updateData.completionPercentage = 100;
     }
 
-    return prisma.mopingPadProductionBatch.update({
+    const updated = await prisma.mopingPadProductionBatch.update({
       where: { id },
       data: updateData,
     });
+    return this.formatBatch(updated);
   }
 
   /**
@@ -258,7 +259,7 @@ export class MopingPadProductionService {
       completionDate = null;
     }
 
-    return prisma.mopingPadProductionBatch.update({
+    const updated = await prisma.mopingPadProductionBatch.update({
       where: { id },
       data: {
         completedQuantity: completed,
@@ -269,6 +270,22 @@ export class MopingPadProductionService {
         notes: dto.notes !== undefined ? dto.notes : existing.notes,
       },
     });
+    return this.formatBatch(updated);
+  }
+
+  private formatBatch(b: any) {
+    if (!b) return b;
+    return {
+      ...b,
+      totalLength: b.totalLength !== null && b.totalLength !== undefined ? Number(b.totalLength) : 0,
+      remnantLength: b.remnantLength !== null && b.remnantLength !== undefined ? Number(b.remnantLength) : 0,
+      pinningSize: b.pinningSize !== null && b.pinningSize !== undefined ? Number(b.pinningSize) : 0,
+      completionPercentage: b.completionPercentage !== null && b.completionPercentage !== undefined ? Number(b.completionPercentage) : 0,
+      rollLength: b.rollLength !== null && b.rollLength !== undefined ? Number(b.rollLength) : null,
+      rollWidth: b.rollWidth !== null && b.rollWidth !== undefined ? Number(b.rollWidth) : null,
+      pieceLength: b.pieceLength !== null && b.pieceLength !== undefined ? Number(b.pieceLength) : null,
+      pieceWidth: b.pieceWidth !== null && b.pieceWidth !== undefined ? Number(b.pieceWidth) : null,
+    };
   }
 
   /**

@@ -743,9 +743,9 @@ export default function JobWorkWagesPage() {
                         <span className="font-bold text-foreground block text-sm">
                           {item.outputQuantity.toLocaleString('en-IN')} {item.uom}
                         </span>
-                        {item.outputWeight && item.outputWeight > 0 && item.uom !== 'Kg' && (
+                        {item.outputWeight && Number(item.outputWeight) > 0 && item.uom !== 'Kg' && (
                           <span className="text-[10px] text-muted-foreground block">
-                            ({item.outputWeight.toFixed(1)} Kg)
+                            ({Number(item.outputWeight).toFixed(1)} Kg)
                           </span>
                         )}
                       </td>

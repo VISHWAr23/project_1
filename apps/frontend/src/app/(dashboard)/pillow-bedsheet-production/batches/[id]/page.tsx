@@ -86,11 +86,11 @@ export default function PillowBedsheetBatchDetailPage() {
   const progressPct = batch.outputQuantity > 0
     ? Math.min(100, Math.round((batch.completedQuantity / batch.outputQuantity) * 100))
     : 0;
-  const earnedSalary = batch.completedQuantity * batch.salaryRatePerUnit;
+  const earnedSalary = Number(batch.completedQuantity || 0) * Number(batch.salaryRatePerUnit || 0);
   const workerList = batch.workerNames ? batch.workerNames.split(',').map((w) => w.trim()).filter(Boolean) : [];
   const workerCount = workerList.length > 0 ? workerList.length : 1;
-  const perWorkerSalary = batch.workerSalaryShare || (batch.totalSalary / workerCount);
-  const perWorkerEarned = earnedSalary / workerCount;
+  const perWorkerSalary = Number(batch.workerSalaryShare || (Number(batch.totalSalary || 0) / workerCount));
+  const perWorkerEarned = Number(earnedSalary || 0) / workerCount;
 
   const handleStatusUpdate = async (status: PillowBedsheetBatchStatus) => {
     try {
@@ -264,7 +264,7 @@ export default function PillowBedsheetBatchDetailPage() {
               <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
                 <span className="text-[10px] text-purple-700 dark:text-purple-300 block uppercase font-bold tracking-wider">Total Roll Length</span>
                 <span className="text-base font-bold font-mono text-purple-600 dark:text-purple-400 mt-0.5 block">
-                  {batch.totalLength.toFixed(2)} m
+                  {Number(batch.totalLength || 0).toFixed(2)} m
                 </span>
                 <span className="text-[10px] text-muted-foreground">Linear meters</span>
               </div>
@@ -297,7 +297,7 @@ export default function PillowBedsheetBatchDetailPage() {
                     <div className="p-2 rounded bg-background border border-border/70">
                       <span className="text-[10px] text-muted-foreground block">Remnant Length</span>
                       <span className="font-mono font-bold text-muted-foreground">
-                        {batch.remnantLength !== undefined ? `${batch.remnantLength.toFixed(2)} m` : '0 m'}
+                        {batch.remnantLength !== undefined ? `${Number(batch.remnantLength || 0).toFixed(2)} m` : '0 m'}
                       </span>
                     </div>
                   </div>
@@ -329,7 +329,7 @@ export default function PillowBedsheetBatchDetailPage() {
                   </div>
                   {batch.remnantLength !== undefined && (
                     <div className="text-[10px] text-muted-foreground font-mono pt-1">
-                      Remnant length remaining from roll: <strong>{batch.remnantLength.toFixed(2)} meters</strong>
+                      Remnant length remaining from roll: <strong>{Number(batch.remnantLength || 0).toFixed(2)} meters</strong>
                     </div>
                   )}
                 </div>
@@ -492,7 +492,7 @@ export default function PillowBedsheetBatchDetailPage() {
                   </span>
                   {workerList.length > 1 && (
                     <span className="text-[10px] text-muted-foreground font-mono">
-                      ₹{perWorkerSalary.toFixed(0)}/worker
+                      ₹{Number(perWorkerSalary || 0).toFixed(0)}/worker
                     </span>
                   )}
                 </div>
@@ -510,10 +510,10 @@ export default function PillowBedsheetBatchDetailPage() {
                           <span className="font-medium text-foreground">{workerName}</span>
                           <div className="text-right font-mono">
                             <span className="font-bold text-emerald-600 dark:text-emerald-400 block">
-                              ₹{perWorkerEarned.toFixed(0)} earned
+                              ₹{Number(perWorkerEarned || 0).toFixed(0)} earned
                             </span>
                             <span className="text-[10px] text-muted-foreground">
-                              of ₹{perWorkerSalary.toFixed(0)}
+                              of ₹{Number(perWorkerSalary || 0).toFixed(0)}
                             </span>
                           </div>
                         </div>

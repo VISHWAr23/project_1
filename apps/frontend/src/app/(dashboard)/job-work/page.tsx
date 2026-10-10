@@ -278,7 +278,7 @@ function JobWorkProductionHubContent() {
         timestamp: resolveTimestamp(batch),
         metricPrimary: (
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Input: <strong className="text-foreground font-mono">{Number(batch.inputQuantity).toFixed(0)} {batch.inputUom}</strong></span>
+            <span>Input: <strong className="text-foreground font-mono">{Number(batch.inputQuantity || 0).toFixed(0)} {batch.inputUom}</strong></span>
             <span className="px-2 py-0.5 rounded bg-secondary text-[10px] font-mono">{batch.status}</span>
           </div>
         ),
@@ -369,8 +369,8 @@ function JobWorkProductionHubContent() {
         ),
         metricSecondary: (
           <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground bg-secondary/40 px-2 py-1 rounded">
-            <span>Rate: ₹{batch.salaryRatePerPiece.toFixed(2)}/pad</span>
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">₹{batch.totalSalary.toFixed(0)} Salary</span>
+            <span>Rate: ₹{Number(batch.salaryRatePerPiece || 0).toFixed(2)}/pad</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">₹{Number(batch.totalSalary || 0).toFixed(0)} Salary</span>
           </div>
         ),
         manageUrl: '/gauze-pad-pinning',
@@ -404,8 +404,8 @@ function JobWorkProductionHubContent() {
         ),
         metricSecondary: (
           <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground bg-secondary/40 px-2 py-1 rounded">
-            <span>{batch.completedLength.toFixed(0)}m / {batch.totalLength}m</span>
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">₹{batch.totalSalary.toFixed(0)} Salary</span>
+            <span>{Number(batch.completedLength || 0).toFixed(0)}m / {Number(batch.totalLength || 0).toFixed(0)}m</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">₹{Number(batch.totalSalary || 0).toFixed(0)} Salary</span>
           </div>
         ),
         manageUrl: '/drying',
@@ -439,8 +439,8 @@ function JobWorkProductionHubContent() {
         ),
         metricSecondary: (
           <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground bg-secondary/40 px-2 py-1 rounded">
-            <span>{batch.totalLength.toFixed(1)}m</span>
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">₹{batch.totalSalary.toFixed(0)} Salary</span>
+            <span>{Number(batch.totalLength || 0).toFixed(1)}m</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">₹{Number(batch.totalSalary || 0).toFixed(0)} Salary</span>
           </div>
         ),
         manageUrl: `/pillow-bedsheet-production/batches/${batch.id}`,
@@ -509,7 +509,7 @@ function JobWorkProductionHubContent() {
         timestamp: resolveTimestamp(order),
         metricPrimary: (
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Sourced: <strong className="text-foreground font-mono">{Number(order.totalIssuedWeight).toFixed(1)} kg</strong></span>
+            <span>Sourced: <strong className="text-foreground font-mono">{Number(order.totalIssuedWeight || 0).toFixed(1)} kg</strong></span>
             <span className="px-2 py-0.5 rounded bg-secondary text-[10px] font-mono">{order.status}</span>
           </div>
         ),
@@ -547,7 +547,7 @@ function JobWorkProductionHubContent() {
         timestamp: resolveTimestamp(order),
         metricPrimary: (
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Issued: <strong className="text-foreground font-mono">{Number(order.totalIssuedWeight).toFixed(1)} kg</strong></span>
+            <span>Issued: <strong className="text-foreground font-mono">{Number(order.totalIssuedWeight || 0).toFixed(1)} kg</strong></span>
             <span className="px-2 py-0.5 rounded bg-secondary text-[10px] font-mono">{order.status}</span>
           </div>
         ),

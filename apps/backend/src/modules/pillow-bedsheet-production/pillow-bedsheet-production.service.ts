@@ -186,7 +186,7 @@ export class PillowBedsheetProductionService {
       },
     });
 
-    return batch;
+    return this.formatBatch(batch);
   }
 
   /**
@@ -244,7 +244,7 @@ export class PillowBedsheetProductionService {
     ]);
 
     return {
-      items,
+      items: items.map((b) => this.formatBatch(b)),
       meta: {
         total,
         page,
@@ -266,7 +266,7 @@ export class PillowBedsheetProductionService {
       throw new NotFoundException(`Pillow & Bedsheet batch with ID "${id}" not found`);
     }
 
-    return batch;
+    return this.formatBatch(batch);
   }
 
   /**
@@ -294,7 +294,7 @@ export class PillowBedsheetProductionService {
       completionDate = null;
     }
 
-    return prisma.pillowBedsheetBatch.update({
+    const updated = await prisma.pillowBedsheetBatch.update({
       where: { id },
       data: {
         completedQuantity,
@@ -305,6 +305,7 @@ export class PillowBedsheetProductionService {
         notes: dto.notes !== undefined ? dto.notes?.trim() || null : existing.notes,
       },
     });
+    return this.formatBatch(updated);
   }
 
   /**
@@ -323,10 +324,30 @@ export class PillowBedsheetProductionService {
       updateData.completionDate = null;
     }
 
-    return prisma.pillowBedsheetBatch.update({
+    const updated = await prisma.pillowBedsheetBatch.update({
       where: { id },
       data: updateData,
     });
+    return this.formatBatch(updated);
+  }
+
+  private formatBatch(b: any) {
+    if (!b) return b;
+    return {
+      ...b,
+      weightKg: b.weightKg !== null && b.weightKg !== undefined ? Number(b.weightKg) : 0,
+      gsm: b.gsm !== null && b.gsm !== undefined ? Number(b.gsm) : 0,
+      rollWidth: b.rollWidth !== null && b.rollWidth !== undefined ? Number(b.rollWidth) : 0,
+      rollWidthInMeters: b.rollWidthInMeters !== null && b.rollWidthInMeters !== undefined ? Number(b.rollWidthInMeters) : 0,
+      totalLength: b.totalLength !== null && b.totalLength !== undefined ? Number(b.totalLength) : 0,
+      bedSheetLength: b.bedSheetLength !== null && b.bedSheetLength !== undefined ? Number(b.bedSheetLength) : null,
+      pillowCoverCuttingLength: b.pillowCoverCuttingLength !== null && b.pillowCoverCuttingLength !== undefined ? Number(b.pillowCoverCuttingLength) : null,
+      remnantLength: b.remnantLength !== null && b.remnantLength !== undefined ? Number(b.remnantLength) : 0,
+      completionPercentage: b.completionPercentage !== null && b.completionPercentage !== undefined ? Number(b.completionPercentage) : 0,
+      salaryRatePerUnit: b.salaryRatePerUnit !== null && b.salaryRatePerUnit !== undefined ? Number(b.salaryRatePerUnit) : 0,
+      totalSalary: b.totalSalary !== null && b.totalSalary !== undefined ? Number(b.totalSalary) : 0,
+      workerSalaryShare: b.workerSalaryShare !== null && b.workerSalaryShare !== undefined ? Number(b.workerSalaryShare) : 0,
+    };
   }
 
   /**

@@ -360,7 +360,7 @@ export default function PillowBedsheetProductionPage() {
                           Width: <span className="font-mono text-foreground">{batch.rollWidth} {batch.rollWidthUom}</span>
                         </div>
                         <div className="text-[10px] font-mono font-bold text-purple-600 dark:text-purple-400">
-                          {batch.totalLength.toFixed(2)} m
+                          {Number(batch.totalLength || 0).toFixed(2)} m
                         </div>
                       </td>
 
@@ -376,7 +376,7 @@ export default function PillowBedsheetProductionPage() {
                             </div>
                             {batch.remnantLength !== undefined && (
                               <div className="text-[10px] text-muted-foreground font-mono">
-                                Remnant: {batch.remnantLength.toFixed(2)} m
+                                Remnant: {Number(batch.remnantLength || 0).toFixed(2)} m
                               </div>
                             )}
                           </>
@@ -435,14 +435,14 @@ export default function PillowBedsheetProductionPage() {
                           ₹{batch.salaryRatePerUnit} / pc
                         </div>
                         <div className="text-[10px] text-muted-foreground">
-                          Total: <span className="font-mono font-semibold text-foreground">₹{batch.totalSalary.toLocaleString()}</span>
+                          Total: <span className="font-mono font-semibold text-foreground">₹{Number(batch.totalSalary || 0).toLocaleString()}</span>
                         </div>
                         <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-semibold">
-                          Earned: ₹{earnedBatchSalary.toLocaleString()}
+                          Earned: ₹{Number(earnedBatchSalary || 0).toLocaleString()}
                         </div>
-                        {batch.workerSalaryShare > 0 && batch.executorType === 'WORKERS' && (
+                        {Number(batch.workerSalaryShare || 0) > 0 && batch.executorType === 'WORKERS' && (
                           <div className="text-[9px] text-muted-foreground">
-                            Share/worker: ₹{batch.workerSalaryShare.toFixed(0)}
+                            Share/worker: ₹{Number(batch.workerSalaryShare || 0).toFixed(0)}
                           </div>
                         )}
                       </td>

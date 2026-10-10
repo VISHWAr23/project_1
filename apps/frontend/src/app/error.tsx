@@ -11,15 +11,16 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const isChunkError = Boolean(
+    error?.name === 'ChunkLoadError' ||
+    error?.message?.includes('ChunkLoadError') ||
+    error?.message?.includes('Loading chunk') ||
+    error?.message?.includes('Failed to fetch dynamically imported module')
+  );
+
   useEffect(() => {
     // If the error is a ChunkLoadError (caused by new deployments or HMR code updates),
     // automatically reload once to fetch the latest assets seamlessly.
-    const isChunkError =
-      error?.name === 'ChunkLoadError' ||
-      error?.message?.includes('ChunkLoadError') ||
-      error?.message?.includes('Loading chunk') ||
-      error?.message?.includes('Failed to fetch dynamically imported module');
-
     if (isChunkError && typeof window !== 'undefined') {
       const storageKey = 'last_chunk_reload_ts';
       const lastReload = sessionStorage.getItem(storageKey);
@@ -30,16 +31,20 @@ export default function GlobalError({
         window.location.reload();
       }
     }
-  }, [error]);
+  }, [isChunkError]);
 
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">
       <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4 border border-amber-500/20">
         <AlertTriangle className="h-7 w-7" />
       </div>
-      <h2 className="text-xl font-bold text-foreground mb-2">Application Updated</h2>
+      <h2 className="text-xl font-bold text-foreground mb-2">
+        {isChunkError ? 'Application Updated' : 'Something went wrong'}
+      </h2>
       <p className="text-xs text-muted-foreground max-w-md mb-6">
-        New code changes or updated modules were detected. Please reload the page to load the latest version.
+        {isChunkError
+          ? 'New code changes or updated modules were detected. Please reload the page to load the latest version.'
+          : error?.message || 'An unexpected error occurred while loading this view. Please try reloading or contact support.'}
       </p>
       <div className="flex items-center gap-3">
         <Button

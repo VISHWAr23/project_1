@@ -320,10 +320,10 @@ export default function DryingPage() {
 
                     <td className="py-3.5 px-4 text-right">
                       <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 block">
-                        ₹{batch.earnedSalary.toFixed(2)}
+                        ₹{Number(batch.earnedSalary || 0).toFixed(2)}
                       </span>
                       <span className="text-[10px] text-muted-foreground font-mono">
-                        (₹{batch.workerSalaryShare.toFixed(2)} / person)
+                        (₹{Number(batch.workerSalaryShare || 0).toFixed(2)} / person)
                       </span>
                     </td>
 
@@ -572,13 +572,13 @@ export default function DryingPage() {
                       <div>
                         <span className="text-muted-foreground block text-[11px]">Salary Earned So Far:</span>
                         <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
-                          ₹{earned.toFixed(2)}
+                          ₹{Number(earned || 0).toFixed(2)}
                         </span>
                       </div>
                       <div className="text-right">
                         <span className="text-muted-foreground block text-[11px]">Per Worker ({workerCount}):</span>
                         <span className="font-mono font-semibold text-foreground">
-                          ₹{perWorker.toFixed(2)}
+                          ₹{Number(perWorker || 0).toFixed(2)}
                         </span>
                       </div>
                     </div>

@@ -295,10 +295,10 @@ export default function GauzePadPinningPage() {
 
                     <td className="py-3.5 px-4 text-right">
                       <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 block">
-                        ₹{batch.totalSalary.toFixed(2)}
+                        ₹{Number(batch.totalSalary || 0).toFixed(2)}
                       </span>
                       <span className="text-[10px] text-muted-foreground font-mono">
-                        (₹{batch.workerSalaryShare.toFixed(2)} / person)
+                        (₹{Number(batch.workerSalaryShare || 0).toFixed(2)} / person)
                       </span>
                     </td>
 

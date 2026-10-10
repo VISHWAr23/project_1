@@ -118,7 +118,7 @@ export class DryingService {
       },
     });
 
-    return batch;
+    return this.formatBatch(batch);
   }
 
   /**
@@ -170,7 +170,7 @@ export class DryingService {
     ]);
 
     return {
-      items,
+      items: items.map((b) => this.formatBatch(b)),
       meta: {
         total,
         page,
@@ -192,7 +192,7 @@ export class DryingService {
       throw new NotFoundException(`Drying batch with ID "${id}" not found`);
     }
 
-    return batch;
+    return this.formatBatch(batch);
   }
 
   /**
@@ -223,10 +223,11 @@ export class DryingService {
       updateData.workerSalaryShare = Number((earnedSalary / workerCount).toFixed(2));
     }
 
-    return prisma.dryingBatch.update({
+    const updated = await prisma.dryingBatch.update({
       where: { id },
       data: updateData,
     });
+    return this.formatBatch(updated);
   }
 
   /**
@@ -266,7 +267,7 @@ export class DryingService {
       completionDate = null;
     }
 
-    return prisma.dryingBatch.update({
+    const updated = await prisma.dryingBatch.update({
       where: { id },
       data: {
         completedPieces: completed,
@@ -280,6 +281,23 @@ export class DryingService {
         notes: dto.notes !== undefined ? dto.notes : existing.notes,
       },
     });
+    return this.formatBatch(updated);
+  }
+
+  private formatBatch(b: any) {
+    if (!b) return b;
+    return {
+      ...b,
+      pieceLength: b.pieceLength !== null && b.pieceLength !== undefined ? Number(b.pieceLength) : 0,
+      pieceWidth: b.pieceWidth !== null && b.pieceWidth !== undefined ? Number(b.pieceWidth) : null,
+      totalLength: b.totalLength !== null && b.totalLength !== undefined ? Number(b.totalLength) : 0,
+      completedLength: b.completedLength !== null && b.completedLength !== undefined ? Number(b.completedLength) : 0,
+      completionPercentage: b.completionPercentage !== null && b.completionPercentage !== undefined ? Number(b.completionPercentage) : 0,
+      salaryRatePerMeter: b.salaryRatePerMeter !== null && b.salaryRatePerMeter !== undefined ? Number(b.salaryRatePerMeter) : 0,
+      totalSalary: b.totalSalary !== null && b.totalSalary !== undefined ? Number(b.totalSalary) : 0,
+      earnedSalary: b.earnedSalary !== null && b.earnedSalary !== undefined ? Number(b.earnedSalary) : 0,
+      workerSalaryShare: b.workerSalaryShare !== null && b.workerSalaryShare !== undefined ? Number(b.workerSalaryShare) : 0,
+    };
   }
 
   /**
